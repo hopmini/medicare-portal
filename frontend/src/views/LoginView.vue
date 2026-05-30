@@ -88,30 +88,38 @@
   function redirectAfterLogin () {
     const user = authStore.user.value
 
-    // If there's an external redirect (SSO from Appointment-Service)
+    // If there's an internal redirect path from our router guard
     if (redirectUrl.value) {
-      const callbackUrl = new URL(decodeURIComponent(redirectUrl.value))
-      callbackUrl.searchParams.set('token', authStore.token.value)
-      callbackUrl.searchParams.set('user', encodeURIComponent(JSON.stringify(user)))
-      callbackUrl.searchParams.set('role', user.role)
-      window.location.href = callbackUrl.toString()
-      return
+      // Decode and handle either paths or full URLs (if external)
+      try {
+        const decoded = decodeURIComponent(redirectUrl.value)
+        if (decoded.startsWith('/') || decoded.startsWith('#')) {
+          router.push(decoded)
+          return
+        } else {
+          // If it is a full external URL, fallback to it
+          const callbackUrl = new URL(decoded)
+          callbackUrl.searchParams.set('token', authStore.token.value)
+          callbackUrl.searchParams.set('user', encodeURIComponent(JSON.stringify(user)))
+          callbackUrl.searchParams.set('role', user.role)
+          window.location.href = callbackUrl.toString()
+          return
+        }
+      } catch (e) {
+        router.push('/')
+        return
+      }
     }
-
-    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-    const APPOINTMENT_URL = currentHost === 'localhost' || currentHost === '127.0.0.1'
-      ? 'http://localhost:5173'
-      : `http://${currentHost}:3001`
 
     // Internal portal redirect based on role
     if (user.role === 'Admin') {
       router.push('/dashboard')
-    } else if (user.role === 'Doctor' || user.role === 'Receptionist') {
-      // Doctors and Receptionists are redirected straight to their respective views in Appointment-Service
-      const ssoUrl = `${APPOINTMENT_URL}/auth-callback?token=${authStore.token.value}&user=${encodeURIComponent(JSON.stringify(user))}&role=${user.role}`
-      window.location.href = ssoUrl
+    } else if (user.role === 'Doctor') {
+      router.push('/doctor')
+    } else if (user.role === 'Receptionist') {
+      router.push('/receptionist')
     } else {
-      // Patient → về landing page, tự bấm "Đặt lịch" để sang Appointment
+      // Patient → go to Home page
       router.push('/')
     }
   }

@@ -23,28 +23,41 @@
             </div>
           </span>
         </li>
-        <li><a :href="APPOINTMENT_URL + '/track'">Tra cứu lịch hẹn</a></li>
-        <li><a :href="APPOINTMENT_URL + '/contact'">Liên hệ</a></li>
+        <li><router-link to="/my-appointments">Lịch sử đặt hẹn</router-link></li>
+        <li><router-link to="/contact">Liên hệ</router-link></li>
       </ul>
 
       <div class="nav-actions">
         <template v-if="authStore.isAuthenticated.value">
-          <span class="user-badge-nav">{{ authStore.user.value?.fullName || authStore.user.value?.username }}</span>
           <button v-if="authStore.canAccessDashboard.value" class="btn-outline-nav" @click="$router.push('/dashboard')">
             <i class="fas fa-tachometer-alt" /> Dashboard
           </button>
           <button v-else-if="authStore.canAccessDoctorDashboard.value" class="btn-outline-nav" @click="$router.push('/doctor')">
             <i class="fas fa-user-md" /> Bác sĩ
           </button>
-          <button class="btn-logout" @click="authStore.logout()">
-            <i class="fas fa-sign-out-alt" /> Đăng xuất
-          </button>
+          
+          <!-- Modern compact User Pill -->
+          <div class="user-pill">
+            <div class="user-pill__main-info" @click="$router.push('/profile')" style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
+              <div class="user-pill__avatar">
+                <i class="fas fa-user-md" v-if="authStore.user.value?.role === 'Doctor'" />
+                <i class="fas fa-user-shield" v-else-if="authStore.user.value?.role === 'Admin'" />
+                <i class="fas fa-user" v-else />
+              </div>
+              <span class="user-pill__name" :title="authStore.user.value?.fullName || authStore.user.value?.username">
+                {{ authStore.user.value?.fullName || authStore.user.value?.username }}
+              </span>
+            </div>
+            <button class="user-pill__logout" title="Đăng xuất" @click="authStore.logout()">
+              <i class="fas fa-sign-out-alt" />
+            </button>
+          </div>
         </template>
         <template v-else>
           <button class="btn-outline-nav" @click="$router.push('/login')">
             <i class="fas fa-sign-in-alt" /> Đăng nhập
           </button>
-          <button class="btn-outline-nav" @click="$router.push('/register')">
+          <button class="btn-outline-nav btn-register-nav" @click="$router.push('/register')">
             <i class="fas fa-user-plus" /> Đăng ký
           </button>
         </template>
@@ -60,8 +73,8 @@
       <a href="#" @click.prevent="redirectToBooking(); mobileOpen = false"><i class="fas fa-calendar-check" /> Đặt lịch khám</a>
       <a href="#" @click.prevent="redirectToMedicalRecord(); mobileOpen = false"><i class="fas fa-file-medical" /> Bệnh án điện tử</a>
       <a href="#" @click.prevent="redirectToPharmacy(); mobileOpen = false"><i class="fas fa-pills" /> Hóa đơn & Thuốc</a>
-      <a :href="APPOINTMENT_URL + '/track'" @click="mobileOpen = false">Tra cứu lịch hẹn</a>
-      <a :href="APPOINTMENT_URL + '/contact'" @click="mobileOpen = false">Liên hệ</a>
+      <router-link to="/my-appointments" @click="mobileOpen = false">Lịch sử đặt hẹn</router-link>
+      <router-link to="/contact" @click="mobileOpen = false">Liên hệ</router-link>
 
       <div class="mobile-menu__actions">
         <template v-if="authStore.isAuthenticated.value">
@@ -89,7 +102,7 @@
   </nav>
 </template>
 
-<script setup lang="ts">
+<script setup>
   import { onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
@@ -98,16 +111,6 @@
   const authStore = useAuthStore()
   const mobileOpen = ref(false)
   const scrolled = ref(false)
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  const APPOINTMENT_URL = currentHost === 'localhost' || currentHost === '127.0.0.1'
-    ? 'http://localhost:5173'
-    : `http://${currentHost}:3001`
-  const MEDICAL_RECORD_URL = currentHost === 'localhost' || currentHost === '127.0.0.1'
-    ? 'http://localhost:8001'
-    : `http://${currentHost}:8001`
-  const PHARMACY_URL = currentHost === 'localhost' || currentHost === '127.0.0.1'
-    ? 'http://localhost:8002'
-    : `http://${currentHost}:8002`
 
   function redirectToBooking () {
     if (authStore.isAuthenticated.value) {
@@ -116,31 +119,22 @@
         router.push('/dashboard')
         return
       }
-      const redirect = `${APPOINTMENT_URL}/auth-callback?token=${authStore.token.value}&user=${encodeURIComponent(JSON.stringify(user))}&role=${user.role}`
-      window.location.href = redirect
+      if (user.role === 'Doctor') {
+        router.push('/doctor')
+        return
+      }
+      router.push('/patient')
     } else {
-      window.location.href = `${APPOINTMENT_URL}/patient`
+      router.push('/login')
     }
   }
 
   function redirectToPharmacy () {
-    if (authStore.isAuthenticated.value) {
-      const user = authStore.user.value
-      const redirect = `${PHARMACY_URL}/auth-callback.html?token=${authStore.token.value}&user=${encodeURIComponent(JSON.stringify(user))}&role=${user.role}`
-      window.open(redirect, '_blank')
-    } else {
-      window.open(PHARMACY_URL, '_blank')
-    }
+    router.push('/pharmacy')
   }
 
   function redirectToMedicalRecord () {
-    if (authStore.isAuthenticated.value) {
-      const user = authStore.user.value
-      const redirect = `${MEDICAL_RECORD_URL}/auth-callback?token=${authStore.token.value}&user=${encodeURIComponent(JSON.stringify(user))}&role=${user.role}`
-      window.open(redirect, '_blank')
-    } else {
-      window.open(MEDICAL_RECORD_URL, '_blank')
-    }
+    router.push('/medical-records')
   }
 
   function handleScroll () {
@@ -159,17 +153,16 @@
 <style scoped>
 @import '@/styles/navbar.css';
 
-
 .btn-outline-nav {
-  padding: 0.5rem 1.1rem;
-  border: 1.5px solid #0047AB;
-  border-radius: 10px;
-  color: #0047AB;
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--cobalt, #0047AB);
+  border-radius: 20px;
+  color: var(--cobalt, #0047AB);
   background: transparent;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -177,45 +170,84 @@
 }
 
 .btn-outline-nav:hover {
-  background: #0047AB;
+  background: var(--cobalt, #0047AB);
   color: white;
 }
 
-.btn-logout {
-  padding: 0.5rem 1.1rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  color: #64748b;
-  background: transparent;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
+.btn-register-nav {
+  background: var(--cobalt, #0047AB) !important;
+  color: white !important;
+}
+
+.btn-register-nav:hover {
+  background: var(--cobalt-dark, #003380) !important;
+  border-color: var(--cobalt-dark, #003380) !important;
+}
+
+/* User Pill Modern Design */
+.user-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+  gap: 10px;
+  background: var(--gray-50, #f8fafc);
+  border: 1px solid var(--gray-200, #e2e8f0);
+  padding: 4px 6px 4px 12px;
+  border-radius: 30px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-logout:hover {
-  border-color: #fecaca;
-  color: #ef4444;
-  background: #fef2f2;
+.user-pill:hover {
+  background: white;
+  box-shadow: 0 4px 15px rgba(0, 71, 171, 0.06);
+  border-color: var(--cobalt, #0047ab);
 }
 
-.user-badge-nav {
+.user-pill__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cobalt-pale, #e8f0fe);
+  color: var(--cobalt, #0047ab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #0f172a;
-  padding: 0.4rem 0.8rem;
-  background: #f1f5f9;
-  border-radius: 8px;
+  font-weight: 700;
+}
+
+.user-pill__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-800, #1e293b);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-pill__logout {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--gray-500, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-pill__logout:hover {
+  background: var(--red-light, #ffebee);
+  color: var(--red, #e53935);
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.50rem;
 }
 
 .mobile-user-name {

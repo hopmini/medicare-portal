@@ -38,6 +38,7 @@ const api = {
 export const publicApi = {
   get: (path, config) => gatewayApi.get(`/api/appointment/public${path}`, config),
   post: (path, data, config) => gatewayApi.post(`/api/appointment/public${path}`, data, config),
+  put: (path, data, config) => gatewayApi.put(`/api/appointment/public${path}`, data, config),
 }
 
 export const pharmacyApi = {

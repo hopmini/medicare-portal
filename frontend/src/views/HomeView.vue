@@ -81,11 +81,6 @@
                 <path d="M12 5v14M5 12l7 7 7-7" />
               </svg>
             </button>
-
-            <button class="btn-outline btn-outline--large" @click="$router.push('/login')" style="border-color: var(--cobalt, #0047ab); color: var(--cobalt, #0047ab); background: rgba(0, 71, 171, 0.02);">
-              <i class="fas fa-sign-in-alt" style="margin-right: 8px;" />
-              Đăng nhập / Đăng ký
-            </button>
           </div>
 
           <!-- Stats bar -->
@@ -590,7 +585,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
   import { onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import Navbar from '@/components/Navbar.vue'
@@ -598,28 +593,32 @@
   const router = useRouter()
   const authStore = useAuthStore()
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  const APPOINTMENT_URL = currentHost === 'localhost' || currentHost === '127.0.0.1'
-    ? 'http://localhost:5173'
-    : `http://${currentHost}:3001`
-
   function redirectToBooking () {
     if (authStore.isAuthenticated.value) {
       const user = authStore.user.value
-      if (user.role === 'Admin' || user.role === 'Receptionist') {
+      if (user.role === 'Admin') {
         router.push('/dashboard')
         return
       }
-      const redirect = `${APPOINTMENT_URL}/auth-callback?token=${authStore.token.value}&user=${encodeURIComponent(JSON.stringify(user))}&role=${user.role}`
-      window.location.href = redirect
+      if (user.role === 'Receptionist') {
+        router.push('/receptionist')
+        return
+      }
+      if (user.role === 'Doctor') {
+        router.push('/doctor')
+        return
+      }
+      // Patients go directly to internal patient booking page
+      router.push('/patient')
     } else {
-      window.location.href = `${APPOINTMENT_URL}/patient`
+      // If not logged in, route to patient booking (route guard will redirect to login)
+      router.push('/patient')
     }
   }
 
   // ── State ──────────────────────────────────────────────────────────
   const loaded = ref(false)
-  const observer = ref<IntersectionObserver | null>(null)
+  const observer = ref(null)
 
   // ── Lifecycle ──────────────────────────────────────────────────────
   onMounted(() => {
@@ -650,7 +649,7 @@
   })
 
   // ── Methods ────────────────────────────────────────────────────────
-  function smoothScroll (selector: string) {
+  function smoothScroll (selector) {
     document.querySelector(selector)?.scrollIntoView({ behavior: 'smooth' })
   }
 

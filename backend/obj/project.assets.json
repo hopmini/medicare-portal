@@ -3686,11 +3686,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\VisualStudio\\Section_3_Ky3\\medicare-portal\\backend\\Gateway.csproj",
+      "projectUniqueName": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\Gateway.csproj",
       "projectName": "Gateway",
-      "projectPath": "D:\\VisualStudio\\Section_3_Ky3\\medicare-portal\\backend\\Gateway.csproj",
+      "projectPath": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\Gateway.csproj",
       "packagesPath": "C:\\Users\\hop13\\.nuget\\packages\\",
-      "outputPath": "D:\\VisualStudio\\Section_3_Ky3\\medicare-portal\\backend\\obj\\",
+      "outputPath": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\hop13\\AppData\\Roaming\\NuGet\\NuGet.Config"

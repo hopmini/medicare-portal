@@ -33,7 +33,7 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  flex-shrink: 0; /* Đảm bảo logo không bị bóp nhỏ */
+  flex-shrink: 0;
 }
 
 .logo__icon img {
@@ -42,14 +42,14 @@
 }
 
 .logo__text {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 850;
-  color: var(--c-gray-900, #0f172a);
+  color: var(--gray-900, #0f172a);
   letter-spacing: -0.5px;
 }
 
 .logo__dot {
-  color: var(--c-red, #e53935);
+  color: var(--red, #e53935);
 }
 
 /* Nav Links */
@@ -58,85 +58,101 @@
   align-items: center;
   list-style: none;
   gap: 2rem;
-  margin-left: auto;
-  margin-right: 2.5rem;
+  margin: 0 2rem 0 auto; /* Reset browser default margins to absolute 0 */
   padding: 0;
 }
 
-.nav-links li a {
-  text-decoration: none;
-  color: var(--c-gray-600, #475569);
-  font-size: 15px;
-  font-weight: 600;
-  transition: 0.3s;
-  padding: 8px 4px;
-  position: relative;
-  white-space: nowrap;
+.nav-links li {
   display: inline-flex;
   align-items: center;
 }
 
+.nav-links li a {
+  text-decoration: none;
+  color: var(--gray-600, #475569);
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 4px;
+  position: relative;
+  white-space: nowrap;
+}
+
 .nav-links li a:hover,
 .nav-links li a.router-link-active {
-  color: var(--c-cobalt, #0047ab);
+  color: var(--cobalt, #0047ab);
 }
 
 .nav-links li a.router-link-active::after {
   content: "";
   position: absolute;
-  bottom: 0;
+  bottom: -6px; /* Draw line perfectly below the text */
   left: 0;
   width: 100%;
-  height: 2px;
-  background: var(--c-cobalt, #0047ab);
-  border-radius: 2px;
+  height: 3px;
+  background: var(--cobalt, #0047ab);
+  border-radius: 3px;
 }
 
 /* Dropdown Styles */
 .dropdown {
   position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.dropdown-toggle {
-  color: var(--c-gray-600, #475569);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 4px;
-  transition: 0.3s;
   display: inline-flex;
   align-items: center;
 }
 
-.dropdown:hover .dropdown-toggle {
-  color: var(--c-cobalt, #0047ab);
+.dropdown-toggle {
+  color: var(--gray-600, #475569);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 4px;
+  transition: all 0.2s ease;
+  gap: 4px;
+}
+
+.dropdown:hover .dropdown-toggle,
+.dropdown:focus-within .dropdown-toggle {
+  color: var(--cobalt, #0047ab);
 }
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
-  left: 0;
+  top: calc(100% + 15px); /* Positioned cleanly below the centered dropdown item */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
   background: white;
   min-width: 260px;
   border-radius: 16px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg, 0 15px 35px rgba(0, 0, 0, 0.1));
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--c-gray-100, #f1f5f9);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  border: 1px solid var(--gray-100, #f1f5f9);
+}
+
+.dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  right: 0;
+  height: 25px;
+  background: transparent;
 }
 
 .dropdown:hover .dropdown-menu {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 .dropdown-menu a {
@@ -145,12 +161,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--c-gray-700, #334155) !important;
+  color: var(--gray-700, #334155) !important;
   font-weight: 600 !important;
 }
 
 .dropdown-menu a i {
-  color: var(--c-cobalt, #0047ab);
+  color: var(--cobalt, #0047ab);
   font-size: 1.1rem;
   width: 20px;
   text-align: center;
@@ -158,7 +174,7 @@
 
 .dropdown-menu a:hover {
   background: #f8fafc;
-  color: var(--c-cobalt, #0047ab) !important;
+  color: var(--cobalt, #0047ab) !important;
 }
 
 /* Nav Actions */
@@ -167,7 +183,7 @@
 }
 
 .btn-cta {
-  background: var(--c-cobalt, #0047ab);
+  background: var(--cobalt, #0047ab);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -183,7 +199,7 @@
 }
 
 .btn-cta:hover {
-  background: var(--c-cobalt-dark, #003380);
+  background: var(--cobalt-dark, #003380);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 71, 171, 0.25);
 }
@@ -202,11 +218,25 @@
 
 .hamburger span {
   display: block;
-  width: 28px;
-  height: 3px;
-  background: var(--c-gray-900, #0f172a);
+  width: 24px;
+  height: 2px;
+  background: var(--gray-900, #0f172a);
   border-radius: 4px;
-  transition: 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hamburger Active Transform to 'X' */
+.hamburger--open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger--open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.hamburger--open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
 }
 
 /* Ẩn mobile menu trên desktop */
@@ -227,7 +257,7 @@
     display: flex;
     margin-left: auto;
   }
-  
+
   .nav-links, .nav-actions {
     display: none;
   }
@@ -235,18 +265,20 @@
   .mobile-menu {
     display: flex;
     position: fixed;
-    top: 80px;
+    top: 70px; /* Fixed gap: matched navbar height */
     left: 0;
     width: 100%;
     background: white;
     padding: 2rem;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
     border-bottom: 1px solid var(--c-gray-100, #f1f5f9);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     transform: translateY(-100%);
     opacity: 0;
-    transition: 0.4s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    z-index: 999;
   }
 
   .mobile-menu--open {
@@ -258,8 +290,18 @@
   .mobile-menu a {
     text-decoration: none;
     color: var(--c-gray-900, #0f172a);
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8fafc;
+    transition: color 0.2s;
+  }
+  
+  .mobile-menu a:hover {
+    color: var(--c-cobalt, #0047ab);
   }
 
   .mobile-group {
@@ -270,15 +312,15 @@
     border-left: 2px solid var(--c-gray-200, #e2e8f0);
     margin: 0.5rem 0;
   }
-  
+
   .mobile-group a {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--c-gray-600, #475569);
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  
+
   .mobile-group a i {
     color: var(--c-cobalt, #0047ab);
   }

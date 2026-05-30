@@ -54,6 +54,15 @@
       "UpstreamPathTemplate": "/api/appointment/public/Appointments/track/{everything}",
       "UpstreamHttpMethod": [ "GET" ]
     },
+    {
+      "DownstreamPathTemplate": "/api/Appointments/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/Appointments/{everything}",
+      "UpstreamHttpMethod": [ "PUT" ]
+    },
 
     // ==========================================================
     // 2. AUTHENTICATED ROUTES (Requires Bearer JWT)
@@ -195,7 +204,7 @@
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        { "Host": "pharmacy-service", "Port": 8002 }
+        { "Host": "pharmacy-api", "Port": 80 }
       ],
       "UpstreamPathTemplate": "/api/pharmacy/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
