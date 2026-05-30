@@ -1,0 +1,211 @@
+{
+  "Routes": [
+    // ==========================================================
+    // 1. PUBLIC ROUTES (AllowAnonymous, No Bearer Token Required)
+    // ==========================================================
+    
+    // Public Doctors
+    {
+      "DownstreamPathTemplate": "/api/Doctors/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/Doctors/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/Doctors",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/Doctors",
+      "UpstreamHttpMethod": [ "GET", "POST" ]
+    },
+
+    // Public MedicalServices
+    {
+      "DownstreamPathTemplate": "/api/MedicalServices/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/MedicalServices/{everything}",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/MedicalServices",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/MedicalServices",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+
+    // Public Appointments Tracking
+    {
+      "DownstreamPathTemplate": "/api/Appointments/track/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/public/Appointments/track/{everything}",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+
+    // ==========================================================
+    // 2. AUTHENTICATED ROUTES (Requires Bearer JWT)
+    // ==========================================================
+
+    // Authenticated Appointments
+    {
+      "DownstreamPathTemplate": "/api/Appointments/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Appointments/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Doctors
+    {
+      "DownstreamPathTemplate": "/api/Doctors/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Doctors/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated MedicalServices
+    {
+      "DownstreamPathTemplate": "/api/MedicalServices/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/MedicalServices/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Statistics
+    {
+      "DownstreamPathTemplate": "/api/Statistics/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Statistics/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Notifications
+    {
+      "DownstreamPathTemplate": "/api/Notifications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Notifications/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/Notifications",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Notifications",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Chat
+    {
+      "DownstreamPathTemplate": "/api/Chat/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Chat/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/Chat",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "appointment-service", "Port": 5150 }
+      ],
+      "UpstreamPathTemplate": "/api/appointment/Chat",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Medical-Record-Service Routes
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "medical-record-service", "Port": 8001 }
+      ],
+      "UpstreamPathTemplate": "/api/medical/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // Authenticated Pharmacy-Billing-Service Routes
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "pharmacy-api", "Port": 80 }
+      ],
+      "UpstreamPathTemplate": "/api/pharmacy/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://gateway:5000"
+  }
+}
