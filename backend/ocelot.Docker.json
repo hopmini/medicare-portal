@@ -1,10 +1,5 @@
 {
   "Routes": [
-    // ==========================================================
-    // 1. PUBLIC ROUTES (AllowAnonymous, No Bearer Token Required)
-    // ==========================================================
-    
-    // Public Doctors
     {
       "DownstreamPathTemplate": "/api/Doctors/{everything}",
       "DownstreamScheme": "http",
@@ -24,7 +19,6 @@
       "UpstreamHttpMethod": [ "GET", "POST" ]
     },
 
-    // Public MedicalServices
     {
       "DownstreamPathTemplate": "/api/MedicalServices/{everything}",
       "DownstreamScheme": "http",
@@ -44,7 +38,6 @@
       "UpstreamHttpMethod": [ "GET" ]
     },
 
-    // Public Appointments Tracking
     {
       "DownstreamPathTemplate": "/api/Appointments/track/{everything}",
       "DownstreamScheme": "http",
@@ -92,7 +85,6 @@
       }
     },
 
-    // Authenticated MedicalServices
     {
       "DownstreamPathTemplate": "/api/MedicalServices/{everything}",
       "DownstreamScheme": "http",
@@ -107,7 +99,6 @@
       }
     },
 
-    // Authenticated Statistics
     {
       "DownstreamPathTemplate": "/api/Statistics/{everything}",
       "DownstreamScheme": "http",
@@ -122,7 +113,6 @@
       }
     },
 
-    // Authenticated Notifications
     {
       "DownstreamPathTemplate": "/api/Notifications/{everything}",
       "DownstreamScheme": "http",
@@ -150,7 +140,6 @@
       }
     },
 
-    // Authenticated Chat
     {
       "DownstreamPathTemplate": "/api/Chat/{everything}",
       "DownstreamScheme": "http",
@@ -178,7 +167,6 @@
       }
     },
 
-    // Authenticated Medical-Record-Service Routes
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
@@ -193,7 +181,6 @@
       }
     },
 
-    // Authenticated Pharmacy-Billing-Service Routes
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
