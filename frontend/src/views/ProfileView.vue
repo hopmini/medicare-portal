@@ -18,8 +18,8 @@
         <div class="profile-sidebar shadow-light">
           <div class="user-avatar-section">
             <div class="avatar-large">
-              <i class="fas fa-user-md" v-if="userRole === 'Doctor'" />
-              <i class="fas fa-user-shield" v-else-if="userRole === 'Admin'" />
+              <i class="fas fa-user-md" v-if="userRole.toLowerCase() === 'doctor'" />
+              <i class="fas fa-user-shield" v-else-if="userRole.toLowerCase() === 'admin'" />
               <i class="fas fa-user" v-else />
             </div>
             <h3 class="user-fullname">{{ profileForm.fullName }}</h3>
@@ -230,19 +230,19 @@
   })
 
   function getRoleText (role) {
-    switch (role) {
-      case 'Admin': return 'Hệ thống Admin'
-      case 'Receptionist': return 'Nhân viên Tiếp nhận'
-      case 'Doctor': return 'Bác sĩ lâm sàng'
+    switch ((role || '').toLowerCase()) {
+      case 'admin': return 'Hệ thống Admin'
+      case 'receptionist': return 'Nhân viên Tiếp nhận'
+      case 'doctor': return 'Bác sĩ lâm sàng'
       default: return 'Bệnh nhân'
     }
   }
 
   function getRoleClass (role) {
-    switch (role) {
-      case 'Admin': return 'role--admin'
-      case 'Receptionist': return 'role--receptionist'
-      case 'Doctor': return 'role--doctor'
+    switch ((role || '').toLowerCase()) {
+      case 'admin': return 'role--admin'
+      case 'receptionist': return 'role--receptionist'
+      case 'doctor': return 'role--doctor'
       default: return 'role--patient'
     }
   }
