@@ -262,7 +262,7 @@
         </div>
 
         <div class="doctors-grid">
-          <div v-for="(doc, i) in mockDoctors" :key="i" class="doctor-card animate-on-scroll" :style="{ transitionDelay: (i * 100) + 'ms' }">
+          <div v-for="(doc, i) in displayedDoctors" :key="i" class="doctor-card animate-on-scroll" :style="{ transitionDelay: (i * 100) + 'ms' }">
             <div class="doctor-card__bg" />
             <div class="doctor-card__avatar"><i :class="doc.avatar" /></div>
 
@@ -586,10 +586,11 @@
 </template>
 
 <script setup>
-  import { onMounted, onUnmounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import Navbar from '@/components/Navbar.vue'
   import { useAuthStore } from '@/stores/authStore'
+  import { publicApi } from '@/services/api'
   const router = useRouter()
   const authStore = useAuthStore()
 
@@ -619,9 +620,34 @@
   // ── State ──────────────────────────────────────────────────────────
   const loaded = ref(false)
   const observer = ref(null)
+  const realDoctors = ref([])
+
+  const displayedDoctors = computed(() => {
+    if (realDoctors.value && realDoctors.value.length > 0) {
+      return realDoctors.value.slice(0, 3).map(doc => ({
+        avatar: 'fas fa-user-md',
+        name: `BS. ${doc.fullName}`,
+        specialty: doc.specialty,
+        experience: doc.degree || 'Chuyên khoa lâm sàng',
+        rating: '5.0 / 5.0',
+        fee: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(doc.consultationFee || 150000),
+      }))
+    }
+    return mockDoctors
+  })
+
+  async function fetchRealDoctors() {
+    try {
+      const res = await publicApi.get('/Doctors')
+      realDoctors.value = res.data
+    } catch (e) {
+      console.error('Failed to load real doctors:', e)
+    }
+  }
 
   // ── Lifecycle ──────────────────────────────────────────────────────
   onMounted(() => {
+    fetchRealDoctors()
     setTimeout(() => {
       loaded.value = true
     }, 600)
@@ -676,40 +702,40 @@
 
   const services = [
     {
-      icon: 'fas fa-bolt',
-      title: 'Đặt lịch siêu nhanh',
-      desc: 'Chọn bác sĩ → chọn giờ → xác nhận. Toàn bộ quy trình hoàn tất trong chưa đầy 2 phút.',
-      tag: 'UX First',
+      icon: 'fas fa-stethoscope',
+      title: 'Khoa Nội Tổng Quát',
+      desc: 'Khám và điều trị toàn diện các bệnh lý tim mạch, hô hấp, tiêu hóa, gan mật và nội tiết cho người lớn.',
+      tag: 'Chuyên sâu',
     },
     {
-      icon: 'fas fa-shield-alt',
-      title: 'Chống đặt trùng lịch',
-      desc: 'Optimistic Concurrency Control đảm bảo không bao giờ có 2 bệnh nhân cùng một slot giờ.',
-      tag: 'Đảm bảo 100%',
+      icon: 'fas fa-baby',
+      title: 'Nhi Khoa & Tiêm Chủng',
+      desc: 'Theo dõi sự phát triển của trẻ, khám điều trị bệnh nhi khoa và cung cấp vắc xin trọn gói an toàn.',
+      tag: 'Tận tâm',
     },
     {
-      icon: 'fas fa-lock',
-      title: 'Bảo mật JWT chuẩn',
-      desc: 'Dữ liệu bệnh nhân được mã hoá, xác thực bằng JWT Bearer Token chuẩn công nghiệp.',
-      tag: 'Enterprise Grade',
+      icon: 'fas fa-female',
+      title: 'Sản Phụ Khoa & Thai Sản',
+      desc: 'Chăm sóc thai kỳ trọn gói, tầm soát dị tật thai nhi, khám phụ khoa và hỗ trợ tư vấn sức khỏe sinh sản.',
+      tag: 'Hiện đại',
     },
     {
-      icon: 'fas fa-clipboard-list',
-      title: 'Số thứ tự tự động',
-      desc: 'Hệ thống tự phát số thứ tự hàng đợi, tiếp tân duyệt lịch chỉ bằng một cú nhấp chuột.',
-      tag: 'Tiết kiệm thời gian',
+      icon: 'fas fa-heartbeat',
+      title: 'Khoa Tim Mạch Chuyên Sâu',
+      desc: 'Tầm soát xơ vữa động mạch, đo điện tim, siêu âm tim chuẩn đoán các bệnh lý suy tim, tăng huyết áp.',
+      tag: 'Kỹ thuật cao',
     },
     {
-      icon: 'fas fa-clock',
-      title: 'Ca sáng & ca chiều',
-      desc: 'Slot 30 phút linh hoạt: Ca sáng 8h–11h30, ca chiều 13h–16h30. Chủ động sắp xếp.',
-      tag: 'Linh hoạt',
+      icon: 'fas fa-ear-listen',
+      title: 'Nhãn Khoa & Tai Mũi Họng',
+      desc: 'Khám khúc xạ mắt chuyên sâu, điều trị nội ngoại khoa tai mũi họng bằng thiết bị hiện đại tiên tiến.',
+      tag: 'Công nghệ mới',
     },
     {
-      icon: 'fas fa-mobile-alt',
-      title: 'Hoạt động mọi thiết bị',
-      desc: 'Giao diện responsive hoàn toàn, trải nghiệm nhất quán trên máy tính, điện thoại và máy tính bảng.',
-      tag: 'Mobile Ready',
+      icon: 'fas fa-microscope',
+      title: 'Xét Nghiệm & Chẩn Đoán',
+      desc: 'Xét nghiệm sinh hóa máu chuẩn xác, siêu âm 4D thế hệ mới và X-Quang kỹ thuật số liều thấp.',
+      tag: 'Nhanh & Chuẩn xác',
     },
   ]
 
