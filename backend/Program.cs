@@ -9,8 +9,7 @@ using Gateway.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register DB context for Centralized Identity Database (PostgreSQL)
-var connectionString = builder.Configuration.GetConnectionString("IdentityConnection") 
-    ?? "Host=localhost;Database=medicare_identity_db;Username=postgres;Password=Medicare@2024;Port=5432";
+    var connectionString = builder.Configuration.GetConnectionString("IdentityConnection") ?? "Host=localhost;Port=5432;Database=medicare_identity_db;Username=postgres;Password=Medicare@2024";
 builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseNpgsql(connectionString));
 

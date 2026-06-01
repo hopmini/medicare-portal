@@ -1,3 +1,4 @@
+// Updated router with pharmacy routes
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
@@ -13,6 +14,13 @@ import DoctorsView from './views/Appointment/DoctorsView.vue'
 import ContactView from './views/Appointment/ContactView.vue'
 import GuideView from './views/Appointment/GuideView.vue'
 import ProfileView from './views/ProfileView.vue'
+// Pharmacy components
+import MedicineManagement from './views/Pharmacy/MedicineManagement.vue'
+import InventoryManagement from './views/Pharmacy/InventoryManagement.vue'
+import BillingManagement from './views/Pharmacy/BillingManagement.vue'
+import CreateBill from './views/Pharmacy/CreateBill.vue'
+import PrescriptionManagement from './views/Pharmacy/PrescriptionManagement.vue'
+import PharmacyDashboard from './views/Pharmacy/PharmacyDashboard.vue'
 
 const routes = [
   {
@@ -90,7 +98,14 @@ const routes = [
     name: 'Profile',
     component: ProfileView,
     meta: { requiresAuth: true }
-  }
+  },
+  // Pharmacy routes
+  { path: '/pharmacy/medicines', name: 'PharmacyMedicines', component: MedicineManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor'] } },
+  { path: '/pharmacy/inventory', name: 'PharmacyInventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin'] } },
+  { path: '/pharmacy/billing', name: 'PharmacyBilling', component: BillingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Receptionist', 'Patient'] } },
+  { path: '/pharmacy/create-bill', name: 'PharmacyCreateBill', component: CreateBill, meta: { requiresAuth: true, roles: ['Receptionist'] } },
+  { path: '/pharmacy/prescriptions', name: 'PharmacyPrescriptions', component: PrescriptionManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Receptionist', 'Patient'] } },
+  { path: '/pharmacy/dashboard', name: 'PharmacyDashboard', component: PharmacyDashboard, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({
@@ -98,7 +113,6 @@ const router = createRouter({
   routes
 })
 
-// Route guard to check auth status and roles
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || 'null')
@@ -133,4 +147,3 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
-
