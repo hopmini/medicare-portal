@@ -63,18 +63,33 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure Central Identity Database is automatically created and seeded at startup
+// Ensure Central Identity Database is automatically created and seeded at startup with a robust retry loop
 using (var scope = app.Services.CreateScope())
 {
-    try
+    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    int maxRetries = 15;
+    int delaySeconds = 3;
+    bool success = false;
+
+    for (int i = 1; i <= maxRetries; i++)
     {
-        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-        db.Database.EnsureCreated();
-        Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
+        try
+        {
+            db.Database.EnsureCreated();
+            Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
+            success = true;
+            break;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Gateway-Auth Retry {i}/{maxRetries}] Failed to connect to DB: {ex.Message}. Retrying in {delaySeconds}s...");
+            System.Threading.Thread.Sleep(delaySeconds * 1000);
+        }
     }
-    catch (Exception ex)
+
+    if (!success)
     {
-        Console.WriteLine($"[Gateway-Auth] Error ensuring Central Identity DB: {ex.Message}");
+        Console.WriteLine("[Gateway-Auth FATAL] Could not connect to Central Identity DB after all retries.");
     }
 }
 
