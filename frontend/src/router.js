@@ -125,16 +125,17 @@ router.beforeEach((to, from, next) => {
 
     // Role verification
     if (to.meta.roles && to.meta.roles.length > 0) {
-      const userRole = user?.role
-      if (!userRole || !to.meta.roles.includes(userRole)) {
+      const userRole = (user?.role || '').toLowerCase()
+      const allowedRoles = to.meta.roles.map(r => r.toLowerCase())
+      if (!userRole || !allowedRoles.includes(userRole)) {
         // Not authorized for this role, redirect to their default dashboard or page
-        if (userRole === 'Patient') {
+        if (userRole === 'patient') {
           next({ path: '/patient' })
-        } else if (userRole === 'Doctor') {
+        } else if (userRole === 'doctor') {
           next({ path: '/doctor' })
-        } else if (userRole === 'Receptionist') {
+        } else if (userRole === 'receptionist') {
           next({ path: '/receptionist' })
-        } else if (userRole === 'Admin') {
+        } else if (userRole === 'admin') {
           next({ path: '/dashboard' })
         } else {
           next({ path: '/' })
