@@ -572,6 +572,7 @@
         slotId: selectedSlot.value?.id || '',
         medicalServiceId: selectedService.value?.id || '',
         reason: richReason,
+        patientEmail: patientForm.value.email,
       }
       const response = await appointmentService.bookAppointment(data)
       successData.value = { ...response, patientName: patientForm.value.fullName }

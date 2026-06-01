@@ -1016,7 +1016,7 @@
 /* ============================================================
    RESPONSIVE DESIGN RULES FOR MOBILE AND VARIOUS WIDTHS
    ============================================================ */
-@media (max-width: 768px) {
+ @media (max-width: 768px) {
   .booking-content-card {
     padding: 2rem 1.5rem;
   }
@@ -1028,6 +1028,11 @@
 
   .slot-grid-v {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .step-final .final-form-fields {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
@@ -1042,10 +1047,6 @@
 
   .slot-grid-v {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .step-final .final-form-fields {
-    grid-template-columns: 1fr;
   }
 
   .action-footer {
