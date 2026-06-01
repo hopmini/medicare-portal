@@ -872,3 +872,64 @@
 .toast-progress {
   display: none !important;
 }
+
+/* ============================================================
+   RESPONSIVE DESIGN RULES FOR MOBILE AND VARIOUS WIDTHS
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .patient-booking {
+    padding: 0.75rem;
+  }
+
+  .booking-content-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .card-item {
+    max-width: 100%;
+  }
+
+  .slot-grid-v {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .patient-booking {
+    padding: 0.5rem;
+  }
+
+  .booking-content-card {
+    padding: 1rem;
+  }
+
+  .section-title h2 {
+    font-size: 1.2rem;
+  }
+
+  .slot-grid-v {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .step-final .final-form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .action-footer {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .btn-main {
+    justify-content: center;
+    width: 100%;
+  }
+}

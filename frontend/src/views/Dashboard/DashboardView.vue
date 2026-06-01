@@ -743,6 +743,16 @@
     }
   }
 
+  function getStatusClass (status) {
+    switch (status) {
+      case 0: return 'badge--pending'
+      case 1: return 'badge--confirmed'
+      case 2: return 'badge--completed'
+      case 3: return 'badge--cancelled'
+      default: return ''
+    }
+  }
+
   // Charts trend setup
   let trendChartInstance = null
   function initCharts () {

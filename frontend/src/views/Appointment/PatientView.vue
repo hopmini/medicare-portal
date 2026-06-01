@@ -102,6 +102,15 @@
                 </div>
               </div>
             </div>
+
+            <div class="action-footer">
+              <button class="btn-main btn-back-v" @click="$router.push('/')">
+                <i class="fas fa-chevron-left" /> Quay lại trang chủ
+              </button>
+              <button class="btn-main btn-primary-v" :disabled="!selectedService" @click="currentStep = 2">
+                Chọn bác sĩ <i class="fas fa-chevron-right" />
+              </button>
+            </div>
           </section>
 
           <!-- STEP 2: SELECT SPECIALIST DOCTOR -->
@@ -128,7 +137,6 @@
                 <div class="card-item__info">
                   <h3>BS. {{ doc.fullName }}</h3>
                   <span class="doc-spec-badge">{{ doc.specialty }}</span>
-                  <div class="card-item__price" style="margin-top: 8px;">Phí khám: {{ formatPrice(doc.consultationFee) }}</div>
                 </div>
               </div>
             </div>
@@ -153,7 +161,7 @@
             <!-- Horizontal Dates Slider -->
             <div class="date-scroll-v">
               <div
-                v-for="date in nextSevenDays"
+                v-for="date in nextFourteenDays"
                 :key="date.iso"
                 class="date-card-v"
                 :class="{ 'date-card-v--active': selectedDate === date.iso }"
@@ -172,14 +180,14 @@
                 <p>Đang tra cứu lịch trực bác sĩ...</p>
               </div>
 
-              <div v-else-if="slots.length === 0" class="empty-slots">
+              <div v-else-if="availableSlots.length === 0" class="empty-slots">
                 <i class="far fa-calendar-times" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block;" />
-                <p>Bác sĩ hiện không có ca khám trực nào khả dụng trong ngày này.</p>
+                <p>Bác sĩ hiện không có ca khám trực nào khả dụng hoặc các ca hôm nay đã qua giờ.</p>
               </div>
 
               <div v-else class="slot-grid-v">
                 <div
-                  v-for="slot in slots"
+                  v-for="slot in availableSlots"
                   :key="slot.id"
                   class="slot-v"
                   :class="{ 'slot-v--active': selectedSlot?.id === slot.id, 'slot-v--disabled': slot.isBooked }"
@@ -274,7 +282,7 @@
                   <div class="summary-row total-row">
                     <span class="summary-label">Tổng phí tạm tính</span>
                     <span class="summary-value total-value">
-                      {{ formatPrice((selectedService?.price || 0) + (selectedDoctor?.consultationFee || 0)) }}
+                      {{ formatPrice(selectedService?.price || 0) }}
                     </span>
                   </div>
                 </div>
@@ -319,7 +327,7 @@
       <div class="success-card shadow-lg">
         <div class="success-icon"><i class="fas fa-check-circle" /></div>
         <h2>Đăng Ký Thành Công!</h2>
-        <div class="appointment-id">Mã đơn: #{{ successData.id?.slice(0,8).toUpperCase() }}</div>
+        <div class="appointment-id">Mã đơn: #{{ (successData.appointmentId || successData.id || '').slice(0,8).toUpperCase() }}</div>
         
         <p style="margin: 1.25rem 0; color: #475569; font-weight: 500;">
           Medicare đã gửi thông tin xác nhận qua hòm thư <b>{{ authStore.user.value?.email }}</b>. Bạn có thể theo dõi tiến độ khám tại lịch sử đặt hẹn bất cứ lúc nào.
@@ -366,6 +374,38 @@
   const slots = ref([])
   const toasts = ref([])
 
+  const availableSlots = computed(() => {
+    if (!slots.value) return []
+    
+    // Check if the selected date is today in local time
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const todayStr = `${year}-${month}-${day}` // Local YYYY-MM-DD
+    
+    if (selectedDate.value === todayStr) {
+      const currentHours = today.getHours()
+      const currentMinutes = today.getMinutes()
+      
+      return slots.value.filter(slot => {
+        if (!slot.startTime) return false
+        
+        // Parse startTime (e.g. "08:30:00" or "08:30")
+        const parts = slot.startTime.split(':')
+        const slotHours = parseInt(parts[0], 10)
+        const slotMinutes = parseInt(parts[1], 10)
+        
+        if (slotHours > currentHours) return true
+        if (slotHours === currentHours && slotMinutes > currentMinutes) return true
+        
+        return false // Past time slot
+      })
+    }
+    
+    return slots.value
+  })
+
   const patientForm = ref({
     fullName: '',
     phone: '',
@@ -390,11 +430,11 @@
   const loadingDoctors = computed(() => doctorStore.loading.value)
   const filteredDoctors = computed(() => doctorStore.doctors.value)
 
-  const nextSevenDays = computed(() => {
+  const nextFourteenDays = computed(() => {
     const days = []
     const today = new Date()
     const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       const d = new Date()
       d.setDate(today.getDate() + i)
       const year = d.getFullYear()
@@ -424,7 +464,6 @@
 
   function selectService (service) {
     selectedService.value = service
-    currentStep.value = 2
     addToast('Đã chọn chuyên khoa', service.name)
   }
 
@@ -489,16 +528,17 @@
   onMounted(() => {
     fetchServices()
     doctorStore.fetchDoctors()
-    // Pre-populate fields from the logged in user store
-    if (authStore.user.value) {
-      patientForm.value.fullName = authStore.user.value.fullName || ''
-      patientForm.value.email = authStore.user.value.email || ''
-      patientForm.value.phone = authStore.user.value.phoneNumber || ''
-      patientForm.value.address = authStore.user.value.address || ''
-      patientForm.value.dob = authStore.user.value.dob || '2000-01-01'
-      patientForm.value.gender = authStore.user.value.gender || 'Nam'
-      patientForm.value.insurance = authStore.user.value.insurance || ''
-      patientForm.value.history = authStore.user.value.history || ''
+    // Pre-populate fields from the logged in user store safely and robustly
+    const u = authStore.user.value || authStore.user
+    if (u) {
+      patientForm.value.fullName = u.fullName || u.username || ''
+      patientForm.value.email = u.email || (u.username && u.username.includes('@') ? u.username : '') || ''
+      patientForm.value.phone = u.phoneNumber || u.phone || ''
+      patientForm.value.address = u.address || ''
+      patientForm.value.dob = u.dob ? u.dob.split('T')[0] : '2000-01-01'
+      patientForm.value.gender = u.gender || 'Nam'
+      patientForm.value.insurance = u.insurance || ''
+      patientForm.value.history = u.history || ''
     }
   })
 </script>
