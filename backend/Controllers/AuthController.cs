@@ -84,6 +84,7 @@ namespace Gateway.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim(ClaimTypes.Role, user.Role),
                 new Claim("Role", user.Role),
                 new Claim("FullName", user.FullName)

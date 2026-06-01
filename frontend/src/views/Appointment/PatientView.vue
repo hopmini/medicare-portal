@@ -159,7 +159,7 @@
             </div>
 
             <!-- Horizontal Dates Slider -->
-            <div class="date-scroll-v">
+            <div class="date-scroll-v" style="align-items: stretch;">
               <div
                 v-for="date in nextFourteenDays"
                 :key="date.iso"
@@ -170,6 +170,23 @@
                 <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">{{ date.dayName }}</span>
                 <span class="date-day-num">{{ date.dayNum }}</span>
                 <span style="font-size: 0.72rem; opacity: 0.85;">Tháng {{ date.month }}</span>
+              </div>
+
+              <!-- Sleek Modern Calendar Date Picker Card -->
+              <div
+                class="date-card-v"
+                style="min-width: 95px; background: rgba(37, 99, 235, 0.05); border: 1.5px dashed rgba(37, 99, 235, 0.4); justify-content: center; align-items: center; color: var(--primary); gap: 6px; position: relative; cursor: pointer;"
+                @click="openDatePicker"
+              >
+                <i class="fas fa-calendar-plus" style="font-size: 1.35rem;" />
+                <span style="font-size: 0.8rem; font-weight: 800; white-space: nowrap;">Chọn ngày</span>
+                <input
+                  type="date"
+                  ref="customDatePicker"
+                  style="position: absolute; opacity: 0; width: 0; height: 0; top: 0; left: 0; pointer-events: none;"
+                  :min="minSelectableDate"
+                  @change="handleCustomDateChange"
+                />
               </div>
             </div>
 
@@ -209,40 +226,40 @@
           </section>
 
           <!-- STEP 4: FINAL SPLIT SCREEN CONFIRMATION -->
-          <section v-if="currentStep === 4" class="step-final">
-            <div class="section-title">
-              <h2>Xác nhận thủ tục đăng ký</h2>
-              <p>Hồ sơ lịch hẹn sẽ được duyệt ngay lập tức bởi bộ phận tiếp tân lâm sàng.</p>
+          <section v-if="currentStep === 4" class="step-final" style="margin-top: -1rem;">
+            <div class="section-title" style="margin-bottom: 1rem; text-align: center;">
+              <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Xác nhận thủ tục đăng ký</h2>
+              <p style="font-size: 0.85rem; margin: 0; opacity: 0.85;">Hồ sơ lịch hẹn sẽ được duyệt tức thời bởi lễ tân lâm sàng.</p>
             </div>
 
-            <div class="final-grid">
+            <div class="final-grid" style="gap: 1.5rem; align-items: stretch;">
               <!-- Left Column: Patient Profile Form Details -->
-              <div class="final-form-col">
-                <div class="summary-section shadow-light" style="border: none; padding: 0;">
-                  <h3 style="font-size: 1.15rem; font-weight: 850; color: #0f172a; margin-bottom: 1.25rem;">
+              <div class="final-form-col" style="background: white; border: 1.5px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+                <div class="summary-section" style="border: none; padding: 0;">
+                  <h3 style="font-size: 1.05rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-id-card text-blue" /> Thông tin bệnh nhân trực tuyến
                   </h3>
                   
-                  <div class="final-form-fields">
+                  <div class="final-form-fields" style="gap: 0.75rem; margin-top: 0;">
                     <div class="form-field">
-                      <label>Họ và tên bệnh nhân:</label>
-                      <input v-model="patientForm.fullName" placeholder="Nhập họ và tên..." type="text" class="final-input" />
+                      <label style="font-size: 0.78rem; font-weight: 750;">Họ và tên bệnh nhân:</label>
+                      <input v-model="patientForm.fullName" placeholder="Nhập họ và tên..." type="text" class="final-input" style="height: 38px; font-size: 0.85rem;" />
                     </div>
                     <div class="form-field">
-                      <label>Số điện thoại liên hệ:</label>
-                      <input v-model="patientForm.phone" placeholder="Số điện thoại di động..." type="tel" class="final-input" />
+                      <label style="font-size: 0.78rem; font-weight: 750;">Số điện thoại liên hệ:</label>
+                      <input v-model="patientForm.phone" placeholder="Số điện thoại di động..." type="tel" class="final-input" style="height: 38px; font-size: 0.85rem;" />
                     </div>
                     <div class="form-field">
-                      <label>Địa chỉ Email nhận kết quả:</label>
-                      <input v-model="patientForm.email" placeholder="Nhập địa chỉ email nhận kết quả..." type="email" class="final-input" />
+                      <label style="font-size: 0.78rem; font-weight: 750;">Địa chỉ Email nhận kết quả:</label>
+                      <input v-model="patientForm.email" placeholder="Nhập địa chỉ email nhận kết quả..." type="email" class="final-input" style="height: 38px; font-size: 0.85rem;" />
                     </div>
                     <div class="form-field">
-                      <label>Ngày tháng năm sinh:</label>
-                      <input v-model="patientForm.dob" type="date" class="final-input" />
+                      <label style="font-size: 0.78rem; font-weight: 750;">Ngày tháng năm sinh:</label>
+                      <input v-model="patientForm.dob" type="date" class="final-input" style="height: 38px; font-size: 0.85rem;" />
                     </div>
                     <div class="form-field">
-                      <label>Giới tính sinh học:</label>
-                      <select v-model="patientForm.gender" class="final-input" style="padding: 0 1rem; background: white;">
+                      <label style="font-size: 0.78rem; font-weight: 750;">Giới tính sinh học:</label>
+                      <select v-model="patientForm.gender" class="final-input" style="height: 38px; font-size: 0.85rem; padding: 0 1rem; background: white;">
                         <option value="">-- Chọn giới tính --</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
@@ -250,59 +267,63 @@
                       </select>
                     </div>
                     <div class="form-field">
-                      <label>Địa chỉ thường trú:</label>
-                      <input v-model="patientForm.address" placeholder="Nơi ở hiện tại của bệnh nhân..." type="text" class="final-input" />
+                      <label style="font-size: 0.78rem; font-weight: 750;">Địa chỉ thường trú:</label>
+                      <input v-model="patientForm.address" placeholder="Nơi ở hiện tại của bệnh nhân..." type="text" class="final-input" style="height: 38px; font-size: 0.85rem;" />
                     </div>
-                    <div class="form-field full-width">
-                      <label>Triệu chứng & Lý do đăng ký khám bệnh:</label>
-                      <textarea v-model="reason" placeholder="Ví dụ: Đau đầu kéo dài, sốt nhẹ vào chiều tối..." rows="3" class="final-textarea" style="height: 70px;" />
+                    <div class="form-field full-width" style="margin-top: 0.25rem;">
+                      <label style="font-size: 0.78rem; font-weight: 750;">Triệu chứng & Lý do khám bệnh:</label>
+                      <textarea v-model="reason" placeholder="Ví dụ: Đau đầu kéo dài, sốt nhẹ vào chiều tối..." rows="2" class="final-textarea" style="height: 52px; font-size: 0.85rem; padding: 0.5rem 1rem;" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Right Column: Receipt Summary and Book Button -->
+              <!-- Right Column: Receipt Summary and Book Button Integrated -->
               <div class="final-summary-col">
-                <div class="summary-card shadow-light">
-                  <h3><i class="fas fa-receipt text-blue" /> Phiếu đặt lịch khám</h3>
-                  
-                  <div class="summary-row">
-                    <span class="summary-label">Chuyên khoa khám</span>
-                    <span class="summary-value">{{ selectedService?.name }}</span>
+                <div class="summary-card shadow-light" style="padding: 1.25rem; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border: 1.5px solid var(--slate-200); border-radius: var(--radius-lg); overflow: hidden;">
+                  <div>
+                    <h3 style="font-size: 1.05rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+                      <i class="fas fa-receipt text-blue" /> Phiếu đặt lịch khám
+                    </h3>
+                    
+                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
+                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Chuyên khoa khám</span>
+                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">{{ selectedService?.name }}</span>
+                    </div>
+                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
+                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Bác sĩ phụ trách</span>
+                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">BS. {{ selectedDoctor?.fullName }}</span>
+                    </div>
+                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
+                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Thời gian khám</span>
+                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">{{ formatDateFull(selectedDate) }} - {{ formatTime(selectedSlot?.startTime) }}</span>
+                    </div>
+                    
+                    <div class="summary-row total-row" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 2px dashed var(--slate-300);">
+                      <span class="summary-label" style="font-weight: 750; color: var(--slate-800);">Phí tạm tính</span>
+                      <span class="summary-value total-value" style="font-size: 1.35rem; font-weight: 900; color: var(--primary);">
+                        {{ formatPrice(selectedService?.price || 0) }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="summary-row">
-                    <span class="summary-label">Bác sĩ phụ trách</span>
-                    <span class="summary-value">BS. {{ selectedDoctor?.fullName }}</span>
-                  </div>
-                  <div class="summary-row">
-                    <span class="summary-label">Thời gian</span>
-                    <span class="summary-value">{{ formatDateFull(selectedDate) }} - {{ formatTime(selectedSlot?.startTime) }}</span>
-                  </div>
-                  
-                  <div class="summary-row total-row">
-                    <span class="summary-label">Tổng phí tạm tính</span>
-                    <span class="summary-value total-value">
-                      {{ formatPrice(selectedService?.price || 0) }}
-                    </span>
-                  </div>
-                </div>
 
-                <div class="confirm-box shadow-light">
-                  <p class="confirm-note">
-                    <i class="fas fa-info-circle text-blue" /> Đơn đặt lịch sẽ được chuyển tức thời đến Cổng tiếp nhận. Bạn sẽ nhận số thứ tự tại cổng sau khi được duyệt.
-                  </p>
-                  <button class="btn-book-final shadow-light" :disabled="submitting" @click="bookAppointment">
-                    <span v-if="submitting"><i class="fas fa-spinner fa-spin" /> Đang truyền dữ liệu...</span>
-                    <span v-else><i class="fas fa-check-double" /> XÁC NHẬN ĐẶT LỊCH NGAY</span>
-                  </button>
+                  <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--slate-200);">
+                    <p class="confirm-note" style="margin-bottom: 0.75rem; font-size: 0.76rem; color: var(--slate-600); line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
+                      <i class="fas fa-info-circle text-blue" style="margin-top: 2px;" /> Lịch hẹn sẽ được gửi tức thời đến Cổng tiếp nhận. Bạn sẽ được cấp số thứ tự ngay khi duyệt.
+                    </p>
+                    <button class="btn-book-final shadow-light" :disabled="submitting" @click="bookAppointment" style="padding: 0.8rem 1.25rem; font-size: 0.92rem; width: 100%; border-radius: var(--radius-md); font-weight: 850; background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);">
+                      <span v-if="submitting"><i class="fas fa-spinner fa-spin" /> ĐANG TRUYỀN DỮ LIỆU...</span>
+                      <span v-else><i class="fas fa-check-double" /> XÁC NHẬN ĐẶT LỊCH NGAY</span>
+                    </button>
+                    <button 
+                      style="width: 100%; margin-top: 0.5rem; background: #f8fafc; border: 1.5px solid var(--slate-300); color: var(--slate-600); padding: 0.6rem; border-radius: var(--radius-md); font-weight: 750; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;"
+                      @click="currentStep = 3"
+                    >
+                      <i class="fas fa-chevron-left" /> Quay lại chọn ngày
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div class="action-footer" style="margin-top: 2rem;">
-              <button class="btn-main btn-back-v" @click="currentStep = 3">
-                <i class="fas fa-chevron-left" /> Quay lại chọn ngày
-              </button>
             </div>
           </section>
 
@@ -430,11 +451,41 @@
   const loadingDoctors = computed(() => doctorStore.loading.value)
   const filteredDoctors = computed(() => doctorStore.doctors.value)
 
+  const customDatePicker = ref(null)
+  const customDate = ref('')
+
+  const minSelectableDate = computed(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  })
+
+  function handleCustomDateChange(e) {
+    const val = e.target.value
+    if (val) {
+      customDate.value = val
+      selectDate(val)
+    }
+  }
+
+  function openDatePicker() {
+    if (customDatePicker.value) {
+      try {
+        customDatePicker.value.showPicker();
+      } catch (e) {
+        customDatePicker.value.click();
+      }
+    }
+  }
+
   const nextFourteenDays = computed(() => {
     const days = []
     const today = new Date()
     const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
-    for (let i = 0; i < 14; i++) {
+    // Default 7 days of this week
+    for (let i = 0; i < 7; i++) {
       const d = new Date()
       d.setDate(today.getDate() + i)
       const year = d.getFullYear()
@@ -446,6 +497,20 @@
         month: d.getMonth() + 1,
         dayName: i === 0 ? 'Hôm nay' : dayNames[d.getDay()],
       })
+    }
+
+    // Dynamic union: Append selected custom date if it's outside this week's 7 days
+    if (customDate.value) {
+      const exists = days.some(d => d.iso === customDate.value)
+      if (!exists) {
+        const d = new Date(customDate.value)
+        days.push({
+          iso: customDate.value,
+          dayNum: d.getDate(),
+          month: d.getMonth() + 1,
+          dayName: dayNames[d.getDay()],
+        })
+      }
     }
     return days
   })

@@ -82,7 +82,7 @@
 
 .booking-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 2.5rem;
   width: 100%;
   max-width: 1240px;
@@ -268,6 +268,7 @@
 /* MAIN CONTENT AREA - LUXURIOUS CARD PATTERN */
 .booking-main {
   width: 100%;
+  min-width: 0;
 }
 
 .booking-content-card {
