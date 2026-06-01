@@ -42,6 +42,12 @@
           <span>Dịch vụ y khoa</span>
         </div>
 
+        <div class="sidebar__divider">2. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
+        <div class="nav-item" @click="$router.push('/pharmacy/medicines')">
+          <span class="nav-icon"><i class="fas fa-prescription-bottle-alt text-green" /></span>
+          <span>Quản lý Dược & Hóa đơn</span>
+        </div>
+
 
 
         <!-- Section 5: Return to Portal -->
@@ -442,10 +448,6 @@
               <label>Mô tả dịch vụ:</label>
               <textarea v-model="formService.description" placeholder="Nhập mô tả của dịch vụ khám bệnh..." required class="cockpit-input" style="height: 80px; resize: none;"></textarea>
             </div>
-            <div class="form-group-cockpit">
-              <label>Đơn giá dịch vụ (VND):</label>
-              <input v-model="formService.price" placeholder="Ví dụ: 250000" required type="number" class="cockpit-input" />
-            </div>
             <div class="modal-footer-btns">
               <button type="button" class="btn-cancel-modal" @click="showServiceModal = false">Hủy</button>
               <button type="submit" class="btn-primary-cockpit" :disabled="submittingService">
@@ -457,14 +459,7 @@
         </div>
       </div>
     </div>
-
-  </div>
-
-
-  <!-- -------------------------------------------------------- -->
-  <!-- -------------Pharmecy Billing Service------------------- -->
-  <!-- -------------------------------------------------------- -->
-  <!-- Viết code ở đây -->  
+  
 
    
   <!-- -------------------------------------------------------- -->
@@ -472,6 +467,7 @@
   <!-- -------------------------------------------------------- -->
   <!-- Viết code ở đây --> 
 
+  </div>
 </template>
 
 <script setup>

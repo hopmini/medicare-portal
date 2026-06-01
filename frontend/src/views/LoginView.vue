@@ -112,14 +112,15 @@
     }
 
     // Internal portal redirect based on role
-    if (user.role === 'Admin') {
+    const role = (user?.role || '').toLowerCase()
+    if (role === 'admin') {
       router.push('/dashboard')
-    } else if (user.role === 'Doctor') {
+    } else if (role === 'doctor') {
       router.push('/doctor')
-    } else if (user.role === 'Receptionist') {
+    } else if (role === 'receptionist') {
       router.push('/receptionist')
     } else {
-      // Patient → go to Home page
+      // Patient or unknown → go to Home page
       router.push('/')
     }
   }

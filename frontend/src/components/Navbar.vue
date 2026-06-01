@@ -130,7 +130,15 @@
   }
 
   function redirectToPharmacy () {
-    router.push('/pharmacy')
+    if (authStore.isAuthenticated.value) {
+      const user = authStore.user.value
+      const role = (user?.role || '').toLowerCase()
+      if (role === 'patient') {
+        router.push('/pharmacy/billing')
+        return
+      }
+    }
+    router.push('/pharmacy/medicines')
   }
 
   function redirectToMedicalRecord () {

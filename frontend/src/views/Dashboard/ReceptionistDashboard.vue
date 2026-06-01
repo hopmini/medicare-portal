@@ -60,11 +60,11 @@
 
         <div class="user-profile">
           <div class="user-info" style="text-align: right;">
-            <p style="font-weight: 700; font-size: 0.9rem; margin: 0;">{{ authStore.user?.fullName || 'Tiếp Tân' }}</p>
+            <p style="font-weight: 700; font-size: 0.9rem; margin: 0;">{{ authStore.user?.value?.fullName || 'Tiếp Tân' }}</p>
             <p style="font-size: 0.75rem; color: #64748b; margin: 0;">Quản trị Tiếp tân</p>
           </div>
 
-          <div class="user-avatar">{{ (authStore.user?.username || authStore.user?.fullName || 'AD').substring(0, 2).toUpperCase() }}</div>
+          <div class="user-avatar">{{ (authStore.user?.value?.username || authStore.user?.value?.fullName || 'AD').substring(0, 2).toUpperCase() }}</div>
         </div>
       </header>
 
@@ -97,7 +97,7 @@
 
           <div class="stat-card">
             <span class="stat-card__label">Vai trò hiện tại</span>
-            <span class="stat-card__value" style="font-size: 1.25rem; font-weight: 800; color: #0047AB;">{{ authStore.user?.role }}</span>
+            <span class="stat-card__value" style="font-size: 1.25rem; font-weight: 800; color: #0047AB;">{{ authStore.user?.value?.role }}</span>
             <span class="stat-card__trend">Quyền hạn hệ thống</span>
           </div>
         </div>
@@ -130,7 +130,7 @@
             <tbody>
               <tr v-for="app in filteredAppointments" :key="app.id">
                 <td>
-                  <code style="font-family: monospace; background: #eff6ff; color: #0047AB; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.8rem;">#{{ app.id.substring(0,8).toUpperCase() }}</code>
+                  <code style="font-family: monospace; background: #eff6ff; color: #0047AB; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.8rem;">#{{ String(app.id).substring(0,8).toUpperCase() }}</code>
                 </td>
 
                 <td>
@@ -189,7 +189,7 @@
       <div class="detail-modal-card animate-scale-up">
         <div class="modal-header">
           <div class="modal-header__title">
-            <span class="ref-code-lg">#{{ selectedApp.id.toUpperCase() }}</span>
+            <span class="ref-code-lg">#{{ String(selectedApp.id).toUpperCase() }}</span>
             <h3>Chi tiết Lịch hẹn Y khoa Bệnh nhân</h3>
           </div>
           <button class="modal-close-btn" @click="closeDetail">&times;</button>
@@ -414,7 +414,7 @@
 
     if (rawReason.includes('[KHÁM CHUYÊN KHOA]')) {
       const lines = rawReason.split('\n')
-      lines.forEach(line => {
+      lines.forEach((line: string) => {
         if (line.includes('- Lý do khám:')) info.reason = line.replace('- Lý do khám:', '').trim()
         if (line.includes('- Bệnh nhân:')) info.fullName = line.replace('- Bệnh nhân:', '').trim()
         if (line.includes('- Ngày sinh:')) info.dob = line.replace('- Ngày sinh:', '').trim()
