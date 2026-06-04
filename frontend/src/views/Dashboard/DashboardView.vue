@@ -42,7 +42,17 @@
           <span>Dịch vụ y khoa</span>
         </div>
 
-        <div class="sidebar__divider">2. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
+        <div class="sidebar__divider">2. PHÂN HỆ BỆNH ÁN ĐIỆN TỬ</div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'medical-records' }" @click="activeTab = 'medical-records'">
+          <span class="nav-icon"><i class="fas fa-notes-medical text-red" /></span>
+          <span>Bệnh án điện tử</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'patient-registry' }" @click="activeTab = 'patient-registry'">
+          <span class="nav-icon"><i class="fas fa-id-card text-red" /></span>
+          <span>Hồ sơ Bệnh nhân</span>
+        </div>
+
+        <div class="sidebar__divider">3. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
         <div class="nav-item" @click="$router.push('/pharmacy/medicines')">
           <span class="nav-icon"><i class="fas fa-prescription-bottle-alt text-green" /></span>
           <span>Quản lý Dược & Hóa đơn</span>
@@ -353,6 +363,121 @@
           </div>
         </div>
 
+        <!-- TAB 6: MEDICAL RECORDS -->
+        <div v-if="activeTab === 'medical-records'" class="tab-content">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Tìm kiếm bệnh án:</label>
+              <input placeholder="Triệu chứng, chẩn đoán..." type="text" v-model="searchRecordQuery" class="filter-input" style="width: 250px;" />
+            </div>
+            <div class="filter-stats">
+              Tổng số bệnh án: <b>{{ allMedicalRecords.length }}</b> bản ghi
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã BA</th>
+                  <th>Mã Bệnh nhân</th>
+                  <th>Triệu chứng</th>
+                  <th>Chẩn đoán</th>
+                  <th>Đơn thuốc</th>
+                  <th>Ngày khám</th>
+                  <th style="text-align: center;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredRecords.length === 0">
+                  <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                    Không tìm thấy bệnh án nào.
+                  </td>
+                </tr>
+                <tr v-for="rec in filteredRecords" :key="rec.id">
+                  <td><code>#{{ rec.id?.substring(0, 8).toUpperCase() }}</code></td>
+                  <td>
+                    <span style="font-family: monospace; font-size: 0.8rem; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px;">
+                      {{ rec.patientId?.substring(24) }}
+                    </span>
+                  </td>
+                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ rec.symptoms }}</td>
+                  <td><span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">{{ rec.diagnosis }}</span></td>
+                  <td>
+                    <span v-if="rec.prescription" class="badge badge--service" style="background: #fdf2f2; color: #991b1b; border: 1px solid #fca5a5;">
+                      <i class="fas fa-pills" /> Có kê đơn
+                    </span>
+                    <span v-else style="color: #94a3b8; font-style: italic;">Không kê đơn</span>
+                  </td>
+                  <td>{{ formatDate(rec.createdAt) }}</td>
+                  <td style="text-align: center;">
+                    <button class="btn-primary-cockpit" style="padding: 4px 10px; font-size: 0.8rem;" @click="viewRecordDetails(rec)">
+                      <i class="fas fa-eye" /> Chi tiết
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 7: PATIENT REGISTRY -->
+        <div v-if="activeTab === 'patient-registry'" class="tab-content">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Tìm kiếm bệnh nhân:</label>
+              <input placeholder="Họ tên bệnh nhân..." type="text" v-model="searchPatientRegistryQuery" class="filter-input" style="width: 250px;" />
+            </div>
+            <div class="filter-stats">
+              Tổng số bệnh nhân: <b>{{ allPatientsList.length }}</b> người
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã số</th>
+                  <th>Họ và tên</th>
+                  <th>Ngày sinh</th>
+                  <th>Giới tính</th>
+                  <th>Tiền sử bệnh lý</th>
+                  <th>Dị ứng</th>
+                  <th style="text-align: center;">Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredPatientRegistry.length === 0">
+                  <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                    Không tìm thấy bệnh nhân nào.
+                  </td>
+                </tr>
+                <tr v-for="pat in filteredPatientRegistry" :key="pat.id">
+                  <td><code>#{{ pat.id?.substring(24) }}</code></td>
+                  <td><strong style="color: #0f172a;">{{ pat.fullName }}</strong></td>
+                  <td>{{ formatDate(pat.dateOfBirth) }}</td>
+                  <td>
+                    <span class="badge" :class="pat.gender === 'Nam' ? 'badge--confirmed' : 'badge--pending'">
+                      {{ pat.gender }}
+                    </span>
+                  </td>
+                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="pat.medicalHistory">
+                    {{ pat.medicalHistory || 'Chưa cập nhật' }}
+                  </td>
+                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626;" :title="pat.allergies">
+                    {{ pat.allergies || 'Không dị ứng' }}
+                  </td>
+                  <td style="text-align: center;">
+                    <button class="btn-primary-cockpit" style="padding: 4px 10px; font-size: 0.8rem; background: #64748b;" @click="viewPatientDetails(pat)">
+                      <i class="fas fa-user-shield" /> Xem hồ sơ
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </main>
 
@@ -462,11 +587,88 @@
   
 
    
-  <!-- -------------------------------------------------------- -->
-  <!-- -------------Medicare Record Service-------------------- -->
-  <!-- -------------------------------------------------------- -->
-  <!-- Viết code ở đây --> 
+    <!-- 4. Medical Record Detail Modal -->
+    <div v-if="selectedRecord" class="modal-backdrop">
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 600px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-medical text-red" /> Chi tiết bệnh án #{{ selectedRecord.id?.substring(0, 8).toUpperCase() }}</h3>
+          <button class="btn-close-modal" @click="selectedRecord = null">&times;</button>
+        </div>
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left; max-height: 70vh; overflow-y: auto;">
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Mã bệnh nhân (Guid)</label>
+            <p style="background: #f8fafc; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 0.85rem;">{{ selectedRecord.patientId }}</p>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
+            <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.4; white-space: pre-wrap;">{{ selectedRecord.symptoms }}</p>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
+            <p style="background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; color: #15803d; font-weight: bold;">{{ selectedRecord.diagnosis }}</p>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
+            <p style="line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 6px;">{{ selectedRecord.notes || 'Không có ghi chú thêm.' }}</p>
+          </div>
+          
+          <div v-if="selectedRecord.prescription" style="border-top: 1.5px dashed #fca5a5; padding-top: 15px; margin-top: 5px;">
+            <h4 style="margin: 0 0 10px 0; color: #b91c1c; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-prescription-bottle" /> Đơn thuốc kèm theo
+            </h4>
+            <div style="background: #fff8f8; border: 1px solid #fecaca; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div v-for="(med, idx) in selectedRecord.prescription.details" :key="idx" style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                <span><strong>{{ idx + 1 }}. {{ med.medicationName }}</strong> - <i>{{ med.dosage }}</i></span>
+                <span style="color: #b91c1c; font-weight: bold;">x{{ med.quantity }} Viên</span>
+              </div>
+              <div v-if="selectedRecord.prescription.instructions" style="font-size: 0.8rem; color: #7f1d1d; border-top: 1px dashed #fee2e2; padding-top: 6px; margin-top: 4px;">
+                <strong>Lời dặn:</strong> {{ selectedRecord.prescription.instructions }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding-top: 10px; display: flex; justify-content: flex-end;">
+          <button class="btn-cancel-modal" @click="selectedRecord = null">Đóng thông tin</button>
+        </div>
+      </div>
+    </div>
 
+    <!-- 5. Patient Profile View Modal -->
+    <div v-if="selectedPatient" class="modal-backdrop">
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 550px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-id-card text-blue" /> Hồ sơ Bệnh nhân</h3>
+          <button class="btn-close-modal" @click="selectedPatient = null">&times;</button>
+        </div>
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Họ và tên</label>
+              <p style="font-size: 1.1rem; font-weight: bold; color: #0f172a; margin: 4px 0 0 0;">{{ selectedPatient.fullName }}</p>
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Giới tính</label>
+              <p style="margin: 4px 0 0 0;">{{ selectedPatient.gender }}</p>
+            </div>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Ngày sinh</label>
+            <p style="margin: 4px 0 0 0;">{{ formatDate(selectedPatient.dateOfBirth) }}</p>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Tiền sử bệnh lý</label>
+            <p style="background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 0 0;">{{ selectedPatient.medicalHistory || 'Chưa có ghi nhận' }}</p>
+          </div>
+          <div>
+            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Dị ứng thuốc / Thức ăn</label>
+            <p style="background: #fff5f5; padding: 8px; border-radius: 6px; border: 1px solid #fee2e2; color: #991b1b; margin: 4px 0 0 0;">{{ selectedPatient.allergies || 'Không dị ứng' }}</p>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding-top: 10px; display: flex; justify-content: flex-end;">
+          <button class="btn-cancel-modal" @click="selectedPatient = null">Đóng hồ sơ</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -476,6 +678,7 @@
   import api, { publicApi } from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
+  import { medicalRecordService } from '@/services/medicalRecordService'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -507,6 +710,49 @@
   const appointments = ref([])
   const doctorsList = ref([])
   const servicesList = ref([])
+
+  // Medical Record Service states (N2)
+  const allMedicalRecords = ref([])
+  const allPatientsList = ref([])
+  const searchRecordQuery = ref('')
+  const searchPatientRegistryQuery = ref('')
+  const selectedRecord = ref(null)
+  const selectedPatient = ref(null)
+
+  const filteredRecords = computed(() => {
+    let list = [...allMedicalRecords.value]
+    if (searchRecordQuery.value) {
+      const q = searchRecordQuery.value.toLowerCase()
+      list = list.filter(r => 
+        r.symptoms?.toLowerCase().includes(q) || 
+        r.diagnosis?.toLowerCase().includes(q) ||
+        r.notes?.toLowerCase().includes(q) ||
+        r.patientId?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  })
+
+  const filteredPatientRegistry = computed(() => {
+    let list = [...allPatientsList.value]
+    if (searchPatientRegistryQuery.value) {
+      const q = searchPatientRegistryQuery.value.toLowerCase()
+      list = list.filter(p => 
+        p.fullName?.toLowerCase().includes(q) || 
+        p.medicalHistory?.toLowerCase().includes(q) ||
+        p.allergies?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  })
+
+  function viewRecordDetails(rec) {
+    selectedRecord.value = rec
+  }
+
+  function viewPatientDetails(pat) {
+    selectedPatient.value = pat
+  }
 
   // Strategic Stats (Appointment Service - ACTIVE)
   const stats = computed(() => {
@@ -605,6 +851,21 @@
       const svcsRes = await publicApi.get('/MedicalServices')
       servicesList.value = svcsRes.data
 
+      // Fetch all medical records and patients (N2)
+      try {
+        const recordsData = await medicalRecordService.getAllRecords()
+        allMedicalRecords.value = recordsData || []
+      } catch (errRecord) {
+        console.error('Lỗi khi tải toàn bộ bệnh án:', errRecord)
+      }
+
+      try {
+        const patientsData = await medicalRecordService.getAllPatients()
+        allPatientsList.value = patientsData || []
+      } catch (errPatient) {
+        console.error('Lỗi khi tải danh sách bệnh nhân:', errPatient)
+      }
+
       // Refresh slots if doctor selected
       if (selectedScheduleDoc.value) {
         loadActiveSlots()
@@ -628,6 +889,8 @@
       case 'schedule': return 'Quản Lý Lịch Trực Bác Sĩ'
       case 'doctors': return 'Danh Mục Bác Sĩ Lâm Sàng'
       case 'services': return 'Dịch Vụ Y Khoa Toàn Viện'
+      case 'medical-records': return 'Quản Lý Bệnh Án Điện Tử (N2)'
+      case 'patient-registry': return 'Danh Sách Bệnh Nhân Hệ Thống (N2)'
       default: return 'Medicare Master Cockpit'
     }
   }

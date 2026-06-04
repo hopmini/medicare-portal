@@ -13,7 +13,7 @@
 
       <ul class="nav-links">
         <li><router-link to="/">Trang chủ</router-link></li>
-        <li>
+        <li v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
           <span class="dropdown">
             <span class="dropdown-toggle">Dịch vụ <i class="fas fa-chevron-down" /></span>
             <div class="dropdown-menu">
@@ -23,7 +23,9 @@
             </div>
           </span>
         </li>
-        <li><router-link to="/my-appointments">Lịch sử đặt hẹn</router-link></li>
+        <li v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
+          <router-link to="/my-appointments">Lịch sử đặt hẹn</router-link>
+        </li>
         <li><router-link to="/contact">Liên hệ</router-link></li>
       </ul>
 
@@ -70,10 +72,12 @@
 
     <div class="mobile-menu" :class="{ 'mobile-menu--open': mobileOpen }">
       <router-link to="/" @click="mobileOpen = false">Trang chủ</router-link>
-      <a href="#" @click.prevent="redirectToBooking(); mobileOpen = false"><i class="fas fa-calendar-check" /> Đặt lịch khám</a>
-      <a href="#" @click.prevent="redirectToMedicalRecord(); mobileOpen = false"><i class="fas fa-file-medical" /> Bệnh án điện tử</a>
-      <a href="#" @click.prevent="redirectToPharmacy(); mobileOpen = false"><i class="fas fa-pills" /> Hóa đơn & Thuốc</a>
-      <router-link to="/my-appointments" @click="mobileOpen = false">Lịch sử đặt hẹn</router-link>
+      <template v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
+        <a href="#" @click.prevent="redirectToBooking(); mobileOpen = false"><i class="fas fa-calendar-check" /> Đặt lịch khám</a>
+        <a href="#" @click.prevent="redirectToMedicalRecord(); mobileOpen = false"><i class="fas fa-file-medical" /> Bệnh án điện tử</a>
+        <a href="#" @click.prevent="redirectToPharmacy(); mobileOpen = false"><i class="fas fa-pills" /> Hóa đơn & Thuốc</a>
+        <router-link to="/my-appointments" @click="mobileOpen = false">Lịch sử đặt hẹn</router-link>
+      </template>
       <router-link to="/contact" @click="mobileOpen = false">Liên hệ</router-link>
 
       <div class="mobile-menu__actions">
@@ -143,7 +147,19 @@
   }
 
   function redirectToMedicalRecord () {
-    router.push('/medical-records')
+    if (authStore.isAuthenticated.value) {
+      const user = authStore.user.value
+      const role = (user?.role || '').toLowerCase()
+      if (role === 'doctor') {
+        router.push('/doctor')
+        return
+      }
+      if (role === 'patient') {
+        router.push('/my-medical-records')
+        return
+      }
+    }
+    router.push('/login')
   }
 
   function handleScroll () {
