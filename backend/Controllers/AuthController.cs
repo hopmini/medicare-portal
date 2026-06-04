@@ -7,6 +7,7 @@ using Gateway.Data;
 using Gateway.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Gateway.Controllers
 {
@@ -43,7 +44,7 @@ namespace Gateway.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đăng ký tài khoản thành công!" });
+            return Ok(new { message = "Đăng ký tài khoản thành công!", userId = user.Id });
         }
 
         [HttpPost("login")]
@@ -99,6 +100,39 @@ namespace Gateway.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính người dùng!" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "Người dùng không tồn tại!" });
+            }
+
+            if (user.PasswordHash != HashPassword(model.CurrentPassword))
+            {
+                return BadRequest(new { message = "Mật khẩu hiện tại không chính xác!" });
+            }
+
+            user.PasswordHash = HashPassword(model.NewPassword);
+            
+            // Clean up forceChange flag in Email field if it exists
+            if (user.Email != null && user.Email.Contains("|forceChange"))
+            {
+                user.Email = user.Email.Split('|')[0];
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Thay đổi mật khẩu thành công!" });
         }
 
         private string HashPassword(string password)

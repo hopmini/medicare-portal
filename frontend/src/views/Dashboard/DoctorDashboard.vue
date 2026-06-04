@@ -821,12 +821,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Force Change Password Modal -->
+    <div v-if="showForceChangePasswordModal" class="modal-backdrop" style="background: rgba(15, 23, 42, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
+      <div class="modal-card shadow-lg animate-fade-in" style="max-width: 480px; width: 90%; background: white; border-radius: 16px; border: 2px solid #ef4444; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <div class="modal-header" style="background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fee2e2; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.2rem;">
+            <i class="fas fa-exclamation-triangle" style="color: #dc2626;" /> Yêu cầu đổi mật khẩu lần đầu
+          </h3>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem; text-align: left;">
+          <p style="margin: 0 0 1.25rem 0; font-size: 0.9rem; color: #475569; line-height: 1.6;">
+            Tài khoản bác sĩ của bạn được khởi tạo tự động. Để bảo đảm an toàn thông tin y tế, bạn <strong>bắt buộc phải thay đổi mật khẩu mặc định</strong> trước khi tiếp tục.
+          </p>
+          
+          <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-weight: 700; font-size: 0.85rem; color: #334155;">Mật khẩu hiện tại (Mặc định):</label>
+            <input v-model="forcePasswordForm.currentPassword" type="password" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" placeholder="Nhập mật khẩu được cấp..." />
+          </div>
+          
+          <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-weight: 700; font-size: 0.85rem; color: #334155;">Mật khẩu mới (Tối thiểu 6 ký tự):</label>
+            <input v-model="forcePasswordForm.newPassword" type="password" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" placeholder="Nhập mật khẩu mới..." />
+          </div>
+
+          <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-weight: 700; font-size: 0.85rem; color: #334155;">Xác nhận mật khẩu mới:</label>
+            <input v-model="forcePasswordForm.confirmPassword" type="password" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" placeholder="Xác thực mật khẩu mới..." />
+          </div>
+
+          <button @click="submitForceChangePassword" style="width: 100%; padding: 12px; background: #dc2626; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;" :disabled="submittingForcePassword">
+            <span v-if="submittingForcePassword"><i class="fas fa-spinner fa-spin" /> Đang cập nhật...</span>
+            <span v-else><i class="fas fa-key" /> Đổi mật khẩu & Bắt đầu làm việc</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref, computed } from 'vue'
-  import api from '@/services/api'
+  import api, { publicApi } from '@/services/api'
   import { useAuthStore } from '@/stores/authStore'
   import { getMedicines } from '@/services/pharmacyService'
   import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
@@ -843,6 +879,15 @@
   const searchPatientQuery = ref('')
   const searchRecordQuery = ref('')
   const loadingTab = ref(false)
+
+  // Force change password states
+  const showForceChangePasswordModal = ref(false)
+  const submittingForcePassword = ref(false)
+  const forcePasswordForm = ref({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
 
   // Patient history dialog state
   const selectedPatientForHistory = ref<any>(null)
@@ -1057,11 +1102,75 @@
     }
     
     loadingTab.value = true
-    setTimeout(() => {
-      loadingTab.value = false
-      alert('Đổi mật khẩu bảo mật thành công! Vui lòng ghi nhớ mật khẩu mới.')
+    try {
+      await publicApi.post('/Auth/change-password', {
+        currentPassword: sec.currentPassword,
+        newPassword: sec.newPassword
+      })
+      alert('Đổi mật khẩu thành công! Vui lòng ghi nhớ mật khẩu mới.')
       settingsSecurity.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-    }, 800)
+    } catch (e: any) {
+      alert('Lỗi đổi mật khẩu: ' + (e.response?.data?.message || e.message))
+    } finally {
+      loadingTab.value = false
+    }
+  }
+
+  function parseJwt (token: string) {
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      }).join(''))
+      return JSON.parse(jsonPayload)
+    } catch (e) {
+      return null
+    }
+  }
+
+  function checkForceChangePassword() {
+    const tokenStr = authStore.token || localStorage.getItem('token')
+    if (tokenStr) {
+      const decoded = parseJwt(tokenStr)
+      if (decoded) {
+        const email = decoded['email'] || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || ''
+        if (email.includes('|forceChange')) {
+          showForceChangePasswordModal.value = true
+        }
+      }
+    }
+  }
+
+  async function submitForceChangePassword() {
+    const form = forcePasswordForm.value
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+      alert('Vui lòng nhập đầy đủ thông tin mật khẩu!')
+      return
+    }
+    if (form.newPassword !== form.confirmPassword) {
+      alert('Mật khẩu mới và xác nhận mật khẩu không trùng khớp!')
+      return
+    }
+    if (form.newPassword.length < 6) {
+      alert('Mật khẩu mới phải có ít nhất 6 ký tự!')
+      return
+    }
+
+    submittingForcePassword.value = true
+    try {
+      await publicApi.post('/Auth/change-password', {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword
+      })
+      alert('Đổi mật khẩu mặc định thành công! Hệ thống yêu cầu đăng nhập lại bằng mật khẩu mới để áp dụng cập nhật.')
+      authStore.logout()
+      window.location.reload()
+    } catch (e: any) {
+      alert('Lỗi đổi mật khẩu: ' + (e.response?.data?.message || e.message))
+    } finally {
+      submittingForcePassword.value = false
+    }
   }
 
   async function changeTab(tab: string) {
@@ -1312,6 +1421,7 @@
 
   onMounted(() => {
     fetchData()
+    checkForceChangePassword()
   })
 </script>
 

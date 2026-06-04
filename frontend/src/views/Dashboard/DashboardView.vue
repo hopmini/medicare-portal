@@ -331,8 +331,8 @@
                 <p class="doc-card-detail">Phí khám cơ bản: <b style="color: var(--cobalt);">{{ formatCurrency(doc.consultationFee || 150000) }}</b></p>
               </div>
               <div class="doc-card-footer">
-                <button class="btn-doc-action" @click="selectedScheduleDoc = doc.id; activeTab = 'schedule'; loadActiveSlots()">
-                  <i class="fas fa-calendar-alt" /> Xem lịch trực bác sĩ
+                <button class="btn-doc-action" style="background: #3b82f6; color: white;" @click="viewDoctorInfo(doc)">
+                  <i class="fas fa-info-circle" /> Xem thông tin bác sĩ
                 </button>
               </div>
             </div>
@@ -530,6 +530,10 @@
               <label>Họ và tên bác sĩ:</label>
               <input v-model="formDoctor.fullName" placeholder="Ví dụ: BS. Nguyễn Văn A" required type="text" class="cockpit-input" />
             </div>
+            <div class="form-group-cockpit">
+              <label>Tên đăng nhập (Tài khoản) *:</label>
+              <input v-model="formDoctor.username" placeholder="Nhập tên đăng nhập (Mật khẩu mặc định sẽ tự động tạo)..." required type="text" class="cockpit-input" />
+            </div>
             <div class="form-row-cockpit">
               <div class="form-group-cockpit">
                 <label>Chuyên khoa:</label>
@@ -552,6 +556,74 @@
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Doctor Info Modal -->
+    <div v-if="showDoctorInfoModal" class="modal-backdrop">
+      <div class="modal-card shadow-lg animate-fade-in" style="max-width: 500px;">
+        <div class="modal-header" style="background: #eff6ff; color: #1e40af; border-bottom: 1px solid #dbeafe;">
+          <h3><i class="fas fa-id-card text-blue" /> Thông tin tài khoản Bác sĩ</h3>
+          <button class="btn-close-modal" @click="showDoctorInfoModal = false">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem;">
+          <div v-if="loadingDoctorInfo" style="text-align: center; padding: 2rem;">
+            <i class="fas fa-spinner fa-spin fa-2x text-blue" />
+            <p style="margin-top: 1rem; color: #64748b;">Đang truy vấn thông tin tài khoản...</p>
+          </div>
+          <div v-else-if="selectedDoctorInfo">
+            <!-- Professional profile -->
+            <div style="background: #f8fafc; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid #e2e8f0; text-align: left;">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #0f172a; font-weight: 800;">
+                {{ selectedDoctorInfo.fullName }}
+              </h4>
+              <p style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: #475569;">
+                Chuyên khoa: <strong>{{ selectedDoctorInfo.specialty }}</strong>
+              </p>
+              <p style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: #475569;">
+                Học vị: <strong>{{ selectedDoctorInfo.degree || 'Bác sĩ' }}</strong>
+              </p>
+              <p style="margin: 0; font-size: 0.9rem; color: #475569;">
+                Phí khám: <strong style="color: #0047AB;">{{ formatCurrency(selectedDoctorInfo.consultationFee) }}</strong>
+              </p>
+            </div>
+
+            <!-- Credentials / Account -->
+            <div style="border: 2px dashed #3b82f6; border-radius: 12px; padding: 1.25rem; background: #f0f9ff; text-align: left;">
+              <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #1e3a8a; display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                <i class="fas fa-key" /> THÔNG TIN ĐĂNG NHẬP
+              </h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                  <span style="color: #64748b;">Tên đăng nhập (Username):</span>
+                  <strong style="color: #0f172a; font-family: monospace; font-size: 1rem;">{{ selectedDoctorInfo.username }}</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; align-items: center;">
+                  <span style="color: #64748b;">Mật khẩu mặc định:</span>
+                  <strong style="color: #dc2626; font-family: monospace; font-size: 1rem; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">
+                    {{ selectedDoctorInfo.password }}
+                  </strong>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; align-items: center; margin-top: 4px; padding-top: 8px; border-top: 1px solid #e0f2fe;">
+                  <span style="color: #64748b;">Trạng thái tài khoản:</span>
+                  <span v-if="selectedDoctorInfo.forceChange" class="badge" style="background: #fef3c7; color: #d97706; font-weight: 700; border: none; padding: 4px 8px;">
+                    Yêu cầu đổi mật khẩu lần đầu
+                  </span>
+                  <span v-else class="badge" style="background: #d1fae5; color: #065f46; font-weight: 700; border: none; padding: 4px 8px;">
+                    Đã đổi mật khẩu / Sẵn sàng
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="modal-footer-btns" style="margin-top: 1.5rem;">
+            <button class="btn-cancel-modal" style="width: 100%;" @click="showDoctorInfoModal = false">Đóng</button>
+          </div>
         </div>
       </div>
     </div>
@@ -693,6 +765,9 @@
   // Modal display toggles (Appointment Service - ACTIVE)
   const showSlotModal = ref(false)
   const showDoctorModal = ref(false)
+  const showDoctorInfoModal = ref(false)
+  const selectedDoctorInfo = ref(null)
+  const loadingDoctorInfo = ref(false)
   const showServiceModal = ref(false)
 
   // Doctor Schedule state
@@ -812,7 +887,7 @@
   })
 
   // Forms bounds (Appointment Service - ACTIVE)
-  const formDoctor = ref({ fullName: '', specialty: '', degree: '', consultationFee: null })
+  const formDoctor = ref({ fullName: '', specialty: '', degree: '', consultationFee: null, username: '', password: '' })
   const formService = ref({ name: '', description: '', price: null })
   const formSlots = ref({ doctorId: '', date: '' })
 
@@ -921,22 +996,90 @@
   }
 
   async function submitAddDoctor () {
+    if (!formDoctor.value.username) {
+      alert('Vui lòng nhập tên đăng nhập của bác sĩ!')
+      return
+    }
     submittingDoctor.value = true
     try {
+      // Sinh mật khẩu tự động ngẫu nhiên dạng MC-XXXXXX
+      const autoPassword = 'MC-' + Math.floor(100000 + Math.random() * 900000)
+
+      // 1. Đăng ký tài khoản trong Cổng xác thực với cờ forceChange trong Email
+      const regRes = await publicApi.post('/Auth/register', {
+        username: formDoctor.value.username,
+        password: autoPassword,
+        fullName: formDoctor.value.fullName,
+        email: `${formDoctor.value.username}@medicare.vn|${autoPassword}|forceChange`,
+        role: 'Doctor'
+      })
+      
+      const newUserId = regRes.data?.userId
+      if (!newUserId) {
+        throw new Error('Đăng ký tài khoản bác sĩ thất bại, không nhận được ID!')
+      }
+
+      // 2. Thêm thông tin chuyên môn bác sĩ trong Appointment-Service
       await api.post('/Doctors', {
+        userId: String(newUserId),
         fullName: formDoctor.value.fullName,
         specialty: formDoctor.value.specialty,
         degree: formDoctor.value.degree,
         consultationFee: formDoctor.value.consultationFee
       })
-      alert('Thêm bác sĩ thành công!')
-      formDoctor.value = { fullName: '', specialty: '', degree: '', consultationFee: null }
+
+      alert(`Thêm bác sĩ thành công!\nTài khoản: ${formDoctor.value.username}\nMật khẩu mặc định: ${autoPassword}\n(Bác sĩ bắt buộc phải đổi mật khẩu khi đăng nhập lần đầu)`)
+      formDoctor.value = { fullName: '', specialty: '', degree: '', consultationFee: null, username: '', password: '' }
       showDoctorModal.value = false
       fetchAllData()
     } catch (e) {
-      alert('Lỗi thêm bác sĩ: ' + (e.response?.data || e.message))
+      alert('Lỗi thêm bác sĩ: ' + (e.response?.data?.message || e.message))
     } finally {
       submittingDoctor.value = false
+    }
+  }
+
+  async function viewDoctorInfo(doc) {
+    selectedDoctorInfo.value = { ...doc, username: '', password: '', originalEmail: '', forceChange: false }
+    showDoctorInfoModal.value = true
+    loadingDoctorInfo.value = true
+    
+    try {
+      const res = await api.get('/Users/doctors')
+      const doctorsUsers = res.data || []
+      
+      let userAccount = doctorsUsers.find(u => u.id === doc.userId)
+      
+      if (!userAccount) {
+        userAccount = doctorsUsers.find(u => {
+          const uName = u.fullName?.replace(/^(BS\.|Bác sĩ)\s+/i, '').trim().toLowerCase()
+          const docName = doc.fullName?.replace(/^(BS\.|Bác sĩ)\s+/i, '').trim().toLowerCase()
+          return uName === docName || u.fullName?.toLowerCase() === doc.fullName?.toLowerCase()
+        })
+      }
+      
+      if (userAccount) {
+        selectedDoctorInfo.value.username = userAccount.username
+        
+        const emailStr = userAccount.email || ''
+        if (emailStr.includes('|')) {
+          const parts = emailStr.split('|')
+          selectedDoctorInfo.value.originalEmail = parts[0]
+          selectedDoctorInfo.value.password = parts[1]
+          selectedDoctorInfo.value.forceChange = parts[2] === 'forceChange'
+        } else {
+          selectedDoctorInfo.value.originalEmail = emailStr
+          selectedDoctorInfo.value.password = '(Đã thay đổi mật khẩu mặc định)'
+          selectedDoctorInfo.value.forceChange = false
+        }
+      } else {
+        selectedDoctorInfo.value.username = 'Không tìm thấy tài khoản'
+        selectedDoctorInfo.value.password = 'N/A'
+      }
+    } catch (e) {
+      console.error('Lỗi khi tải thông tin tài khoản:', e)
+    } finally {
+      loadingDoctorInfo.value = false
     }
   }
 
