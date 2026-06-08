@@ -476,6 +476,13 @@
                       >
                         <i class="fas fa-chevron-left" /> Quay lại chọn ngày
                       </button>
+<<<<<<< HEAD
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+=======
                     </div>
                   </div>
                 </div>
@@ -487,8 +494,8 @@
                 <i class="fas fa-chevron-left" /> Quay lại chọn ngày
               </button>
             </div>
+>>>>>>> e65df8edbcbf4527cda23de499a4d81af727c2b0
           </section>
-
         </div>
       </main>
     </div>
