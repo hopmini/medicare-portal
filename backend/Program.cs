@@ -71,10 +71,53 @@ using (var scope = app.Services.CreateScope())
         var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         db.Database.EnsureCreated();
         Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
+
+        // Ensure all default users exist (seed data only works on fresh DB)
+        await EnsureDefaultUsers(db);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"[Gateway-Auth] Error ensuring Central Identity DB: {ex.Message}");
+    }
+}
+
+static async Task EnsureDefaultUsers(IdentityDbContext db)
+{
+    var defaultUsers = new[]
+    {
+        new { Username = "admin",        Password = "admin",        FullName = "Hệ thống Admin",      Email = "admin@medicare.vn",        Role = "Admin" },
+        new { Username = "receptionist", Password = "receptionist", FullName = "Lễ tân Medicare",      Email = "receptionist@medicare.vn", Role = "Receptionist" },
+        new { Username = "doctor",       Password = "doctor",       FullName = "Bác sĩ Nguyễn Văn A", Email = "doctora@medicare.vn",      Role = "Doctor" },
+        new { Username = "pharmacist",   Password = "pharmacist",   FullName = "Dược sĩ Trần Thị B",  Email = "pharmacist@medicare.vn",   Role = "Pharmacist" },
+        new { Username = "patient",      Password = "patient",      FullName = "Bệnh nhân Trần Văn B",Email = "patient@medicare.vn",      Role = "Patient" },
+    };
+
+    foreach (var u in defaultUsers)
+    {
+        if (!db.Users.Any(x => x.Username == u.Username))
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(u.Password));
+            var hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+
+            db.Users.Add(new Gateway.Models.User
+            {
+                Username = u.Username,
+                PasswordHash = hash,
+                FullName = u.FullName,
+                Email = u.Email,
+                Role = u.Role
+            });
+            Console.WriteLine($"[Gateway-Auth] Created default user: {u.Username} ({u.Role})");
+        }
+    }
+    await db.SaveChangesAsync();
+
+    // Print all users in DB
+    Console.WriteLine("[Gateway-Auth] Existing Users in DB:");
+    foreach (var user in db.Users.ToList())
+    {
+        Console.WriteLine($" - ID: {user.Id}, Username: {user.Username}, Role: {user.Role}");
     }
 }
 

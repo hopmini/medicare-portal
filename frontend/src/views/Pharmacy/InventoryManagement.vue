@@ -1,213 +1,1309 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f0f2f5;">
-    <a-layout-sider width="260" theme="light">
+  <a-layout style="min-height: 100vh; background: #f8fafc;">
+    <!-- Sidebar -->
+    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
-    
-    <a-layout style="background: #f0f2f5;">
-      <!-- Top header bar -->
-      <a-layout-header style="background: #ffffff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f0; height: 64px;">
-        <h2 style="margin: 0; font-weight: 700; color: #262626; font-size: 1.25rem;">Quản lý kho</h2>
-        <div style="display: flex; align-items: center; gap: 20px;">
-          <a-input-search v-model:value="search" placeholder="Tìm kiếm..." style="width: 240px;" @search="onSearch" allow-clear />
-          <a-badge :count="3" dot>
-            <i class="far fa-bell" style="font-size: 1.2rem; cursor: pointer; color: #8c8c8c;" />
-          </a-badge>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <a-avatar size="small" style="background-color: #007d88;"><i class="fas fa-user" /></a-avatar>
-            <span style="font-weight: 600; color: #262626; font-size: 0.9rem;">{{ authStore.user?.value?.fullName || 'Người dùng' }}</span>
+
+    <!-- Main Layout -->
+    <a-layout style="background: #f8fafc;">
+      <AppHeader title="Lịch sử kho" welcome="Theo dõi và tra cứu các giao dịch nhập, xuất, điều chỉnh và hủy trong kho thuốc." />
+
+      <!-- Main Content Area -->
+      <a-layout-content style="padding: 24px 28px;">
+
+        <!-- 5 Stats Cards -->
+        <div class="metrics-grid" style="margin-bottom: 24px;">
+          <!-- Card: Total -->
+          <div class="stat-card" :class="{ 'stat-active': activeFilter === 'all' }" @click="selectFilter('all')">
+            <div class="stat-icon-wrapper" style="background: #eff6ff; color: #2563eb;">
+              <i class="fas fa-exchange-alt" />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Tổng giao dịch</div>
+              <div class="stat-value" style="color: #1e293b;">{{ totalTransactionsCount }}</div>
+              <div class="stat-unit">Giao dịch</div>
+            </div>
+          </div>
+
+          <!-- Card: Import -->
+          <div class="stat-card" :class="{ 'stat-active': activeFilter === 'Nhập kho' }" @click="selectFilter('Nhập kho')">
+            <div class="stat-icon-wrapper" style="background: #eff6ff; color: #3b82f6;">
+              <i class="fas fa-file-import" />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Nhập kho</div>
+              <div class="stat-value" style="color: #2563eb;">{{ importCount }}</div>
+              <div class="stat-unit">Giao dịch</div>
+            </div>
+          </div>
+
+          <!-- Card: Export -->
+          <div class="stat-card" :class="{ 'stat-active': activeFilter === 'Xuất kho' }" @click="selectFilter('Xuất kho')">
+            <div class="stat-icon-wrapper" style="background: #fff7ed; color: #ea580c;">
+              <i class="fas fa-arrow-up" />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Xuất kho</div>
+              <div class="stat-value" style="color: #ea580c;">{{ exportCount }}</div>
+              <div class="stat-unit">Giao dịch</div>
+            </div>
+          </div>
+
+          <!-- Card: Adjust -->
+          <div class="stat-card" :class="{ 'stat-active': activeFilter === 'Điều chỉnh' }" @click="selectFilter('Điều chỉnh')">
+            <div class="stat-icon-wrapper" style="background: #f1f5f9; color: #64748b;">
+              <i class="fas fa-sliders-h" />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Điều chỉnh</div>
+              <div class="stat-value" style="color: #475569;">{{ adjustCount }}</div>
+              <div class="stat-unit">Giao dịch</div>
+            </div>
+          </div>
+
+          <!-- Card: Destroy -->
+          <div class="stat-card" :class="{ 'stat-active': activeFilter === 'Hủy' }" @click="selectFilter('Hủy')">
+            <div class="stat-icon-wrapper" style="background: #fef2f2; color: #dc2626;">
+              <i class="fas fa-times" />
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">Hủy</div>
+              <div class="stat-value" style="color: #dc2626;">{{ destroyCount }}</div>
+              <div class="stat-unit">Giao dịch</div>
+            </div>
           </div>
         </div>
-      </a-layout-header>
 
-      <a-layout-content style="padding: 24px;">
-        <a-spin :spinning="loading">
-          <a-card :bordered="false" style="border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <!-- Custom Tabs mirroring design style -->
-            <div class="tabs-header" style="display: flex; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px; gap: 32px;">
-              <div 
-                v-for="tab in tabs" 
-                :key="tab.key" 
-                :class="['tab-item', activeTab === tab.key ? 'active' : '']"
-                @click="activeTab = tab.key"
-                style="padding: 12px 4px; font-weight: 600; cursor: pointer; position: relative;"
-              >
-                {{ tab.title }}
-                <div v-if="activeTab === tab.key" class="active-indicator" style="position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #007d88;" />
+        <!-- Filter bar -->
+        <div class="filter-panel" style="margin-bottom: 20px;">
+          <div class="filter-left">
+            <!-- Search -->
+            <div style="position: relative; width: 340px;">
+              <i class="fas fa-search search-icon-input" />
+              <input 
+                type="text" 
+                v-model="searchQuery" 
+                placeholder="Tìm theo mã giao dịch hoặc tên thuốc" 
+                class="custom-search-input"
+              />
+            </div>
+
+            <!-- Date range pickers -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="date-picker-box">
+                <span class="date-label">Từ ngày</span>
+                <a-date-picker 
+                  v-model:value="startDate" 
+                  format="DD/MM/YYYY" 
+                  placeholder="01/05/2024" 
+                  class="custom-datepicker"
+                  :allow-clear="false"
+                />
+              </div>
+              <div class="date-picker-box">
+                <span class="date-label">Đến ngày</span>
+                <a-date-picker 
+                  v-model:value="endDate" 
+                  format="DD/MM/YYYY" 
+                  placeholder="31/05/2024" 
+                  class="custom-datepicker"
+                  :allow-clear="false"
+                />
               </div>
             </div>
+          </div>
 
-            <!-- Tab Content: Nhập thuốc / Xuất thuốc -->
-            <div v-if="activeTab === 'in' || activeTab === 'out'" style="max-width: 600px; padding: 12px 0;">
-              <h3 style="margin-bottom: 20px; font-weight: bold;">{{ activeTab === 'in' ? 'Nhập kho thuốc' : 'Xuất kho thuốc' }}</h3>
-              <a-form :model="form" layout="vertical" @submit.prevent="submitForm">
-                <a-form-item label="Chọn thuốc">
-                  <a-select v-model:value="form.medicine" placeholder="Chọn thuốc..." show-search>
-                    <a-select-option v-for="m in medicineOptions" :key="m" :value="m">{{ m }}</a-select-option>
-                  </a-select>
-                </a-form-item>
-                <a-form-item label="Số lượng">
-                  <a-input-number v-model:value="form.qty" :min="1" style="width: 100%;" />
-                </a-form-item>
-                <a-form-item>
-                  <a-button type="primary" style="background: #007d88; border-color: #007d88;" html-type="submit">
-                    {{ activeTab === 'in' ? 'Xác nhận nhập kho' : 'Xác nhận xuất kho' }}
+          <!-- Action buttons for Admin: Export Excel & Refresh -->
+          <div class="filter-right">
+            <a-button 
+              class="action-export-btn" 
+              @click="exportExcel"
+            >
+              <i class="fas fa-file-excel" style="margin-right: 6px;" /> Xuất Excel
+            </a-button>
+            <a-button 
+              class="action-refresh-btn" 
+              @click="refreshData"
+            >
+              <i class="fas fa-sync-alt" style="margin-right: 6px;" /> Làm mới
+            </a-button>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <a-card :bordered="false" class="table-container-card">
+          <a-table
+            :columns="columns"
+            :data-source="filteredTransactions"
+            row-key="id"
+            :pagination="paginationConfig"
+            @change="handleTableChange"
+            size="middle"
+            class="history-table"
+            :customRow="customRowClick"
+          >
+            <template #bodyCell="{ text, record, column }">
+              <!-- Code Column -->
+              <template v-if="column.key === 'code'">
+                <span class="code-link" @click.stop="viewDetails(record)">{{ record.code }}</span>
+              </template>
+
+              <!-- Type Column -->
+              <template v-else-if="column.key === 'type'">
+                <span :class="['custom-badge', getBadgeClass(record.type)]">
+                  {{ record.type }}
+                </span>
+              </template>
+
+              <!-- Qty Column -->
+              <template v-else-if="column.key === 'qty'">
+                <span :class="['qty-text', record.qty >= 0 ? 'qty-pos' : 'qty-neg']">
+                  {{ record.qty >= 0 ? '+' : '' }}{{ record.qty.toLocaleString() }}
+                </span>
+              </template>
+
+              <!-- Before stock -->
+              <template v-else-if="column.key === 'tonTruoc'">
+                <span>{{ record.tonTruoc.toLocaleString() }}</span>
+              </template>
+
+              <!-- After stock -->
+              <template v-else-if="column.key === 'tonSau'">
+                <span>{{ record.tonSau.toLocaleString() }}</span>
+              </template>
+
+              <!-- Related document link -->
+              <template v-else-if="column.key === 'document'">
+                <span 
+                  :class="['doc-link', record.type === 'Nhập kho' ? 'doc-import' : record.type === 'Xuất kho' ? 'doc-export' : 'doc-other']"
+                  @click.stop="openDocument(record)"
+                >
+                  {{ record.document }}
+                </span>
+              </template>
+
+              <!-- Transaction Date -->
+              <template v-else-if="column.key === 'date'">
+                <span>{{ record.date }}</span>
+              </template>
+
+              <!-- Action Column -->
+              <template v-else-if="column.key === 'action'">
+                <a-tooltip title="Xem chi tiết">
+                  <a-button 
+                    type="text" 
+                    size="small" 
+                    class="action-view-btn"
+                    @click.stop="viewDetails(record)"
+                  >
+                    <i class="fas fa-eye" />
                   </a-button>
-                </a-form-item>
-              </a-form>
-            </div>
-
-            <!-- Tab Content: Lịch sử giao dịch -->
-            <div v-else>
-              <a-row :gutter="[16, 16]" align="middle" style="margin-bottom: 16px;">
-                <a-col :xs="24" :sm="14" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <a-input-search v-model:value="search" placeholder="Tìm kiếm giao dịch..." style="max-width: 280px;" allow-clear />
-                  <a-select v-model:value="typeFilter" style="width: 130px">
-                    <a-select-option value="all">Tất cả loại</a-select-option>
-                    <a-select-option value="in">Nhập kho</a-select-option>
-                    <a-select-option value="out">Xuất kho</a-select-option>
-                  </a-select>
-                  <a-range-picker style="width: 260px;" />
-                </a-col>
-              </a-row>
-
-              <a-table
-                :columns="columns"
-                :data-source="filteredTransactions"
-                row-key="id"
-                :pagination="{ pageSize: 8 }"
-                class="custom-table"
-              >
-                <template #bodyCell="{ text, record, column }">
-                  <template v-if="column.key === 'type'">
-                    {{ record.type === 'in' ? 'Nhập' : 'Xuất' }}
-                  </template>
-                </template>
-              </a-table>
-            </div>
-          </a-card>
-        </a-spin>
+                </a-tooltip>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
       </a-layout-content>
     </a-layout>
+
+    <!-- Modal: View Details -->
+    <a-modal
+      v-model:open="showDetailsModal"
+      title="Chi tiết giao dịch kho"
+      :footer="null"
+      width="780px"
+      centered
+      class="detail-modal"
+    >
+      <div v-if="enrichedSelectedTransaction" style="padding-top: 12px;">
+        <!-- Nhóm 1: Thông tin giao dịch -->
+        <div class="detail-section">
+          <div class="detail-section-title">
+            <i class="fas fa-receipt" /> 1. Thông tin giao dịch
+          </div>
+          <div class="detail-grid-3">
+            <div class="info-item">
+              <span class="lbl">Mã giao dịch</span>
+              <span class="val font-semibold">{{ enrichedSelectedTransaction.code }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Loại giao dịch</span>
+              <div>
+                <span :class="['custom-badge', getBadgeClass(enrichedSelectedTransaction.type)]">
+                  {{ enrichedSelectedTransaction.type }}
+                </span>
+              </div>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Ngày giao dịch</span>
+              <span class="val">{{ enrichedSelectedTransaction.date }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Trạng thái</span>
+              <div>
+                <span class="custom-badge" style="background: #e6f7ff; color: #1890ff; font-weight: 700;">
+                  {{ enrichedSelectedTransaction.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nhóm 2: Thông tin thuốc & lô -->
+        <div class="detail-section">
+          <div class="detail-section-title">
+            <i class="fas fa-pills" /> 2. Thông tin thuốc & lô sản xuất
+          </div>
+          <div class="detail-grid-3">
+            <div class="info-item">
+              <span class="lbl">Tên thuốc</span>
+              <span class="val font-semibold text-primary" style="color: #0047AB;">{{ enrichedSelectedTransaction.medicine }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Mã thuốc</span>
+              <span class="val font-medium">{{ enrichedSelectedTransaction.medicineCode }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Hoạt chất</span>
+              <span class="val">{{ enrichedSelectedTransaction.activeIngredient }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Số lô</span>
+              <span class="val font-medium">{{ enrichedSelectedTransaction.batch }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Hạn dùng</span>
+              <span class="val">{{ enrichedSelectedTransaction.expiryDate }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Kho chứa thuốc</span>
+              <span class="val"><i class="fas fa-warehouse" style="color: #64748b; margin-right: 4px;" /> {{ enrichedSelectedTransaction.warehouse }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nhóm 3: Biến động kho -->
+        <div class="detail-section">
+          <div class="detail-section-title">
+            <i class="fas fa-exchange-alt" /> 3. Biến động kho & tồn kho
+          </div>
+          <div class="detail-grid-3">
+            <div class="info-item">
+              <span class="lbl">Số lượng biến động</span>
+              <span :class="['val font-bold', enrichedSelectedTransaction.qty >= 0 ? 'qty-pos' : 'qty-neg']">
+                {{ enrichedSelectedTransaction.qty >= 0 ? '+' : '' }}{{ enrichedSelectedTransaction.qty.toLocaleString() }}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Tồn trước biến động</span>
+              <span class="val">{{ enrichedSelectedTransaction.tonTruoc.toLocaleString() }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Tồn sau biến động</span>
+              <span class="val font-semibold">{{ enrichedSelectedTransaction.tonSau.toLocaleString() }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Đơn vị tính</span>
+              <span class="val">{{ enrichedSelectedTransaction.unit }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nhóm 4: Chứng từ & người thực hiện -->
+        <div class="detail-section" style="margin-bottom: 12px;">
+          <div class="detail-section-title">
+            <i class="fas fa-user-shield" /> 4. Thông tin chứng từ & người thực hiện
+          </div>
+          <div class="detail-grid-3">
+            <div class="info-item">
+              <span class="lbl">Chứng từ liên quan</span>
+              <span class="val code-blue">{{ enrichedSelectedTransaction.document }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Loại chứng từ</span>
+              <span class="val">{{ enrichedSelectedTransaction.documentType }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Thời gian thực hiện</span>
+              <span class="val">{{ enrichedSelectedTransaction.date }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Người thực hiện</span>
+              <span class="val font-medium">{{ enrichedSelectedTransaction.pharmacist }}</span>
+            </div>
+            <div class="info-item">
+              <span class="lbl">Vai trò</span>
+              <span class="val" style="color: #475569; font-weight: 500;">{{ enrichedSelectedTransaction.pharmacistRole }}</span>
+            </div>
+            <div class="info-item detail-full-width" v-if="enrichedSelectedTransaction.note" style="margin-top: 4px;">
+              <span class="lbl">Ghi chú / Lý do giao dịch</span>
+              <span class="val note-block">{{ enrichedSelectedTransaction.note }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 28px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+          <a-button @click="showDetailsModal = false" style="border-radius: 8px; font-weight: 500;">Đóng</a-button>
+          <a-button type="primary" style="background: #0047AB; border-color: #0047AB; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 500;" @click="printReceipt(enrichedSelectedTransaction)">
+            <i class="fas fa-print" /> In chứng từ
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
+
+
   </a-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import dayjs, { Dayjs } from 'dayjs';
 import { message } from 'ant-design-vue';
-import { useAuthStore } from '@/stores/authStore'
-import { getInventoryTransactions } from '@/services/pharmacyService';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
+import AppHeader from '@/components/AppHeader.vue';
+import { MEDICINE_FALLBACK } from '@/data/sharedPharmacyData';
 
-interface Transaction {
+interface StockTransaction {
   id: number;
   code: string;
-  type: 'in' | 'out';
+  type: 'Nhập kho' | 'Xuất kho' | 'Điều chỉnh' | 'Hủy';
   medicine: string;
+  batch: string;
   qty: number;
+  tonTruoc: number;
+  tonSau: number;
+  document: string;
   date: string;
   pharmacist: string;
+  note?: string;
 }
 
-const authStore = useAuthStore()
-const loading = ref(false);
+const searchQuery = ref('');
+const activeFilter = ref<'all' | 'Nhập kho' | 'Xuất kho' | 'Điều chỉnh' | 'Hủy'>('all');
 
-const transactions = ref<Transaction[]>([]);
-const search = ref('');
-const typeFilter = ref('all');
-const activeTab = ref('history');
+// Default date range matching the image: 01/05/2025 to 31/05/2025
+const startDate = ref<Dayjs>(dayjs('2025-05-01'));
+const endDate = ref<Dayjs>(dayjs('2025-05-31'));
 
-const tabs = [
-  { key: 'in', title: 'Nhập thuốc' },
-  { key: 'out', title: 'Xuất thuốc' },
-  { key: 'history', title: 'Lịch sử giao dịch' }
-];
+const transactions = ref<StockTransaction[]>([]);
 
-const medicineOptions = ['Paracetamol 500mg', 'Amoxicillin 500mg', 'Vitamin C 500mg', 'Ibuprofen 400mg', 'Cetirizine 10mg'];
-
-const form = ref({
-  medicine: '',
-  qty: 1
-});
-
+// Table Columns
 const columns = [
-  { title: 'Mã GD', dataIndex: 'code', key: 'code', width: '120px' },
-  { title: 'Loại', dataIndex: 'type', key: 'type', width: '100px' },
-  { title: 'Tên thuốc', dataIndex: 'medicine', key: 'medicine' },
-  { title: 'Số lượng', dataIndex: 'qty', key: 'qty', width: '120px' },
-  { title: 'Ngày giao dịch', dataIndex: 'date', key: 'date', width: '180px' },
-  { title: 'Người thực hiện', dataIndex: 'pharmacist', key: 'pharmacist', width: '150px' }
+  { title: 'Mã GD', dataIndex: 'code', key: 'code', width: '130px', sorter: (a: any, b: any) => a.code.localeCompare(b.code) },
+  { title: 'Loại giao dịch', dataIndex: 'type', key: 'type', width: '130px' },
+  { title: 'Tên thuốc', dataIndex: 'medicine', key: 'medicine', sorter: (a: any, b: any) => a.medicine.localeCompare(b.medicine) },
+  { title: 'Số lô', dataIndex: 'batch', key: 'batch', width: '110px' },
+  { title: 'Số lượng', dataIndex: 'qty', key: 'qty', width: '110px', align: 'right' as const, sorter: (a: any, b: any) => a.qty - b.qty },
+  { title: 'Tồn trước', dataIndex: 'tonTruoc', key: 'tonTruoc', width: '110px', align: 'right' as const },
+  { title: 'Tồn sau', dataIndex: 'tonSau', key: 'tonSau', width: '110px', align: 'right' as const },
+  { title: 'Chứng từ liên quan', dataIndex: 'document', key: 'document', width: '170px' },
+  { title: 'Ngày giao dịch', dataIndex: 'date', key: 'date', width: '160px', sorter: (a: any, b: any) => a.date.localeCompare(b.date) },
+  { title: 'Người thực hiện', dataIndex: 'pharmacist', key: 'pharmacist', width: '150px' },
+  { title: 'Thao tác', key: 'action', width: '90px', align: 'center' as const, fixed: 'right' as const }
 ];
 
-const filteredTransactions = computed(() => {
-  let list = transactions.value;
-  if (typeFilter.value !== 'all') {
-    list = list.filter(t => t.type === typeFilter.value);
+// Detail Modal state
+const showDetailsModal = ref(false);
+const selectedTransaction = ref<StockTransaction | null>(null);
+
+const enrichedSelectedTransaction = computed(() => {
+  if (!selectedTransaction.value) return null;
+  const tx = selectedTransaction.value;
+  
+  // Find match in MEDICINE_FALLBACK
+  const matchingMed = MEDICINE_FALLBACK.find(m => m.name.toLowerCase() === tx.medicine.toLowerCase()) || 
+                      MEDICINE_FALLBACK.find(m => tx.medicine.toLowerCase().includes(m.name.toLowerCase())) ||
+                      MEDICINE_FALLBACK.find(m => m.name.toLowerCase().includes(tx.medicine.toLowerCase()));
+  
+  const medicineCode = matchingMed ? matchingMed.code : 'MED001';
+  const unit = matchingMed ? matchingMed.unit : 'Viên';
+  
+  // Active ingredient mapping
+  let activeIngredient = 'N/A';
+  if (tx.medicine.includes('Paracetamol') || tx.medicine.includes('Panadol')) {
+    activeIngredient = 'Paracetamol';
+  } else if (tx.medicine.includes('Amoxicillin')) {
+    activeIngredient = 'Amoxicillin';
+  } else if (tx.medicine.includes('Vitamin C')) {
+    activeIngredient = 'Acid Ascorbic (Vitamin C)';
+  } else if (tx.medicine.includes('Omeprazole')) {
+    activeIngredient = 'Omeprazole';
+  } else if (tx.medicine.includes('Ibuprofen')) {
+    activeIngredient = 'Ibuprofen';
+  } else if (tx.medicine.includes('Cetirizine')) {
+    activeIngredient = 'Cetirizine';
+  } else if (tx.medicine.includes('Decolgen')) {
+    activeIngredient = 'Acetaminophen + Phenylephrine + Chlorpheniramine';
+  } else if (tx.medicine.includes('Gaviscon')) {
+    activeIngredient = 'Sodium alginate + Sodium bicarbonate + Calcium carbonate';
+  } else if (tx.medicine.includes('Salbutamol')) {
+    activeIngredient = 'Salbutamol';
   }
-  if (search.value) {
-    const term = search.value.toLowerCase();
-    list = list.filter(t => t.medicine.toLowerCase().includes(term) || t.code.toLowerCase().includes(term));
+
+  // Determine warehouse
+  let warehouse = 'Kho chính';
+  if (tx.type === 'Xuất kho') {
+    warehouse = 'Quầy thuốc số 1 (Kho lẻ)';
+  } else if (tx.type === 'Hủy') {
+    warehouse = 'Khu vực chờ hủy thuốc';
   }
-  return list;
+
+  // Expiry date (deterministic based on batch or ID)
+  let expiryDate = '31/12/2026';
+  if (tx.batch.includes('2404')) {
+    expiryDate = '30/04/2026';
+  } else if (tx.batch.includes('2403')) {
+    expiryDate = '31/03/2026';
+  }
+
+  // Document type
+  let documentType = 'Khác';
+  if (tx.type === 'Nhập kho') {
+    documentType = 'Hóa đơn nhập thuốc';
+  } else if (tx.type === 'Xuất kho') {
+    documentType = 'Hóa đơn bán lẻ';
+  } else if (tx.type === 'Điều chỉnh') {
+    documentType = 'Phiếu điều kho';
+  } else if (tx.type === 'Hủy') {
+    documentType = 'Phiếu hủy thuốc';
+  }
+
+  // Pharmacist role
+  let pharmacistRole = 'Dược sĩ';
+  if (tx.pharmacist.includes('Nguyễn Văn An')) {
+    pharmacistRole = 'Thủ kho';
+  } else if (tx.pharmacist.includes('Trần Thị Bình')) {
+    pharmacistRole = 'Trưởng khoa dược';
+  }
+
+  // Reason / Note if empty
+  let note = tx.note;
+  if (!note) {
+    if (tx.type === 'Nhập kho') {
+      note = 'Nhập kho lô thuốc mới từ nhà cung cấp';
+    } else if (tx.type === 'Xuất kho') {
+      note = 'Xuất thuốc theo đơn cho bệnh nhân';
+    } else {
+      note = 'Giao dịch kho hệ thống';
+    }
+  }
+
+  return {
+    ...tx,
+    medicineCode,
+    activeIngredient,
+    unit,
+    warehouse,
+    expiryDate,
+    documentType,
+    pharmacistRole,
+    status: 'Hoàn thành',
+    note
+  };
 });
 
-function onSearch(value: string) {
-  search.value = value;
+
+
+// Hardcoded First 10 Items as shown in the image
+const imageFirst10: StockTransaction[] = [
+  {
+    id: 1,
+    code: 'GD250501-001',
+    type: 'Nhập kho',
+    medicine: 'Paracetamol 500mg',
+    batch: 'LO001',
+    qty: 10000,
+    tonTruoc: 2000,
+    tonSau: 12000,
+    document: 'HDNK-250501-012',
+    date: '01/05/2025 08:30',
+    pharmacist: 'Nguyễn Văn An'
+  },
+  {
+    id: 2,
+    code: 'GD250501-002',
+    type: 'Nhập kho',
+    medicine: 'Amoxicillin 500mg',
+    batch: 'LO002',
+    qty: 5000,
+    tonTruoc: 1500,
+    tonSau: 6500,
+    document: 'HDNK-250501-013',
+    date: '01/05/2025 09:15',
+    pharmacist: 'Trần Thị Bình'
+  },
+  {
+    id: 3,
+    code: 'GD250501-003',
+    type: 'Xuất kho',
+    medicine: 'Paracetamol 500mg',
+    batch: 'LO001',
+    qty: -150,
+    tonTruoc: 12000,
+    tonSau: 11850,
+    document: 'HDBT-250501-055',
+    date: '01/05/2025 10:05',
+    pharmacist: 'Lê Minh Đức'
+  },
+  {
+    id: 4,
+    code: 'GD250502-001',
+    type: 'Nhập kho',
+    medicine: 'Omeprazole 20mg',
+    batch: 'LO008',
+    qty: 3000,
+    tonTruoc: 0,
+    tonSau: 3000,
+    document: 'HDNK-250502-008',
+    date: '02/05/2025 08:45',
+    pharmacist: 'Nguyễn Văn An'
+  },
+  {
+    id: 5,
+    code: 'GD250502-002',
+    type: 'Xuất kho',
+    medicine: 'Amoxicillin 500mg',
+    batch: 'LO002',
+    qty: -200,
+    tonTruoc: 6500,
+    tonSau: 6300,
+    document: 'HDBT-250502-031',
+    date: '02/05/2025 11:20',
+    pharmacist: 'Phạm Thị Hoa'
+  },
+  {
+    id: 6,
+    code: 'GD250503-001',
+    type: 'Điều chỉnh',
+    medicine: 'Vitamin C 500mg',
+    batch: 'LO003',
+    qty: 300,
+    tonTruoc: 700,
+    tonSau: 1000,
+    document: 'DC-250503-001',
+    date: '03/05/2025 14:30',
+    pharmacist: 'Nguyễn Thị Lan'
+  },
+  {
+    id: 7,
+    code: 'GD250504-001',
+    type: 'Xuất kho',
+    medicine: 'Omeprazole 20mg',
+    batch: 'LO008',
+    qty: -120,
+    tonTruoc: 3000,
+    tonSau: 2880,
+    document: 'HDBT-250504-019',
+    date: '04/05/2025 09:10',
+    pharmacist: 'Lê Minh Đức'
+  },
+  {
+    id: 8,
+    code: 'GD250504-002',
+    type: 'Hủy',
+    medicine: 'Paracetamol 500mg',
+    batch: 'LO001',
+    qty: -50,
+    tonTruoc: 11850,
+    tonSau: 11800,
+    document: 'HDBT-250504-020',
+    date: '04/05/2025 09:25',
+    pharmacist: 'Trần Thị Bình'
+  },
+  {
+    id: 9,
+    code: 'GD250505-001',
+    type: 'Điều chỉnh',
+    medicine: 'Vitamin C 500mg',
+    batch: 'LO003',
+    qty: -100,
+    tonTruoc: 1000,
+    tonSau: 900,
+    document: 'DC-250505-002',
+    date: '05/05/2025 16:40',
+    pharmacist: 'Nguyễn Văn An'
+  },
+  {
+    id: 10,
+    code: 'GD250505-002',
+    type: 'Nhập kho',
+    medicine: 'Vitamin C 500mg',
+    batch: 'LO006',
+    qty: 2000,
+    tonTruoc: 900,
+    tonSau: 2900,
+    document: 'HDNK-250505-010',
+    date: '05/05/2025 17:05',
+    pharmacist: 'Phạm Thị Hoa'
+  }
+];
+
+function generateMockData() {
+  const result: StockTransaction[] = [...imageFirst10];
+
+  // We need Nhập kho: 56 total (currently 4, need 52 more)
+  // We need Xuất kho: 48 total (currently 3, need 45 more)
+  // We need Điều chỉnh: 18 total (currently 2, need 16 more)
+  // We need Hủy: 6 total (currently 1, need 5 more)
+  // Total to generate = 52 + 45 + 16 + 5 = 118 generated records.
+  
+  const toGenerate: Array<'Nhập kho' | 'Xuất kho' | 'Điều chỉnh' | 'Hủy'> = [
+    ...Array(52).fill('Nhập kho'),
+    ...Array(45).fill('Xuất kho'),
+    ...Array(16).fill('Điều chỉnh'),
+    ...Array(5).fill('Hủy')
+  ];
+
+  // Distribute deterministically
+  toGenerate.forEach((type, idx) => {
+    const dayNum = 6 + (idx % 25); // Days 6 to 30
+    const hour = 8 + (idx % 10);
+    const minute = (idx * 13) % 60;
+    const dayStr = String(dayNum).padStart(2, '0');
+    const hourStr = String(hour).padStart(2, '0');
+    const minStr = String(minute).padStart(2, '0');
+
+    const meds = MEDICINE_FALLBACK.map(m => {
+      return {
+        name: m.name,
+        batch: `LO${String(m.id).padStart(3, '0')}`
+      };
+    });
+
+    const med = meds[idx % meds.length];
+    const staff = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Minh Đức', 'Phạm Thị Hoa', 'Nguyễn Thị Lan'][idx % 5];
+
+    let qty = 100;
+    if (type === 'Nhập kho') qty = 500 + (idx * 50) % 5000;
+    else if (type === 'Xuất kho') qty = -(50 + (idx * 12) % 300);
+    else if (type === 'Điều chỉnh') qty = idx % 2 === 0 ? 300 : -200;
+    else if (type === 'Hủy') qty = -(10 + (idx * 7) % 150);
+
+    const tonTruoc = 1000 + (idx * 150) % 10000;
+    const tonSau = tonTruoc + qty;
+
+    // Build unique daily transaction code
+    const countForDay = result.filter(r => r.date.startsWith(`${dayStr}/05/2024`)).length + 1;
+    const code = `GD2405${dayStr}-${String(countForDay).padStart(3, '0')}`;
+
+    let doc = '';
+    if (type === 'Nhập kho') doc = `HDNK-2405${dayStr}-${String(10 + idx).padStart(3, '0')}`;
+    else if (type === 'Xuất kho') doc = `HDBT-2405${dayStr}-${String(10 + idx).padStart(3, '0')}`;
+    else if (type === 'Điều chỉnh') doc = `DC-2405${dayStr}-${String(1 + idx).padStart(3, '0')}`;
+    else if (type === 'Hủy') doc = `HUY-2405${dayStr}-${String(1 + idx).padStart(3, '0')}`;
+
+    result.push({
+      id: 11 + idx,
+      code,
+      type,
+      medicine: med.name,
+      batch: med.batch,
+      qty,
+      tonTruoc,
+      tonSau,
+      document: doc,
+      date: `${dayStr}/05/2025 ${hourStr}:${minStr}`,
+      pharmacist: staff,
+      note: type === 'Điều chỉnh' ? 'Điều chỉnh kiểm kho định kỳ' : type === 'Hủy' ? 'Thuốc cận date/hỏng bao bì' : undefined
+    });
+  });
+
+  // Sort by date/code descending
+  return result.sort((a, b) => b.code.localeCompare(a.code));
 }
 
-function submitForm() {
-  if (!form.value.medicine) {
-    message.error('Vui lòng chọn thuốc');
-    return;
+// Stats Calculations
+const totalTransactionsCount = computed(() => transactions.value.length);
+const importCount = computed(() => transactions.value.filter(t => t.type === 'Nhập kho').length);
+const exportCount = computed(() => transactions.value.filter(t => t.type === 'Xuất kho').length);
+const adjustCount = computed(() => transactions.value.filter(t => t.type === 'Điều chỉnh').length);
+const destroyCount = computed(() => transactions.value.filter(t => t.type === 'Hủy').length);
+
+// Pagination config
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+const paginationConfig = computed(() => ({
+  current: currentPage.value,
+  pageSize: pageSize.value,
+  total: filteredTransactions.value.length,
+  showTotal: (total: number, range: [number, number]) => `Hiển thị ${range[0]} đến ${range[1]} của ${total} giao dịch`,
+  locale: { items_per_page: '/ trang' },
+  showSizeChanger: true
+}));
+
+function handleTableChange(pagination: any) {
+  currentPage.value = pagination.current;
+  pageSize.value = pagination.pageSize;
+}
+
+// Filtered transactions
+const filteredTransactions = computed(() => {
+  return transactions.value.filter(t => {
+    // Search filter
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase();
+      if (!(t.code.toLowerCase().includes(q) || t.medicine.toLowerCase().includes(q))) return false;
+    }
+
+    // Type filter
+    if (activeFilter.value !== 'all' && t.type !== activeFilter.value) {
+      return false;
+    }
+
+    // Date range filter
+    if (startDate.value && endDate.value) {
+      const dateParts = t.date.split(' ')[0].split('/');
+      const itemDate = dayjs(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
+      
+      const start = startDate.value.startOf('day');
+      const end = endDate.value.endOf('day');
+      
+      if (itemDate.isBefore(start) || itemDate.isAfter(end)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+});
+
+function selectFilter(filter: 'all' | 'Nhập kho' | 'Xuất kho' | 'Điều chỉnh' | 'Hủy') {
+  activeFilter.value = filter;
+  currentPage.value = 1;
+}
+
+function getBadgeClass(type: string) {
+  switch (type) {
+    case 'Nhập kho': return 'badge-import';
+    case 'Xuất kho': return 'badge-export';
+    case 'Điều chỉnh': return 'badge-adjust';
+    case 'Hủy': return 'badge-destroy';
+    default: return '';
   }
-  const newId = transactions.value.length ? Math.max(...transactions.value.map(t => t.id)) + 1 : 1;
-  const newTx: Transaction = {
-    id: newId,
-    code: `GD000${40 + newId}`,
-    type: activeTab.value as 'in' | 'out',
-    medicine: form.value.medicine,
-    qty: form.value.qty,
-    date: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour12: false }).substring(0, 5),
-    pharmacist: authStore.user?.value?.fullName || 'User'
+}
+
+// Detail handlers
+function viewDetails(record: StockTransaction) {
+  selectedTransaction.value = record;
+  showDetailsModal.value = true;
+}
+
+function customRowClick(record: StockTransaction) {
+  return {
+    onClick: () => {
+      viewDetails(record);
+    }
   };
-  transactions.value.unshift(newTx);
-  message.success('Đã ghi nhận giao dịch kho thành công!');
-  form.value = { medicine: '', qty: 1 };
-  activeTab.value = 'history';
 }
 
-onMounted(async () => {
-  loading.value = true;
-  try {
-    const data = await getInventoryTransactions();
-    transactions.value = data.map((t: any, idx: number) => ({
-      id: t.id,
-      code: `GD0004${t.id}`,
-      type: t.type,
-      medicine: t.medicine + ' 500mg',
-      qty: t.qty < 0 ? -t.qty : t.qty,
-      date: '18/05/2025 ' + (idx === 0 ? '10:00' : '09:30'),
-      pharmacist: authStore.user?.value?.fullName || 'User'
-    }));
-  } catch (e) {
-    message.error('Không tải được giao dịch kho');
-  } finally {
-    loading.value = false;
-  }
+function openDocument(record: StockTransaction) {
+  message.info(`Xem chứng từ liên quan: ${record.document}`);
+}
+
+function printReceipt(record: StockTransaction) {
+  message.success(`Đang gửi lệnh in phiếu giao dịch ${record.code}...`);
+}
+
+// Admin action handlers
+function exportExcel() {
+  message.success('Đang xuất file Excel danh sách giao dịch kho...');
+}
+
+function refreshData() {
+  transactions.value = generateMockData();
+  currentPage.value = 1;
+  searchQuery.value = '';
+  activeFilter.value = 'all';
+  message.success('Đã làm mới dữ liệu lịch sử kho!');
+}
+
+// Initialize
+onMounted(() => {
+  transactions.value = generateMockData();
 });
 </script>
 
 <style scoped>
-.custom-table :deep(.ant-table-thead > tr > th) {
-  background-color: #fcfcfc;
+/* Metrics Cards grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  text-align: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+  border-color: #cbd5e1;
+}
+
+.stat-active {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08) !important;
+  background: #fdfeff;
+}
+
+.stat-icon-wrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
   font-weight: 600;
-  color: #595959;
 }
-.tab-item {
-  color: #595959;
-  transition: all 0.3s;
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 2px;
+  line-height: 1.1;
 }
-.tab-item.active {
-  color: #007d88;
+
+.stat-unit {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+/* Filter panel */
+.filter-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-icon-input {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.custom-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.custom-search-input:focus {
+  border-color: #0047AB;
+  box-shadow: 0 0 0 2px rgba(0, 71, 171, 0.1);
+}
+
+.date-picker-box {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+.date-label {
+  font-size: 0.76rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.custom-datepicker :deep(.ant-picker) {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+}
+
+.custom-datepicker :deep(.ant-picker-input > input) {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Active Segmented Buttons */
+.btn-all-active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.btn-import-active {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border: 1px solid #bfdbfe;
+}
+
+.btn-export-active {
+  background: #fff7ed !important;
+  color: #ea580c !important;
+  border: 1px solid #ffedd5;
+}
+
+.btn-adjust-active {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-destroy-active {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5;
+}
+
+.action-add-btn {
+  height: 34px;
+  border-radius: 7px;
+  font-weight: 600;
+  background: #0047AB;
+  border-color: #0047AB;
+}
+
+.action-add-btn:hover {
+  background: #003685 !important;
+  border-color: #003685 !important;
+}
+
+/* Table Card */
+.table-container-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  border: 1px solid #e2e8f0;
+}
+
+.table-container-card :deep(.ant-card-body) {
+  padding: 16px 0 !important;
+}
+
+.history-table :deep(.ant-table-thead > tr > th) {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-table :deep(.ant-table-tbody > tr) {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.history-table :deep(.ant-table-tbody > tr:hover > td) {
+  background-color: #f1f5f9 !important;
+}
+
+.history-table :deep(.ant-table-cell) {
+  padding: 12px 16px !important;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+/* Badges */
+.custom-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.badge-import {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.badge-export {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.badge-adjust {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-destroy {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Code & Doc Links */
+.code-link {
+  font-weight: 700;
+  color: #1e293b;
+  transition: color 0.15s;
+}
+
+.code-link:hover {
+  color: #0047AB;
+  text-decoration: underline;
+}
+
+.doc-link {
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.doc-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.doc-import {
+  color: #2563eb;
+}
+
+.doc-export {
+  color: #ea580c;
+}
+
+.doc-other {
+  color: #64748b;
+}
+
+/* Quantities */
+.qty-text {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.qty-pos {
+  color: #2563eb;
+}
+
+.qty-neg {
+  color: #dc2626;
+}
+
+/* Details modal info styling */
+.modal-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-title-code {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lbl {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.val {
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.code-blue {
+  color: #0047AB;
+  font-weight: 700;
+}
+
+.note-block {
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-top: 2px;
+  font-style: italic;
+  font-size: 0.86rem;
+  color: #475569;
+}
+
+/* Admin Action Buttons */
+.action-export-btn {
+  height: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #16a34a;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  display: flex;
+  align-items: center;
+}
+
+.action-export-btn:hover {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #15803d !important;
+}
+
+.action-refresh-btn {
+  height: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+}
+
+.action-refresh-btn:hover {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+/* View Details Action Button in Table */
+.action-view-btn {
+  color: #64748b;
+  font-size: 1rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.action-view-btn:hover {
+  color: #0047AB !important;
+  background: #eff6ff !important;
+}
+
+/* Redesigned 4-group View Details Modal Styles */
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0047AB;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 6px;
+}
+
+.detail-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.detail-full-width {
+  grid-column: span 3;
 }
 </style>

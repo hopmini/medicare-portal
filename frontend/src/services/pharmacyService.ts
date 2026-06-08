@@ -12,11 +12,46 @@ export async function getMedicines() {
   } catch (err) {
     console.error('Failed to fetch medicines from backend, using mock:', err)
     return [
-      { id: 1, name: 'Paracetamol', category: 'Analgesic', price: 0.5, stock: 120 },
-      { id: 2, name: 'Amoxicillin', category: 'Antibiotic', price: 1.2, stock: 80 },
-      { id: 3, name: 'Lisinopril', category: 'Cardiovascular', price: 0.8, stock: 45 }
+      { id: 1, name: 'Paracetamol', activeIngredient: 'Paracetamol', category: 'Analgesic', price: 1500, stock: 120, unit: 'Viên', code: 'MED001' },
+      { id: 2, name: 'Amoxicillin', activeIngredient: 'Amoxicillin', category: 'Antibiotic', price: 2500, stock: 80, unit: 'Viên', code: 'MED002' },
+      { id: 3, name: 'Lisinopril', activeIngredient: 'Lisinopril', category: 'Cardiovascular', price: 1200, stock: 9, unit: 'Viên', code: 'MED003' }
     ]
   }
+}
+
+export async function createMedicine(medicine: any) {
+  const response = await pharmacyApi.post('/Medicines', {
+    name: medicine.name,
+    activeIngredient: medicine.activeIngredient || '',
+    unit: medicine.unit || 'Viên',
+    price: Number(medicine.price),
+    stockQuantity: Number(medicine.stockQuantity || medicine.stock || 0),
+    expiryDate: medicine.expiryDate || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString()
+  })
+  return response.data
+}
+
+export async function updateMedicine(id: number, medicine: any) {
+  const response = await pharmacyApi.put(`/Medicines/${id}`, {
+    id: id,
+    name: medicine.name,
+    activeIngredient: medicine.activeIngredient || '',
+    unit: medicine.unit || 'Viên',
+    price: Number(medicine.price),
+    stockQuantity: Number(medicine.stockQuantity || medicine.stock || 0),
+    expiryDate: medicine.expiryDate || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString()
+  })
+  return response.data
+}
+
+export async function deleteMedicine(id: number) {
+  const response = await pharmacyApi.delete(`/Medicines/${id}`)
+  return response.data
+}
+
+export async function adjustStock(id: number, quantity: number) {
+  const response = await pharmacyApi.post(`/Inventory/adjust/${id}`, quantity)
+  return response.data
 }
 
 export async function getInventoryTransactions() {
@@ -76,20 +111,48 @@ export async function getBills() {
 
 export async function getPrescriptions() {
   try {
-    const response = await pharmacyApi.get('/EventLogs')
+    const response = await pharmacyApi.get('/Prescription')
     const logs = response.data || []
+
+    const medicineMap: Record<number, string> = {
+      1: "Paracetamol 500mg",
+      2: "Amoxicillin 500mg",
+      3: "Vitamin C 500mg",
+      4: "Omeprazole 20mg",
+      5: "Cefixime 200mg",
+      6: "Clorpheniramin 4mg",
+      7: "Dung dịch NaCl 0.9%",
+      8: "Metformin 500mg",
+      9: "Ibuprofen 400mg",
+      10: "Acetylcistein 200mg"
+    }
+
     const prescriptions = logs
       .filter((l: any) => l.eventType === 'prescription.created')
       .map((l: any) => {
         try {
           const payload = JSON.parse(l.payload)
-          const medicineNames = (payload.medicines || []).map((m: any) => `Mã thuốc: ${m.medicineId} (x${m.quantity})`).join(', ')
+          const rawMeds = payload.medicines || payload.Medicines || []
+
+          const medications = rawMeds.map((m: any) => {
+            const medId = m.medicineId || m.MedicineId
+            return {
+              name: medicineMap[medId] || `Thuốc #${medId}`,
+              qty: m.quantity || m.Quantity || 1,
+              dosage: m.dosage || 'Ngày uống 2 lần, mỗi lần 1 viên sau ăn'
+            }
+          })
+
+          const medicineNames = medications.map((m: any) => `${m.name} (x${m.qty})`).join(', ')
+
           return {
-            id: payload.prescriptionId || l.id,
-            patient: `Bệnh nhân #${payload.patientId}`,
+            id: payload.prescriptionId || payload.PrescriptionId || l.id,
+            patient: `Bệnh nhân #${payload.patientId || payload.PatientId}`,
             medicine: medicineNames || 'Không rõ',
+            medications: medications,
             dosage: 'Theo chỉ định bác sĩ',
-            date: new Date(l.timestamp).toLocaleString('vi-VN')
+            date: new Date(l.timestamp || l.createdAt).toLocaleString('vi-VN'),
+            status: l.status === 'Processed' ? 'completed' : 'pending'
           }
         } catch (e) {
           return null
@@ -101,7 +164,7 @@ export async function getPrescriptions() {
       return prescriptions
     }
   } catch (err) {
-    console.error('Failed to fetch prescriptions from event logs, using mock:', err)
+    console.error('Failed to fetch prescriptions from backend:', err)
   }
 
   return [

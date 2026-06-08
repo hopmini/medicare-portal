@@ -40,8 +40,11 @@
           <div class="user-pill">
             <div class="user-pill__main-info" @click="$router.push('/profile')" style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
               <div class="user-pill__avatar">
-                <i class="fas fa-user-md" v-if="authStore.user.value?.role === 'Doctor'" />
-                <i class="fas fa-user-shield" v-else-if="authStore.user.value?.role === 'Admin'" />
+                <i class="fas fa-user-md" v-if="authStore.user.value?.role?.toLowerCase() === 'doctor'" />
+                <i class="fas fa-user-shield" v-else-if="authStore.user.value?.role?.toLowerCase() === 'admin'" />
+                <i class="fas fa-file-prescription" v-else-if="authStore.user.value?.role?.toLowerCase() === 'pharmacist'" />
+                <i class="fas fa-cash-register" v-else-if="authStore.user.value?.role?.toLowerCase() === 'cashier'" />
+                <i class="fas fa-concierge-bell" v-else-if="authStore.user.value?.role?.toLowerCase() === 'receptionist'" />
                 <i class="fas fa-user" v-else />
               </div>
               <span class="user-pill__name" :title="authStore.user.value?.fullName || authStore.user.value?.username">
@@ -115,12 +118,17 @@
   function redirectToBooking () {
     if (authStore.isAuthenticated.value) {
       const user = authStore.user.value
-      if (user.role === 'Admin' || user.role === 'Receptionist') {
+      const role = (user?.role || '').toLowerCase()
+      if (role === 'admin' || role === 'receptionist') {
         router.push('/dashboard')
         return
       }
-      if (user.role === 'Doctor') {
+      if (role === 'doctor') {
         router.push('/doctor')
+        return
+      }
+      if (role === 'pharmacist' || role === 'cashier') {
+        router.push('/pharmacy/dashboard')
         return
       }
       router.push('/patient')
@@ -137,8 +145,10 @@
         router.push('/pharmacy/billing')
         return
       }
+      router.push('/pharmacy/dashboard')
+      return
     }
-    router.push('/pharmacy/medicines')
+    router.push('/pharmacy/dashboard')
   }
 
   function redirectToMedicalRecord () {

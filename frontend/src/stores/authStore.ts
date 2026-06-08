@@ -7,6 +7,9 @@ export interface User {
   username?: string
   fullName?: string
   role?: string
+  email?: string
+  phoneNumber?: string
+  address?: string
   // Add other fields as needed
 }
 
@@ -20,23 +23,33 @@ export const isPatient = computed(() => (user.value?.role || '').toLowerCase() =
 export const isReceptionist = computed(() => (user.value?.role || '').toLowerCase() === 'receptionist')
 export const isDoctor = computed(() => (user.value?.role || '').toLowerCase() === 'doctor')
 export const isAdmin = computed(() => (user.value?.role || '').toLowerCase() === 'admin')
+export const isPharmacist = computed(() => (user.value?.role || '').toLowerCase() === 'pharmacist')
 export const canAccessDashboard = computed(() => {
   const role = (user.value?.role || '').toLowerCase()
-  return role === 'admin' || role === 'receptionist'
+  return role === 'admin' || role === 'receptionist' || role === 'pharmacist'
 })
 export const canAccessDoctorDashboard = computed(() => (user.value?.role || '').toLowerCase() === 'doctor')
+export const canAccessPharmacyDashboard = computed(() => {
+  const role = (user.value?.role || '').toLowerCase()
+  return role === 'admin' || role === 'pharmacist' || role === 'receptionist'
+})
 
 export const canManageMedicine = computed(() => {
   const role = (user.value?.role || '').toLowerCase()
-  return role === 'admin'
+  return role === 'admin' || role === 'pharmacist'
 })
 export const canManageInventory = computed(() => {
   const role = (user.value?.role || '').toLowerCase()
-  return role === 'admin'
+  return role === 'admin' || role === 'pharmacist'
 })
 export const canManageBilling = computed(() => {
   const role = (user.value?.role || '').toLowerCase()
-  return role === 'admin' || role === 'receptionist'
+  return role === 'admin' || role === 'receptionist' || role === 'cashier'
+})
+export const isCashier = computed(() => (user.value?.role || '').toLowerCase() === 'cashier')
+export const canAccessPayment = computed(() => {
+  const role = (user.value?.role || '').toLowerCase()
+  return role === 'admin' || role === 'cashier' || role === 'receptionist'
 })
 
 export function useAuthStore() {
@@ -49,7 +62,10 @@ export function useAuthStore() {
       id: u.id ?? u.Id,
       username: u.username ?? u.Username,
       fullName: u.fullName ?? u.FullName,
-      role: (u.role ?? u.Role ?? '').toLowerCase()
+      role: (u.role ?? u.Role ?? '').toLowerCase(),
+      email: u.email ?? u.Email,
+      phoneNumber: u.phoneNumber ?? u.PhoneNumber,
+      address: u.address ?? u.Address
     }
 
     token.value = t
@@ -69,7 +85,7 @@ export function useAuthStore() {
     user.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    window.location.href = '/'
+    window.location.href = '/login'
   }
 
   return {
@@ -80,8 +96,10 @@ export function useAuthStore() {
     isReceptionist,
     isDoctor,
     isAdmin,
+    isPharmacist,
     canAccessDashboard,
     canAccessDoctorDashboard,
+    canAccessPharmacyDashboard,
     canManageMedicine,
     canManageInventory,
     canManageBilling,

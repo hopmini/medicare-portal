@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const baseURL = import.meta.env.VITE_GATEWAY_URL || ''
-const gatewayApi = axios.create({
+export const gatewayApi = axios.create({
   baseURL,
   timeout: 10000,
   headers: {

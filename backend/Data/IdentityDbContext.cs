@@ -45,6 +45,15 @@ namespace Gateway.Data
                     FullName = "Bác sĩ Nguyễn Văn A",
                     Email = "doctora@medicare.vn",
                     Role = "Doctor"
+                },
+                new User
+                {
+                    Id = 4,
+                    Username = "patient",
+                    PasswordHash = HashPassword("patient"),
+                    FullName = "Bệnh nhân Trần Văn B",
+                    Email = "patient@medicare.vn",
+                    Role = "Patient"
                 }
             );
         }

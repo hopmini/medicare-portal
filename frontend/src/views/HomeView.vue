@@ -597,15 +597,16 @@
   function redirectToBooking () {
     if (authStore.isAuthenticated.value) {
       const user = authStore.user.value
-      if (user.role === 'Admin') {
+      const role = (user?.role || '').toLowerCase()
+      if (role === 'admin') {
         router.push('/dashboard')
         return
       }
-      if (user.role === 'Receptionist') {
+      if (role === 'receptionist') {
         router.push('/receptionist')
         return
       }
-      if (user.role === 'Doctor') {
+      if (role === 'doctor') {
         router.push('/doctor')
         return
       }

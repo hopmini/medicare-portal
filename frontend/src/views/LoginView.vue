@@ -119,8 +119,12 @@
       router.push('/doctor')
     } else if (role === 'receptionist') {
       router.push('/receptionist')
+    } else if (role === 'pharmacist' || role === 'cashier') {
+      router.push('/pharmacy/dashboard')
+    } else if (role === 'patient') {
+      router.push('/')
     } else {
-      // Patient or unknown → go to Home page
+      // Unknown → go to Home page
       router.push('/')
     }
   }
