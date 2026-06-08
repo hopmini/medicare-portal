@@ -761,29 +761,48 @@
     toasts.value = toasts.value.filter(t => t.id !== id)
   }
 
+  const getServiceSpecialty = (serviceName) => {
+    const name = (serviceName || '').toLowerCase()
+    if (name.includes('mat') || name.includes('mắt') || name.includes('thị lực') || name.includes('kính') || name.includes('khúc xạ')) {
+      return 'Khám mắt'
+    }
+    if (name.includes('chan thuong') || name.includes('chinh hinh') || name.includes('chấn thương') || name.includes('chỉnh hình') || name.includes('xương') || name.includes('khớp') || name.includes('gối')) {
+      return 'Ngoại chấn thương chỉnh hình'
+    }
+    if (name.includes('nhi') || name.includes('trẻ em') || name.includes('bé')) {
+      return 'Nhi khoa'
+    }
+    if (name.includes('răng') || name.includes('hàm') || name.includes('mặt') || name.includes('nha khoa') || name.includes('rang') || name.includes('ham')) {
+      return 'Răng Hàm Mặt'
+    }
+    if (name.includes('tai') || name.includes('mũi') || name.includes('họng') || name.includes('mui') || name.includes('hong')) {
+      return 'Tai Mũi Họng'
+    }
+    if (name.includes('sản') || name.includes('phụ khoa') || name.includes('phụ') || name.includes('thai') || name.includes('san') || name.includes('phu')) {
+      return 'Sản Phụ Khoa'
+    }
+    if (name.includes('da liễu') || name.includes('da') || name.includes('mụn') || name.includes('lieu')) {
+      return 'Da liễu'
+    }
+    if (name.includes('ngoại')) {
+      return 'Ngoại tổng quát'
+    }
+    return 'Nội tổng quát'
+  }
+
   const loadingDoctors = computed(() => doctorStore.loading.value)
   const filteredDoctors = computed(() => {
     const list = doctorStore.doctors.value || []
     if (selectedServices.value.length === 0) return list
     
-    const removeDiacritics = (str) => {
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
-    }
-
+    const targetSpecs = selectedServices.value.map(svc => getServiceSpecialty(svc.name))
+    
     const matched = list.filter(doc => {
-      const spec = removeDiacritics((doc.specialty || '').toLowerCase())
-      return selectedServices.value.some(svc => {
-        const svcName = removeDiacritics((svc.name || '').toLowerCase())
-        const svcDesc = removeDiacritics((svc.description || '').toLowerCase())
-        
-        return svcName.includes(spec) || spec.includes(svcName) || 
-               svcDesc.includes(spec) || 
-               spec.split(' ').some(word => word.length > 1 && svcName.includes(word))
-      })
+      const docSpec = (doc.specialty || '').trim()
+      return targetSpecs.includes(docSpec)
     })
     
-    // Fallback: display all doctors if no specific specialty match is found
-    return matched.length > 0 ? matched : list
+    return matched
   })
 
   const totalPrice = computed(() => {

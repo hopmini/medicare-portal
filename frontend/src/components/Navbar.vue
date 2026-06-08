@@ -107,11 +107,27 @@
 
   <!-- Notification Bell Button (Placed OUTSIDE the navbar to avoid backdrop-filter constraints) -->
   <div v-if="authStore.isAuthenticated.value" class="notification-wrapper">
-    <button class="notification-btn" @click="showNotifDropdown = !showNotifDropdown" title="Thông báo">
+    <button class="notification-btn" @click="showNotifDropdown = !showNotifDropdown; toastVisible = false" title="Thông báo">
       <i class="fas fa-bell" />
       <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
     </button>
     
+    <!-- Toast Notification Popup -->
+    <transition name="toast-slide">
+      <div v-if="toastVisible && toastNotif" class="notif-toast" @click="handleToastClick">
+        <div class="notif-toast__icon" :class="toastNotif.type || 'info'">
+          <i class="fas" :class="toastNotif.type === 'success' ? 'fa-check-circle' : toastNotif.type === 'medical' ? 'fa-file-medical-alt' : 'fa-bell'" />
+        </div>
+        <div class="notif-toast__body">
+          <strong>{{ toastNotif.title }}</strong>
+          <p>{{ toastNotif.message }}</p>
+        </div>
+        <button class="notif-toast__close" @click.stop="toastVisible = false" title="Đóng">
+          <i class="fas fa-times" />
+        </button>
+      </div>
+    </transition>
+
     <div v-if="showNotifDropdown" class="notif-dropdown">
       <div class="notif-header">
         <span>Thông báo của bạn</span>
@@ -131,7 +147,7 @@
           @click="readNotif(notif)"
         >
           <div class="notif-item__icon" :class="notif.type || 'info'">
-            <i class="fas" :class="notif.type === 'success' ? 'fa-check-circle' : 'fa-info-circle'" />
+            <i class="fas" :class="getNotifIcon(notif.type)" />
           </div>
           <div class="notif-item__body">
             <b>{{ notif.title }}</b>
@@ -209,7 +225,13 @@
   const notifications = ref(JSON.parse(localStorage.getItem('medicare_notifications') || '[]'))
   const showNotifDropdown = ref(false)
   const knownStatuses = ref({})
+  const knownNotifIds = ref(new Set(JSON.parse(localStorage.getItem('medicare_known_notif_ids') || '[]')))
   let pollInterval = null
+
+  // Toast popup state
+  const toastVisible = ref(false)
+  const toastNotif = ref(null)
+  let toastTimeout = null
 
   const unreadCount = computed(() => notifications.value.filter(n => n.unread).length)
 
@@ -222,9 +244,33 @@
       seedStatuses()
     } else {
       knownStatuses.value = {}
+      knownNotifIds.value = new Set()
       notifications.value = []
     }
   })
+
+  function showToast(notif) {
+    toastNotif.value = notif
+    toastVisible.value = true
+    if (toastTimeout) clearTimeout(toastTimeout)
+    toastTimeout = setTimeout(() => {
+      toastVisible.value = false
+    }, 8000)
+  }
+
+  function handleToastClick() {
+    toastVisible.value = false
+    showNotifDropdown.value = true
+  }
+
+  function getNotifIcon(type) {
+    switch (type) {
+      case 'success': return 'fa-check-circle'
+      case 'medical': return 'fa-file-medical-alt'
+      case 'warning': return 'fa-exclamation-triangle'
+      default: return 'fa-bell'
+    }
+  }
 
   function playSuccessSound () {
     try {
@@ -258,29 +304,60 @@
     try {
       const res = await api.get('/Appointments/my')
       const apps = res.data
-      let hasNewNotification = false
 
       apps.forEach(app => {
         const prev = knownStatuses.value[app.id]
         if (prev === 0 && app.status === 1) {
-          hasNewNotification = true
-          notifications.value.unshift({
+          const newNotif = {
             id: Date.now() + Math.random(),
             title: 'Lịch hẹn đã được duyệt',
-            message: `Lịch hẹn khám #${app.id.substring(0, 8).toUpperCase()} với BS. ${app.doctorName} đã được phê duyệt thành công!`,
+            message: `Lịch hẹn khám #${String(app.id).substring(0, 8).toUpperCase()} với BS. ${app.doctorName} đã được phê duyệt thành công!`,
             time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
             unread: true,
             type: 'success'
-          })
+          }
+          notifications.value.unshift(newNotif)
+          showToast(newNotif)
+          playSuccessSound()
         }
         knownStatuses.value[app.id] = app.status
       })
-
-      if (hasNewNotification) {
-        playSuccessSound()
-      }
     } catch (e) {
       console.error('Lỗi khi kiểm tra lịch hẹn từ Navbar:', e)
+    }
+  }
+
+  async function checkSystemNotifications () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+
+    try {
+      const res = await api.get('/Notifications/my')
+      const sysNotifs = res.data || []
+
+      sysNotifs.forEach(sn => {
+        const snKey = `sys_${sn.id}`
+        if (!knownNotifIds.value.has(snKey)) {
+          knownNotifIds.value.add(snKey)
+          const newNotif = {
+            id: snKey,
+            title: sn.title || 'Thông báo hệ thống',
+            message: sn.message || sn.content || '',
+            time: sn.createdAt ? new Date(sn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            unread: true,
+            type: sn.type || 'medical'
+          }
+          notifications.value.unshift(newNotif)
+          showToast(newNotif)
+          playSuccessSound()
+        }
+      })
+
+      // Persist known IDs
+      localStorage.setItem('medicare_known_notif_ids', JSON.stringify([...knownNotifIds.value]))
+    } catch (e) {
+      // API might not exist yet, silently fail
     }
   }
 
@@ -304,7 +381,10 @@
 
   function readNotif (notif) {
     notif.unread = false
-    router.push('/my-appointments')
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role === 'patient') {
+      router.push('/my-appointments')
+    }
     showNotifDropdown.value = false
   }
 
@@ -321,7 +401,11 @@
     
     if (authStore.isAuthenticated.value) {
       seedStatuses()
-      pollInterval = setInterval(checkAppointments, 8000)
+      checkSystemNotifications()
+      pollInterval = setInterval(() => {
+        checkAppointments()
+        checkSystemNotifications()
+      }, 8000)
     }
   })
 

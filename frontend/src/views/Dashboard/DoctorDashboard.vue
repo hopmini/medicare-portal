@@ -979,8 +979,29 @@
   async function loadPatients() {
     loadingTab.value = true
     try {
-      const res = await medicalRecordService.getAllPatients()
-      patientsList.value = res || []
+      const docGuid = await getCurrentDoctorGuid()
+      if (!docGuid) {
+        patientsList.value = []
+        return
+      }
+
+      // Fetch doctor's records to find patient IDs
+      const doctorRecords = await medicalRecordService.getRecordsByDoctor(docGuid)
+      const patientGuidsFromRecords = new Set(doctorRecords.map(r => r.patientId?.toLowerCase()))
+
+      // Get patient IDs from doctor's appointments
+      const patientIdsFromAppointments = new Set(
+        (doctorData.value?.appointments || []).map((a: any) => a.patientId)
+      )
+
+      // Fetch all patients
+      const allPatients = await medicalRecordService.getAllPatients()
+      
+      // Keep only patients that are either in the doctor's records or have/had an appointment
+      patientsList.value = (allPatients || []).filter(p => {
+        const patientGuid = mapUserIdToGuid(p.id).toLowerCase()
+        return patientGuidsFromRecords.has(patientGuid) || patientIdsFromAppointments.has(p.id)
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -991,12 +1012,27 @@
   async function loadRecords() {
     loadingTab.value = true
     try {
-      const [recRes, patRes] = await Promise.all([
-        medicalRecordService.getAllRecords(),
-        medicalRecordService.getAllPatients()
-      ])
+      const docGuid = await getCurrentDoctorGuid()
+      if (!docGuid) {
+        recordsList.value = []
+        patientsList.value = []
+        return
+      }
+
+      const recRes = await medicalRecordService.getRecordsByDoctor(docGuid)
       recordsList.value = recRes || []
-      patientsList.value = patRes || []
+
+      // Also reload patients for the isolated view
+      const patientGuidsFromRecords = new Set(recordsList.value.map(r => r.patientId?.toLowerCase()))
+      const patientIdsFromAppointments = new Set(
+        (doctorData.value?.appointments || []).map((a: any) => a.patientId)
+      )
+
+      const allPatients = await medicalRecordService.getAllPatients()
+      patientsList.value = (allPatients || []).filter(p => {
+        const patientGuid = mapUserIdToGuid(p.id).toLowerCase()
+        return patientGuidsFromRecords.has(patientGuid) || patientIdsFromAppointments.has(p.id)
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -1134,11 +1170,22 @@
   }
 
   function checkForceChangePassword() {
-    const tokenStr = authStore.token || localStorage.getItem('token')
-    if (tokenStr) {
+    // authStore.token is a Ref, so we must access its value or read from localStorage
+    const tokenStr = (authStore.token && typeof authStore.token === 'object' && 'value' in authStore.token) 
+      ? (authStore.token as any).value 
+      : (authStore.token || localStorage.getItem('token'))
+      
+    if (tokenStr && typeof tokenStr === 'string') {
       const decoded = parseJwt(tokenStr)
       if (decoded) {
-        const email = decoded['email'] || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || ''
+        let email = ''
+        for (const key of Object.keys(decoded)) {
+          const lowerKey = key.toLowerCase()
+          if (lowerKey === 'email' || lowerKey.endsWith('/emailaddress') || lowerKey.endsWith('emailaddress')) {
+            email = decoded[key] || ''
+            break
+          }
+        }
         if (email.includes('|forceChange')) {
           showForceChangePasswordModal.value = true
         }
@@ -1323,6 +1370,18 @@
       }
 
       await api.put(`/Appointments/${completingApp.value.id}/cancel`)
+
+      // Gửi thông báo cho bệnh nhân qua NotificationsController
+      try {
+        await api.post('/Notifications', {
+          userId: completingApp.value.patientId,
+          title: 'Kết quả khám bệnh & Đơn thuốc mới',
+          message: `Bác sĩ đã hoàn tất bệnh án và kê đơn thuốc cho bạn. Chẩn đoán: ${formDiagnosis.value}. Vui lòng kiểm tra lịch sử bệnh án.`,
+          type: 'info'
+        })
+      } catch (notifError) {
+        console.error('Không thể gửi thông báo cho bệnh nhân:', notifError)
+      }
 
       alert('Đã lập bệnh án, kê đơn và hoàn thành cuộc khám thành công!')
       closeCompleteModal()

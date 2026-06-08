@@ -90,6 +90,16 @@ export const medicalRecordService = {
     }
   },
 
+  async getRecordsByDoctor(doctorId: string): Promise<MedicalRecord[]> {
+    try {
+      const response = await medicalApi.get(`/MedicalRecords/doctor/${doctorId}`)
+      return response.data || []
+    } catch (error) {
+      console.error('Failed to get doctor medical records:', error)
+      return []
+    }
+  },
+
   async getAllRecords(): Promise<MedicalRecord[]> {
     try {
       const response = await medicalApi.get('/MedicalRecords')

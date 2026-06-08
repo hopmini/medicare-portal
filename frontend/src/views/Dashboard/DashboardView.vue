@@ -827,7 +827,18 @@
             <div class="form-row-cockpit">
               <div class="form-group-cockpit">
                 <label>Chuyên khoa:</label>
-                <input v-model="formDoctor.specialty" placeholder="Ví dụ: Nội khoa tổng quát" required type="text" class="cockpit-input" />
+                <select v-model="formDoctor.specialty" required class="cockpit-input" style="height: 40px; padding: 0 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; background: white;">
+                  <option value="" disabled>-- Chọn chuyên khoa --</option>
+                  <option value="Nội tổng quát">Nội tổng quát</option>
+                  <option value="Nhi khoa">Nhi khoa</option>
+                  <option value="Khám mắt">Khám mắt</option>
+                  <option value="Ngoại chấn thương chỉnh hình">Ngoại chấn thương chỉnh hình</option>
+                  <option value="Răng Hàm Mặt">Răng Hàm Mặt</option>
+                  <option value="Tai Mũi Họng">Tai Mũi Họng</option>
+                  <option value="Sản Phụ Khoa">Sản Phụ Khoa</option>
+                  <option value="Da liễu">Da liễu</option>
+                  <option value="Ngoại tổng quát">Ngoại tổng quát</option>
+                </select>
               </div>
               <div class="form-group-cockpit">
                 <label>Học vị:</label>
@@ -913,6 +924,53 @@
           
           <div class="modal-footer-btns" style="margin-top: 1.5rem;">
             <button class="btn-cancel-modal" style="width: 100%;" @click="showDoctorInfoModal = false">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Doctor Created Result Modal -->
+    <div v-if="newDoctorResult" class="modal-backdrop" style="background: rgba(15, 23, 42, 0.4); backdrop-filter: none;">
+      <div class="modal-card animate-fade-in" style="max-width: 500px; background: white; border-radius: 4px; border: 1px solid #cbd5e1; box-shadow: none !important; overflow: visible;">
+        <div class="modal-header" style="background: #f8fafc; color: #0f172a; border-bottom: 1px solid #e2e8f0; border-top-left-radius: 4px; border-top-right-radius: 4px; padding: 1rem 1.5rem;">
+          <h3 style="font-weight: 700; font-size: 1.1rem; color: #0f172a;"><i class="fas fa-check-circle" style="color: #3b82f6; margin-right: 8px;" /> Tạo tài khoản bác sĩ thành công</h3>
+          <button class="btn-close-modal" @click="newDoctorResult = null" style="color: #64748b;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <p style="color: #475569; font-weight: 500; font-size: 0.9rem; text-align: left; margin: 0;">
+            Tài khoản bác sĩ đã được khởi tạo thành công trên hệ thống. Dưới đây là thông tin đăng nhập:
+          </p>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <tbody>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; color: #475569; font-weight: 500; text-align: left;">Họ tên bác sĩ:</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 600; color: #0f172a;">{{ newDoctorResult.fullName }}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; color: #475569; font-weight: 500; text-align: left;">Tên đăng nhập:</td>
+                <td style="padding: 10px 0; text-align: right; font-weight: 600; font-family: monospace; color: #0f172a; font-size: 0.95rem;">{{ newDoctorResult.username }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #475569; font-weight: 500; text-align: left; vertical-align: middle;">Mật khẩu mặc định:</td>
+                <td style="padding: 10px 0; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                  <span style="font-weight: 700; font-family: monospace; color: #1e3a8a; background: #eff6ff; padding: 4px 8px; border-radius: 2px; border: 1px solid #bfdbfe;">
+                    {{ newDoctorResult.password }}
+                  </span>
+                  <button @click="copyToClipboard(newDoctorResult.password)" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; border-radius: 2px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                    <i class="fas fa-copy" /> Copy
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 12px; color: #475569; font-size: 0.8rem; line-height: 1.45; text-align: left;">
+            <i class="fas fa-exclamation-triangle" style="margin-right: 4px; color: #d97706;" /> <strong>Lưu ý:</strong> Bác sĩ bắt buộc phải đổi mật khẩu khi đăng nhập lần đầu tiên để kích hoạt tài khoản.
+          </div>
+
+          <div class="modal-footer-btns" style="margin-top: 0.5rem; display: flex; justify-content: flex-end;">
+            <button class="btn-cancel-modal" style="width: 100%; padding: 10px; border-radius: 4px; font-weight: 700; background: #3b82f6; border: none; color: white; cursor: pointer; box-shadow: none !important;" @click="newDoctorResult = null">Hoàn tất</button>
           </div>
         </div>
       </div>
@@ -1327,6 +1385,7 @@
   // Modal display toggles (Appointment Service - ACTIVE)
   const showSlotModal = ref(false)
   const showDoctorModal = ref(false)
+  const newDoctorResult = ref(null)
   const showDoctorInfoModal = ref(false)
   const selectedDoctorInfo = ref(null)
   const loadingDoctorInfo = ref(false)
@@ -1615,7 +1674,11 @@
         consultationFee: formDoctor.value.consultationFee
       })
 
-      alert(`Thêm bác sĩ thành công!\nTài khoản: ${formDoctor.value.username}\nMật khẩu mặc định: ${autoPassword}\n(Bác sĩ bắt buộc phải đổi mật khẩu khi đăng nhập lần đầu)`)
+      newDoctorResult.value = {
+        fullName: formDoctor.value.fullName,
+        username: formDoctor.value.username,
+        password: autoPassword
+      }
       formDoctor.value = { fullName: '', specialty: '', degree: '', consultationFee: null, username: '', password: '' }
       showDoctorModal.value = false
       fetchAllData()
@@ -1623,6 +1686,24 @@
       alert('Lỗi thêm bác sĩ: ' + (e.response?.data?.message || e.message))
     } finally {
       submittingDoctor.value = false
+    }
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Đã sao chép mật khẩu vào bộ nhớ tạm!');
+      }).catch(err => {
+        console.error('Không thể sao chép: ', err);
+      });
+    } else {
+      const input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      alert('Đã sao chép mật khẩu vào bộ nhớ tạm!');
     }
   }
 

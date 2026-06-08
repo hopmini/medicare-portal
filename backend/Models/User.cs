@@ -30,4 +30,16 @@ namespace Gateway.Models
         public string CurrentPassword { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
     }
+
+    public class ForgotPasswordModel
+    {
+        public string Username { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string OTP { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }
