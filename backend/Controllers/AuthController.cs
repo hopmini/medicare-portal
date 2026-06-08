@@ -68,7 +68,8 @@ namespace Gateway.Controllers
                     user.Id,
                     user.Username,
                     user.FullName,
-                    user.Role
+                    user.Role,
+                    user.Email
                 }
             });
         }

@@ -86,18 +86,31 @@
             <input placeholder="Tìm kiếm nhanh..." type="text" v-model="quickSearchQuery" />
           </div>
 
-          <!-- COMPACT USER PILL IN TOP-RIGHT OF TOP-BAR -->
-          <div v-if="authStore.user" class="top-user-pill shadow-light">
-            <div class="top-user-main-info" @click="$router.push('/profile')" style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-              <div class="avatar-small-top">{{ (authStore.user.username || authStore.user.fullName || 'AD').substring(0, 2).toUpperCase() }}</div>
-              <div class="top-user-info">
-                <p class="top-user-name">{{ authStore.user.fullName }}</p>
-                <p class="top-user-role">Hệ thống Admin</p>
+          <!-- COMPACT USER PILL IN TOP-RIGHT OF TOP-BAR WITH DROPDOWN -->
+          <div v-if="authStore.user" class="top-user-dropdown-wrapper">
+            <a-dropdown :trigger="['click']" placement="bottomRight">
+              <div class="top-user-pill shadow-light" style="cursor: pointer;">
+                <div class="top-user-main-info" style="display: flex; align-items: center; gap: 12px;">
+                  <div class="avatar-small-top">{{ (authStore.user.username || authStore.user.fullName || 'AD').substring(0, 2).toUpperCase() }}</div>
+                  <div class="top-user-info">
+                    <p class="top-user-name">{{ authStore.user.fullName }}</p>
+                    <p class="top-user-role">Hệ thống Admin</p>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-down" style="font-size: 0.75rem; color: #94a3b8; margin-left: 8px;" />
               </div>
-            </div>
-            <button class="top-user-logout" title="Đăng xuất" @click="authStore.logout()">
-              <i class="fas fa-sign-out-alt" />
-            </button>
+              <template #overlay>
+                <a-menu style="min-width: 150px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 4px 0;">
+                  <a-menu-item key="profile" @click="$router.push('/profile')" style="padding: 10px 16px;">
+                    <i class="far fa-user" style="margin-right: 8px; color: #596780;" /> Trang cá nhân
+                  </a-menu-item>
+                  <a-menu-divider style="margin: 4px 0;" />
+                  <a-menu-item key="logout" @click="authStore.logout" style="padding: 10px 16px; color: #ef4444;">
+                    <i class="fas fa-sign-out-alt" style="margin-right: 8px; color: #ef4444;" /> Đăng xuất
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
           </div>
         </div>
       </header>

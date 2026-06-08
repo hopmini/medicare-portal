@@ -42,6 +42,16 @@
           </span>
           <span>Danh sách lịch hẹn</span>
         </div>
+
+        <div class="nav-item" @click="$router.push('/pharmacy/billing')">
+          <span>🧾</span>
+          <span>Hóa đơn bán thuốc</span>
+        </div>
+
+        <div class="nav-item" @click="$router.push('/pharmacy/payments/list')">
+          <span>💳</span>
+          <span>Xác nhận thanh toán</span>
+        </div>
       </nav>
 
       <div class="sidebar__footer">

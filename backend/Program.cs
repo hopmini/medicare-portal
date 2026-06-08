@@ -63,33 +63,58 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure Central Identity Database is automatically created and seeded at startup with a robust retry loop
+// Ensure Central Identity Database is automatically created and seeded at startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    int maxRetries = 15;
-    int delaySeconds = 3;
-    bool success = false;
-
-    for (int i = 1; i <= maxRetries; i++)
+    try
     {
-        try
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        db.Database.EnsureCreated();
+        Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
+
+        // Ensure all default users exist (seed data only works on fresh DB)
+        await EnsureDefaultUsers(db);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Gateway-Auth] Error ensuring Central Identity DB: {ex.Message}");
+    }
+}
+
+static async Task EnsureDefaultUsers(IdentityDbContext db)
+{
+    var defaultUsers = new[]
+    {
+        new { Username = "admin",        Password = "admin",        FullName = "Hệ thống Admin",      Email = "admin@medicare.vn",        Role = "Admin" },
+        new { Username = "receptionist", Password = "receptionist", FullName = "Lễ tân Medicare",      Email = "receptionist@medicare.vn", Role = "Receptionist" },
+    };
+
+    foreach (var u in defaultUsers)
+    {
+        if (!db.Users.Any(x => x.Username == u.Username))
         {
-            db.Database.EnsureCreated();
-            Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
-            success = true;
-            break;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Gateway-Auth Retry {i}/{maxRetries}] Failed to connect to DB: {ex.Message}. Retrying in {delaySeconds}s...");
-            System.Threading.Thread.Sleep(delaySeconds * 1000);
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(u.Password));
+            var hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+
+            db.Users.Add(new Gateway.Models.User
+            {
+                Username = u.Username,
+                PasswordHash = hash,
+                FullName = u.FullName,
+                Email = u.Email,
+                Role = u.Role
+            });
+            Console.WriteLine($"[Gateway-Auth] Created default user: {u.Username} ({u.Role})");
         }
     }
+    await db.SaveChangesAsync();
 
-    if (!success)
+    // Print all users in DB
+    Console.WriteLine("[Gateway-Auth] Existing Users in DB:");
+    foreach (var user in db.Users.ToList())
     {
-        Console.WriteLine("[Gateway-Auth FATAL] Could not connect to Central Identity DB after all retries.");
+        Console.WriteLine($" - ID: {user.Id}, Username: {user.Username}, Role: {user.Role}");
     }
 }
 

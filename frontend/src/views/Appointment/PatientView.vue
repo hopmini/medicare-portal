@@ -223,7 +223,7 @@
             </div>
 
             <!-- Horizontal Dates Slider -->
-            <div class="date-scroll-v" style="align-items: stretch;">
+            <div class="date-scroll-v">
               <div
                 v-for="date in nextFourteenDays"
                 :key="date.iso"
@@ -235,7 +235,6 @@
                 <span class="date-day-num">{{ date.dayNum }}</span>
                 <span style="font-size: 0.72rem; opacity: 0.85;">Tháng {{ date.month }}</span>
               </div>
-
               <!-- Sleek Modern Calendar Date Picker Card -->
               <div
                 class="date-card-v"
@@ -477,13 +476,12 @@
                       >
                         <i class="fas fa-chevron-left" /> Quay lại chọn ngày
                       </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
+          </div>
           </section>
-
         </div>
       </main>
     </div>
@@ -813,41 +811,11 @@
     }, 0)
   })
 
-  const customDatePicker = ref(null)
-  const customDate = ref('')
-
-  const minSelectableDate = computed(() => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  })
-
-  function handleCustomDateChange(e) {
-    const val = e.target.value
-    if (val) {
-      customDate.value = val
-      selectDate(val)
-    }
-  }
-
-  function openDatePicker() {
-    if (customDatePicker.value) {
-      try {
-        customDatePicker.value.showPicker();
-      } catch (e) {
-        customDatePicker.value.click();
-      }
-    }
-  }
-
   const nextFourteenDays = computed(() => {
     const days = []
     const today = new Date()
     const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
-    // Default 7 days of this week
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       const d = new Date()
       d.setDate(today.getDate() + i)
       const year = d.getFullYear()
@@ -859,20 +827,6 @@
         month: d.getMonth() + 1,
         dayName: i === 0 ? 'Hôm nay' : dayNames[d.getDay()],
       })
-    }
-
-    // Dynamic union: Append selected custom date if it's outside this week's 7 days
-    if (customDate.value) {
-      const exists = days.some(d => d.iso === customDate.value)
-      if (!exists) {
-        const d = new Date(customDate.value)
-        days.push({
-          iso: customDate.value,
-          dayNum: d.getDate(),
-          month: d.getMonth() + 1,
-          dayName: dayNames[d.getDay()],
-        })
-      }
     }
     return days
   })

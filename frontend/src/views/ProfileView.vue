@@ -20,6 +20,9 @@
             <div class="avatar-large">
               <i class="fas fa-user-md" v-if="userRole.toLowerCase() === 'doctor'" />
               <i class="fas fa-user-shield" v-else-if="userRole.toLowerCase() === 'admin'" />
+              <i class="fas fa-file-prescription" v-else-if="userRole.toLowerCase() === 'pharmacist'" />
+              <i class="fas fa-cash-register" v-else-if="userRole.toLowerCase() === 'cashier'" />
+              <i class="fas fa-concierge-bell" v-else-if="userRole.toLowerCase() === 'receptionist'" />
               <i class="fas fa-user" v-else />
             </div>
             <h3 class="user-fullname">{{ profileForm.fullName }}</h3>
@@ -93,11 +96,11 @@
               <div class="form-row-profile">
                 <div class="form-group-profile">
                   <label>Số điện thoại di động:</label>
-                  <input v-model="profileForm.phoneNumber" required type="tel" class="profile-input" placeholder="Ví dụ: 0987654321" />
+                  <input v-model="profileForm.phoneNumber" type="tel" class="profile-input" placeholder="Ví dụ: 0987654321" />
                 </div>
                 <div class="form-group-profile">
                   <label>Địa chỉ thường trú:</label>
-                  <input v-model="profileForm.address" required type="text" class="profile-input" placeholder="Ví dụ: 78 Giải Phóng, Hà Nội" />
+                  <input v-model="profileForm.address" type="text" class="profile-input" placeholder="Ví dụ: 78 Giải Phóng, Hà Nội" />
                 </div>
               </div>
 
@@ -204,20 +207,26 @@
 
   // Dynamic logs feed depending on User Role
   const dynamicRoleLogs = computed(() => {
-    const role = userRole.value
+    const role = (userRole.value || '').toLowerCase()
     const today = new Date().toLocaleDateString('vi-VN')
     
-    if (role === 'Admin' || role === 'Receptionist') {
+    if (role === 'admin' || role === 'receptionist') {
       return [
         { text: 'Truy cập <b>Tổng Quan Liên Thông Trung Tâm</b> và kiểm tra thông tin đồng bộ.', time: today + ' 10:14', icon: 'fas fa-eye', colorClass: 'bg-blue' },
         { text: 'Phê duyệt trạng thái lịch khám cho bệnh nhân bệnh án số #AP-4890.', time: today + ' 09:30', icon: 'fas fa-check-circle', colorClass: 'bg-green' },
         { text: 'Xác thực đăng nhập tài khoản hệ thống quản trị hành chính.', time: today + ' 08:00', icon: 'fas fa-sign-in-alt', colorClass: 'bg-blue' }
       ]
-    } else if (role === 'Doctor') {
+    } else if (role === 'doctor') {
       return [
         { text: 'Cập nhật phân bổ ca khám và lịch trực tuần mới thành công.', time: today + ' 14:02', icon: 'fas fa-clock', colorClass: 'bg-amber' },
         { text: 'Hoàn thành lượt khám lâm sàng và cấp chẩn đoán y khoa.', time: today + ' 11:20', icon: 'fas fa-user-md', colorClass: 'bg-green' },
         { text: 'Đăng nhập phân hệ điều phối bác sĩ và ca trực.', time: today + ' 07:45', icon: 'fas fa-sign-in-alt', colorClass: 'bg-blue' }
+      ]
+    } else if (role === 'pharmacist' || role === 'cashier') {
+      return [
+        { text: 'Truy cập phân hệ điều phối hóa đơn và cấp phát dược phẩm.', time: today + ' 11:00', icon: 'fas fa-pills', colorClass: 'bg-blue' },
+        { text: 'Xử lý thanh toán hóa đơn liên thông y tế.', time: today + ' 10:15', icon: 'fas fa-receipt', colorClass: 'bg-green' },
+        { text: 'Đăng nhập cổng thông tin phân hệ Dược & Viện phí Medicare.', time: today + ' 08:30', icon: 'fas fa-sign-in-alt', colorClass: 'bg-blue' }
       ]
     } else {
       // Patients
@@ -234,7 +243,10 @@
       case 'admin': return 'Hệ thống Admin'
       case 'receptionist': return 'Nhân viên Tiếp nhận'
       case 'doctor': return 'Bác sĩ lâm sàng'
-      default: return 'Bệnh nhân'
+      case 'pharmacist': return 'Dược sĩ'
+      case 'cashier': return 'Thu ngân'
+      case 'patient': return 'Bệnh nhân'
+      default: return role || 'Bệnh nhân'
     }
   }
 
@@ -243,6 +255,9 @@
       case 'admin': return 'role--admin'
       case 'receptionist': return 'role--receptionist'
       case 'doctor': return 'role--doctor'
+      case 'pharmacist': return 'role--pharmacist'
+      case 'cashier': return 'role--cashier'
+      case 'patient': return 'role--patient'
       default: return 'role--patient'
     }
   }
@@ -280,14 +295,14 @@
     // Seed current authenticated user data
     if (authStore.user.value) {
       profileForm.value.fullName = authStore.user.value.fullName || 'Người dùng Medicare'
-      profileForm.value.email = authStore.user.value.email || 'user@medicare.vn'
-      profileForm.value.phoneNumber = authStore.user.value.phoneNumber || '0901234567'
-      profileForm.value.address = authStore.user.value.address || '78 Giải Phóng, Hà Nội'
+      profileForm.value.email = authStore.user.value.email || ''
+      profileForm.value.phoneNumber = authStore.user.value.phoneNumber || ''
+      profileForm.value.address = authStore.user.value.address || ''
     } else {
       profileForm.value.fullName = 'Bệnh nhân thử nghiệm'
       profileForm.value.email = 'patient@gmail.com'
-      profileForm.value.phoneNumber = '0988777666'
-      profileForm.value.address = 'Hà Nội, Việt Nam'
+      profileForm.value.phoneNumber = ''
+      profileForm.value.address = ''
     }
   })
 </script>
@@ -409,6 +424,8 @@
 .role--admin { background: #fee2e2; color: #991b1b; }
 .role--receptionist { background: #fff7ed; color: #9a3412; }
 .role--doctor { background: #eff6ff; color: #1e40af; }
+.role--pharmacist { background: #fdf2f8; color: #9d174d; }
+.role--cashier { background: #f0fdfa; color: #115e59; }
 .role--patient { background: #f0fdf4; color: #166534; }
 
 .quick-stats-list {

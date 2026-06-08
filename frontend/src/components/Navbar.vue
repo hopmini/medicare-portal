@@ -32,18 +32,21 @@
       <div class="nav-actions">
         <template v-if="authStore.isAuthenticated.value">
           <button v-if="authStore.canAccessDashboard.value" class="btn-outline-nav" @click="$router.push('/dashboard')">
-            <i class="fas fa-tachometer-alt" /> <span class="nav-btn-text">Dashboard</span>
+            <i class="fas fa-tachometer-alt" /> Dashboard
           </button>
           <button v-else-if="authStore.canAccessDoctorDashboard.value" class="btn-outline-nav" @click="$router.push('/doctor')">
-            <i class="fas fa-user-md" /> <span class="nav-btn-text">Bác sĩ</span>
+            <i class="fas fa-user-md" /> Bác sĩ
           </button>
           
           <!-- Modern compact User Pill -->
           <div class="user-pill">
             <div class="user-pill__main-info" @click="$router.push('/profile')" style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
               <div class="user-pill__avatar">
-                <i class="fas fa-user-md" v-if="(authStore.user.value?.role || '').toLowerCase() === 'doctor'" />
-                <i class="fas fa-user-shield" v-else-if="(authStore.user.value?.role || '').toLowerCase() === 'admin'" />
+                <i class="fas fa-user-md" v-if="authStore.user.value?.role?.toLowerCase() === 'doctor'" />
+                <i class="fas fa-user-shield" v-else-if="authStore.user.value?.role?.toLowerCase() === 'admin'" />
+                <i class="fas fa-file-prescription" v-else-if="authStore.user.value?.role?.toLowerCase() === 'pharmacist'" />
+                <i class="fas fa-cash-register" v-else-if="authStore.user.value?.role?.toLowerCase() === 'cashier'" />
+                <i class="fas fa-concierge-bell" v-else-if="authStore.user.value?.role?.toLowerCase() === 'receptionist'" />
                 <i class="fas fa-user" v-else />
               </div>
               <span class="user-pill__name" :title="authStore.user.value?.fullName || authStore.user.value?.username">
@@ -57,10 +60,10 @@
         </template>
         <template v-else>
           <button class="btn-outline-nav" @click="$router.push('/login')">
-            <i class="fas fa-sign-in-alt" /> <span class="nav-btn-text">Đăng nhập</span>
+            <i class="fas fa-sign-in-alt" /> Đăng nhập
           </button>
           <button class="btn-outline-nav btn-register-nav" @click="$router.push('/register')">
-            <i class="fas fa-user-plus" /> <span class="nav-btn-text">Đăng ký</span>
+            <i class="fas fa-user-plus" /> Đăng ký
           </button>
         </template>
       </div>
@@ -183,6 +186,10 @@
         router.push('/doctor')
         return
       }
+      if (role === 'pharmacist' || role === 'cashier') {
+        router.push('/pharmacy/dashboard')
+        return
+      }
       router.push('/patient')
     } else {
       router.push('/login')
@@ -197,8 +204,10 @@
         router.push('/pharmacy/billing')
         return
       }
+      router.push('/pharmacy/dashboard')
+      return
     }
-    router.push('/pharmacy/medicines')
+    router.push('/pharmacy/dashboard')
   }
 
   function redirectToMedicalRecord () {
@@ -555,36 +564,6 @@
   border: 1.5px solid #0047AB;
   color: #0047AB;
   background: transparent;
-}
-
-@media (max-width: 576px) {
-  .nav-btn-text {
-    display: none;
-  }
-  
-  .btn-outline-nav {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    font-size: 1.05rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  .nav-actions {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    margin-left: auto !important;
-  }
-
-  .hamburger {
-    margin-left: 8px !important;
-  }
 }
 </style>
 
