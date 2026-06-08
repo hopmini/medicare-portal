@@ -86,22 +86,83 @@
               <p>Đang tải danh sách dịch vụ y tế...</p>
             </div>
 
-            <div v-else class="grid-container">
-              <div
-                v-for="service in medicalServices"
-                :key="service.id"
-                class="card-item"
-                :class="{ 'card-item--active': selectedServices.some(s => s.id === service.id) }"
-                @click="toggleService(service)"
-              >
-                <div class="card-item__icon">
-                  <i v-if="selectedServices.some(s => s.id === service.id)" class="fas fa-check" style="color: var(--primary); font-size: 1.25rem;" />
-                  <i v-else class="fas fa-stethoscope" />
+            <div v-else>
+              <!-- Search and Filter Bar -->
+              <div class="search-box-container-v" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                  <i class="fas fa-search" style="position: absolute; left: 1rem; color: #94a3b8; font-size: 1.1rem;" />
+                  <input
+                    v-model="searchServiceQuery"
+                    placeholder="Tìm dịch vụ khám (Nội soi, Khám tổng quát, Siêu âm...)"
+                    type="text"
+                    class="final-input"
+                    style="padding-left: 2.75rem; width: 100%; height: 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-weight: 500; outline: none; transition: all 0.25s;"
+                  />
                 </div>
-                <div class="card-item__info">
-                  <h3>{{ service.name }}</h3>
-                  <p>{{ service.description }}</p>
-                  <div class="card-item__price">{{ formatPrice(service.price) }}</div>
+                
+                <!-- Category tabs -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button
+                    v-for="cat in categories"
+                    :key="cat"
+                    @click="selectedCategory = cat"
+                    class="cat-tab-btn"
+                    :class="{ 'cat-tab-btn--active': selectedCategory === cat }"
+                    style="padding: 0.5rem 1.1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 750; border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.2s;"
+                  >
+                    {{ cat }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Services Grid -->
+              <div class="grid-container">
+                <div
+                  v-for="service in filteredServices"
+                  :key="service.id"
+                  class="card-item"
+                  :class="{ 'card-item--active': selectedServices.some(s => s.id === service.id) }"
+                  @click="toggleService(service)"
+                  style="display: flex; flex-direction: column; height: auto;"
+                >
+                  <div style="display: flex; gap: 12px; align-items: flex-start; width: 100%;">
+                    <div class="card-item__icon">
+                      <i v-if="selectedServices.some(s => s.id === service.id)" class="fas fa-check" style="color: var(--primary); font-size: 1.25rem;" />
+                      <i v-else class="fas fa-stethoscope" />
+                    </div>
+                    <div class="card-item__info" style="flex: 1; text-align: left;">
+                      <h3>{{ service.name }}</h3>
+                      <p>{{ service.description }}</p>
+                      <div class="card-item__price">{{ formatPrice(service.price + getSubOptionPriceDiff(service.id)) }}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Dynamic Sub-Options for selected services -->
+                  <div 
+                    v-if="selectedServices.some(s => s.id === service.id) && hasSubOptions(service)"
+                    @click.stop
+                    style="margin-top: 1rem; border-top: 1px dashed #cbd5e1; padding-top: 0.85rem; width: 100%; text-align: left;"
+                  >
+                    <label style="font-size: 0.78rem; font-weight: 800; color: #475569; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">
+                      💡 Chọn phân loại khám chi tiết:
+                    </label>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <label 
+                        v-for="sub in getSubOptions(service)" 
+                        :key="sub.name"
+                        style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #1e293b; cursor: pointer; padding: 4px 8px; border-radius: 6px; background: rgba(0, 71, 171, 0.03);"
+                      >
+                        <input 
+                          type="radio" 
+                          :name="'sub-opt-' + service.id" 
+                          :checked="selectedSubOptions[service.id]?.name === sub.name"
+                          @change="selectSubOption(service.id, sub)"
+                          style="accent-color: #0047AB;"
+                        />
+                        <span>{{ sub.name }} <b style="color: #0047AB;" v-if="sub.priceDiff > 0">(+{{ formatPrice(sub.priceDiff) }})</b></span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -205,15 +266,41 @@
                 <p>Bác sĩ hiện không có ca khám trực nào khả dụng hoặc các ca hôm nay đã qua giờ.</p>
               </div>
 
-              <div v-else class="slot-grid-v">
-                <div
-                  v-for="slot in availableSlots"
-                  :key="slot.id"
-                  class="slot-v"
-                  :class="{ 'slot-v--active': selectedSlot?.id === slot.id, 'slot-v--disabled': slot.isBooked }"
-                  @click="!slot.isBooked && (selectedSlot = slot)"
-                >
-                  <i class="far fa-clock" /> {{ formatTime(slot.startTime) }}
+              <div v-else style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
+                <!-- morning section -->
+                <div v-if="morningSlots.length > 0" style="text-align: left;">
+                  <h4 style="font-size: 0.9rem; font-weight: 800; color: #0047AB; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
+                    🌅 Ca sáng (08:00 - 12:00)
+                  </h4>
+                  <div class="slot-grid-v">
+                    <div
+                      v-for="slot in morningSlots"
+                      :key="slot.id"
+                      class="slot-v"
+                      :class="{ 'slot-v--active': selectedSlot?.id === slot.id, 'slot-v--disabled': slot.isBooked }"
+                      @click="!slot.isBooked && (selectedSlot = slot)"
+                    >
+                      <i class="far fa-clock" /> {{ formatTime(slot.startTime) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- afternoon section -->
+                <div v-if="afternoonSlots.length > 0" style="text-align: left;">
+                  <h4 style="font-size: 0.9rem; font-weight: 800; color: #d97706; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
+                    🌇 Ca chiều (13:00 - 17:00)
+                  </h4>
+                  <div class="slot-grid-v">
+                    <div
+                      v-for="slot in afternoonSlots"
+                      :key="slot.id"
+                      class="slot-v"
+                      :class="{ 'slot-v--active': selectedSlot?.id === slot.id, 'slot-v--disabled': slot.isBooked }"
+                      @click="!slot.isBooked && (selectedSlot = slot)"
+                    >
+                      <i class="far fa-clock" /> {{ formatTime(slot.startTime) }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -358,9 +445,15 @@
                           <i class="fas fa-clock" style="font-size: 1.2rem;" />
                         </div>
                         <div>
-                          <div style="font-weight: 800; color: var(--dark-slate); font-size: 0.95rem;">{{ formatTime(selectedSlot?.startTime) }}</div>
+                          <div style="font-weight: 800; color: var(--dark-slate); font-size: 0.95rem;">
+                            {{ formatTime(selectedSlot?.startTime) }} - {{ estimatedEndTime }}
+                          </div>
                           <div style="font-size: 0.78rem; color: var(--slate-500); font-weight: 600;">{{ formatDateFull(selectedDate) }}</div>
                         </div>
+                      </div>
+                      <div style="font-size: 0.75rem; color: #475569; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e2e8f0; line-height: 1.4;">
+                        <div>⏱️ Thời gian khám: <b>{{ estimatedDuration }} phút</b></div>
+                        <div style="margin-top: 2px;">👤 Lịch người tiếp theo: từ <b>{{ estimatedEndTime }}</b></div>
                       </div>
                     </div>
                   </div>
@@ -459,6 +552,65 @@
   const slots = ref([])
   const toasts = ref([])
 
+  // Search and Category Filters for Services
+  const searchServiceQuery = ref('')
+  const selectedCategory = ref('Tất cả')
+  const categories = ["Tất cả", "Khám bệnh lâm sàng", "Nội soi", "Chẩn đoán hình ảnh", "Xét nghiệm & Khác"]
+  const selectedSubOptions = ref({})
+
+  const getServiceCategory = (service) => {
+    const name = (service.name || '').toLowerCase()
+    const desc = (service.description || '').toLowerCase()
+    if (name.includes('nội soi') || desc.includes('nội soi')) return "Nội soi"
+    if (name.includes('siêu âm') || name.includes('x-quang') || name.includes('chụp') || name.includes('doppler')) return "Chẩn đoán hình ảnh"
+    if (name.includes('xét nghiệm') || name.includes('máu') || name.includes('sinh hóa')) return "Xét nghiệm & Khác"
+    return "Khám bệnh lâm sàng"
+  }
+
+  const filteredServices = computed(() => {
+    let list = [...medicalServices.value]
+    if (selectedCategory.value !== 'Tất cả') {
+      list = list.filter(s => getServiceCategory(s) === selectedCategory.value)
+    }
+    if (searchServiceQuery.value.trim()) {
+      const q = searchServiceQuery.value.toLowerCase().trim()
+      list = list.filter(s => (s.name || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q))
+    }
+    return list
+  })
+
+  // Dynamic Sub-options config
+  const hasSubOptions = (service) => {
+    const name = (service.name || '').toLowerCase()
+    return name.includes('nội soi') || name.includes('khám') || name.includes('tổng quát')
+  }
+
+  const getSubOptions = (service) => {
+    const name = (service.name || '').toLowerCase()
+    if (name.includes('nội soi')) {
+      return [
+        { name: "Nội soi dạ dày/đại tràng 1 phần (Tiêu chuẩn)", priceDiff: 0, duration: 20 },
+        { name: "Nội soi tiêu hóa tổng quát (Dạ dày + Đại tràng gây mê không đau)", priceDiff: 500000, duration: 40 }
+      ]
+    }
+    if (name.includes('khám') || name.includes('tổng quát')) {
+      return [
+        { name: "Khám cơ bản (Lâm sàng + Sinh hiệu)", priceDiff: 0, duration: 15 },
+        { name: "Khám định kỳ tổng quát (Có xét nghiệm máu cơ bản)", priceDiff: 150000, duration: 25 },
+        { name: "Khám tổng quát VIP (Chuyên sâu & Tầm soát sớm)", priceDiff: 350000, duration: 35 }
+      ]
+    }
+    return []
+  }
+
+  const getSubOptionPriceDiff = (serviceId) => {
+    return selectedSubOptions.value[serviceId]?.priceDiff || 0
+  }
+
+  const selectSubOption = (serviceId, sub) => {
+    selectedSubOptions.value[serviceId] = sub
+  }
+
   const availableSlots = computed(() => {
     if (!slots.value) return []
     
@@ -489,6 +641,39 @@
     }
     
     return slots.value
+  })
+
+  const morningSlots = computed(() => availableSlots.value.filter(s => s.startTime < '12:00'))
+  const afternoonSlots = computed(() => availableSlots.value.filter(s => s.startTime >= '12:00'))
+
+  const estimatedDuration = computed(() => {
+    let duration = 15 // default
+    selectedServices.value.forEach(svc => {
+      const subOpt = selectedSubOptions.value[svc.id]
+      if (subOpt && subOpt.duration) {
+        duration = subOpt.duration
+      } else {
+        // service default
+        const name = (svc.name || '').toLowerCase()
+        if (name.includes('nội soi')) duration = 30
+        else if (name.includes('siêu âm') || name.includes('x-quang') || name.includes('chụp') || name.includes('doppler')) duration = 20
+        else duration = 15
+      }
+    })
+    return duration
+  })
+
+  const estimatedEndTime = computed(() => {
+    if (!selectedSlot.value || !selectedSlot.value.startTime) return ''
+    const parts = selectedSlot.value.startTime.split(':')
+    const startHour = parseInt(parts[0], 10)
+    const startMin = parseInt(parts[1], 10)
+    
+    const endTotalMin = startHour * 60 + startMin + estimatedDuration.value
+    const endHour = Math.floor(endTotalMin / 60)
+    const endMin = endTotalMin % 60
+    
+    return `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`
   })
 
   const patientForm = ref({
@@ -601,7 +786,13 @@
     return matched.length > 0 ? matched : list
   })
 
-  const totalPrice = computed(() => selectedServices.value.reduce((sum, s) => sum + (s.price || 0), 0))
+  const totalPrice = computed(() => {
+    return selectedServices.value.reduce((sum, s) => {
+      const base = s.price || 0
+      const diff = getSubOptionPriceDiff(s.id)
+      return sum + base + diff
+    }, 0)
+  })
 
   const customDatePicker = ref(null)
   const customDate = ref('')
@@ -683,9 +874,14 @@
     const index = selectedServices.value.findIndex(s => s.id === service.id)
     if (index > -1) {
       selectedServices.value.splice(index, 1)
+      delete selectedSubOptions.value[service.id]
       addToast('Đã bỏ chọn dịch vụ', service.name)
     } else {
       selectedServices.value.push(service)
+      const subOpts = getSubOptions(service)
+      if (subOpts.length > 0) {
+        selectedSubOptions.value[service.id] = subOpts[0]
+      }
       addToast('Đã chọn dịch vụ', service.name)
     }
     selectedDoctor.value = null
@@ -748,7 +944,10 @@
 
     submitting.value = true
     try {
-      const servicesString = selectedServices.value.map(s => s.name).join(', ')
+      const servicesString = selectedServices.value.map(s => {
+        const sub = selectedSubOptions.value[s.id]
+        return sub ? `${s.name} (${sub.name})` : s.name
+      }).join(', ')
       // Compile rich clinical details to the reason field to pass seamlessly to the backend DB without database schema breakage
       const richReason = `[KHÁM CHUYÊN KHOA]
 - Lý do khám: ${(reason.value || '').trim() || 'Khám tổng quát'}
@@ -765,6 +964,7 @@
         medicalServiceId: selectedServices.value[0]?.id || '',
         reason: richReason,
         patientEmail: form.email.trim(),
+        examinationDuration: estimatedDuration.value
       }
       const response = await appointmentService.bookAppointment(data)
       successData.value = { ...response, patientName: form.fullName.trim() }

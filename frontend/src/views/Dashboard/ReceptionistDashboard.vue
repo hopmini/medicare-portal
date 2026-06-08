@@ -251,6 +251,10 @@
                 <span class="cell-value highlight-value">{{ formatTime(selectedApp.time) }}</span>
               </div>
               <div class="detail-cell">
+                <span class="cell-label">Thời lượng khám dự kiến:</span>
+                <span class="cell-value text-warning font-bold">{{ selectedApp.examinationDuration || 30 }} phút</span>
+              </div>
+              <div class="detail-cell">
                 <span class="cell-label">Số thứ tự xếp hàng (STT):</span>
                 <span class="cell-value text-success font-bold">{{ selectedApp.queueNumber ? '#' + selectedApp.queueNumber : 'Chưa cấp' }}</span>
               </div>

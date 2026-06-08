@@ -108,6 +108,10 @@
                 <span class="cell-label">Giờ hẹn cụ thể:</span>
                 <span class="cell-value highlight-value">{{ formatTime(selectedApp.time) }}</span>
               </div>
+              <div class="detail-cell">
+                <span class="cell-label">Thời lượng dự kiến:</span>
+                <span class="cell-value text-warning font-bold">{{ selectedApp.examinationDuration || 30 }} phút</span>
+              </div>
               <div v-if="selectedApp.queueNumber" class="detail-cell">
                 <span class="cell-label">Số thứ tự tại quầy:</span>
                 <span class="cell-value text-success font-bold">Số {{ selectedApp.queueNumber }}</span>

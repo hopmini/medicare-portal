@@ -108,6 +108,7 @@
                   <div class="widget-content">
                     <label>Thời gian hẹn khám</label>
                     <p>{{ formatTime(appointment.time) }} - {{ formatDate(appointment.date) }}</p>
+                    <span class="sub-label" style="display: block; margin-bottom: 2px;">Thời lượng dự kiến: <strong>{{ appointment.examinationDuration || 30 }} phút</strong></span>
                     <span class="sub-label">Số thứ tự xếp hàng: <strong>{{ appointment.queueNumber || 'Đang chờ phát số' }}</strong></span>
                   </div>
                 </div>
