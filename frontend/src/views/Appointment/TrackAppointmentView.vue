@@ -311,7 +311,7 @@
 </template>
 
 <script setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import Navbar from '@/components/Navbar.vue'
   import { publicApi } from '@/services/api'
@@ -321,6 +321,48 @@
   const appointment = ref(null)
   const loading = ref(false)
   const error = ref('')
+  const lastStatus = ref(null)
+  let trackingInterval = null
+
+  function playSuccessSound () {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const playNote = (frequency, startTime, duration) => {
+        const osc = audioCtx.createOscillator()
+        const gainNode = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(frequency, startTime)
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gainNode)
+        gainNode.connect(audioCtx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      const now = audioCtx.currentTime
+      playNote(523.25, now, 0.4) // C5
+      playNote(659.25, now + 0.12, 0.5) // E5
+    } catch (error) {
+      console.error('Failed to play notification sound:', error)
+    }
+  }
+
+  async function pollTrackedAppointment () {
+    if (!appointment.value) return
+    try {
+      const res = await publicApi.get(`/Appointments/track/${appointment.value.id}`)
+      const newStatus = res.data.status
+      if (lastStatus.value === 0 && newStatus === 1) {
+        playSuccessSound()
+        alert(`🔔 Thông báo Medicare: Lịch hẹn khám #${appointment.value.id.toString().substring(0, 8).toUpperCase()} của bạn đã được phê duyệt thành công!`)
+      }
+      lastStatus.value = newStatus
+      appointment.value = res.data
+    } catch (e) {
+      console.error('Lỗi khi cập nhật trạng thái lịch hẹn:', e)
+    }
+  }
 
   // Symptom Editing Feature States
   const isEditingReason = ref(false)
@@ -381,11 +423,18 @@
     loading.value = true
     error.value = ''
     appointment.value = null
+    if (trackingInterval) {
+      clearInterval(trackingInterval)
+      trackingInterval = null
+    }
 
     try {
       const res = await publicApi.get(`/Appointments/track/${cleanCode}`)
       appointment.value = res.data
+      lastStatus.value = res.data.status
       editReasonText.value = res.data.reason || ''
+      
+      trackingInterval = setInterval(pollTrackedAppointment, 5000)
     } catch (error_) {
       error.value = error_.response?.data || 'Không tìm thấy thông tin lịch hẹn. Vui lòng kiểm tra lại mã.'
       console.error(error_)
@@ -537,6 +586,12 @@
       handleSearch()
     }
   })
+
+  onUnmounted(() => {
+    if (trackingInterval) {
+      clearInterval(trackingInterval)
+    }
+  })
 </script>
 
 <style scoped>
@@ -547,7 +602,7 @@
 }
 
 .track-header {
-  background: linear-gradient(135deg, var(--cobalt-faint, #f0f5ff) 0%, var(--cobalt-pale, #e8f0fe) 100%);
+  background: #f8fafc;
   position: relative;
   overflow: hidden;
   padding: 8rem 0 6rem 0;

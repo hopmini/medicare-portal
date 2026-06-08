@@ -129,7 +129,7 @@
 <style scoped>
 .auth-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f5ff 0%, #f8fafc 50%, #e8f0fe 100%);
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;

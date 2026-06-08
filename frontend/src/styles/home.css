@@ -220,18 +220,16 @@
   padding-top: var(--nav-h);
   position: relative; overflow: hidden;
   display: flex; flex-direction: column;
-  background: linear-gradient(155deg, var(--cobalt-faint) 0%, white 55%, var(--off-white) 100%);
+  background: var(--off-white);
 }
 
 /* Hero bg */
 .hero__bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .hero__bg-grid {
   position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(0,71,171,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,71,171,0.05) 1px, transparent 1px);
+  background-image: none;
   background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+  mask-image: none;
 }
 .hero__bg-blob {
   position: absolute; border-radius: 50%;
@@ -239,17 +237,17 @@
 }
 .blob-1 {
   width: 500px; height: 500px;
-  background: radial-gradient(circle, #0047AB, transparent 70%);
+  background: transparent;
   top: -100px; right: -100px;
 }
 .blob-2 {
   width: 400px; height: 400px;
-  background: radial-gradient(circle, #1565C0, transparent 70%);
+  background: transparent;
   bottom: 0; left: -50px; opacity: 0.2;
 }
 .blob-3 {
   width: 200px; height: 200px;
-  background: radial-gradient(circle, #E53935, transparent 70%);
+  background: transparent;
   top: 30%; right: 20%; opacity: 0.15;
 }
 .hero__cross {
@@ -470,8 +468,8 @@
 .ticker::before, .ticker::after {
   content: ''; position: absolute; top: 0; bottom: 0; z-index: 2; width: 60px;
 }
-.ticker::before { left: 0; background: linear-gradient(to right, var(--cobalt), transparent); }
-.ticker::after  { right: 0; background: linear-gradient(to left, var(--cobalt), transparent); }
+.ticker::before { left: 0; background: transparent; }
+.ticker::after  { right: 0; background: transparent; }
 .ticker__track {
   display: flex; gap: 0; width: max-content;
   animation: ticker 30s linear infinite;
@@ -540,7 +538,7 @@
 .service-card::before {
   content: ''; position: absolute;
   top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--cobalt), var(--cobalt-light));
+  background: var(--cobalt);
   transform: scaleX(0); transform-origin: left;
   transition: transform 0.4s var(--ease-out);
 }
@@ -577,7 +575,7 @@
 ───────────────────────────────────────────── */
 .doctors {
   padding: 6rem 2rem;
-  background: linear-gradient(180deg, var(--gray-50) 0%, white 100%);
+  background: var(--gray-50);
 }
 .doctors-grid {
   display: grid;
@@ -595,7 +593,7 @@
 }
 .doctor-card__bg {
   height: 100px;
-  background: linear-gradient(135deg, var(--cobalt) 0%, var(--cobalt-light) 100%);
+  background: var(--cobalt);
 }
 .doctor-card__avatar {
   width: 72px; height: 72px; border-radius: 50%;
@@ -655,7 +653,7 @@
 }
 .how-step__line {
   position: absolute; top: 36px; left: 100%; width: 2rem;
-  height: 2px; background: linear-gradient(to right, var(--cobalt-pale), transparent);
+  height: 2px; background: var(--cobalt-pale);
   z-index: 0;
 }
 .how-step__bubble {
@@ -721,7 +719,7 @@
    TRUST STRIP
 ───────────────────────────────────────────── */
 .trust {
-  background: linear-gradient(135deg, var(--cobalt-dark) 0%, var(--cobalt) 50%, var(--cobalt-light) 100%);
+  background: var(--cobalt);
   padding: 3rem 2rem;
 }
 .trust-grid {
@@ -858,7 +856,7 @@
 .contact-map {
   border-radius: var(--radius-xl); overflow: hidden;
   border: 1px solid var(--gray-200); height: 360px;
-  background: linear-gradient(135deg, var(--cobalt-faint) 0%, var(--gray-100) 100%);
+  background: var(--gray-100);
   display: flex; align-items: center; justify-content: center;
   position: relative;
 }

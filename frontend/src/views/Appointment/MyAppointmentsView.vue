@@ -62,9 +62,6 @@
                   <button class="btn-table-action btn-detail" @click="viewDetail(app)">
                     <i class="fas fa-eye" /> Chi tiết
                   </button>
-                  <button v-if="app.status === 0 || app.status === 1" class="btn-table-action btn-cancel" @click="cancelAppointment(app.id)">
-                    <i class="fas fa-times" /> Hủy
-                  </button>
                 </div>
               </td>
             </tr>
@@ -169,7 +166,7 @@
 </template>
 
 <script setup>
-  import { onMounted, ref, computed } from 'vue'
+  import { onMounted, onUnmounted, ref, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import Navbar from '@/components/Navbar.vue'
   import api from '@/services/api'
@@ -180,16 +177,61 @@
   const loading = ref(false)
   const appointments = ref([])
   const selectedApp = ref(null)
+  const previousStatuses = ref({})
+  let pollingInterval = null
 
-  async function fetchAppointments () {
-    loading.value = true
+  function playSuccessSound () {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const playNote = (frequency, startTime, duration) => {
+        const osc = audioCtx.createOscillator()
+        const gainNode = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(frequency, startTime)
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gainNode)
+        gainNode.connect(audioCtx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      const now = audioCtx.currentTime
+      playNote(523.25, now, 0.4) // C5
+      playNote(659.25, now + 0.12, 0.5) // E5
+    } catch (error) {
+      console.error('Failed to play notification sound:', error)
+    }
+  }
+
+  async function fetchAppointments (isInitial = false) {
+    if (isInitial) loading.value = true
     try {
       const res = await api.get('/Appointments/my')
-      appointments.value = res.data
+      const newApps = res.data
+      
+      let hasApproved = false
+      let approvedCode = ''
+      
+      newApps.forEach(app => {
+        const prevStatus = previousStatuses.value[app.id]
+        if (!isInitial && prevStatus === 0 && app.status === 1) {
+          hasApproved = true
+          approvedCode = app.id.substring(0, 8).toUpperCase()
+        }
+        previousStatuses.value[app.id] = app.status
+      })
+      
+      appointments.value = newApps
+      
+      if (hasApproved) {
+        playSuccessSound()
+        alert(`🔔 Thông báo Medicare: Lịch hẹn khám #${approvedCode} của bạn đã được phê duyệt thành công!`)
+      }
     } catch (error) {
       console.error('Lỗi tải lịch hẹn:', error)
     } finally {
-      loading.value = false
+      if (isInitial) loading.value = false
     }
   }
 
@@ -273,7 +315,16 @@
       router.push('/login')
       return
     }
-    fetchAppointments()
+    fetchAppointments(true)
+    pollingInterval = setInterval(() => {
+      fetchAppointments(false)
+    }, 5000)
+  })
+
+  onUnmounted(() => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+    }
   })
 </script>
 

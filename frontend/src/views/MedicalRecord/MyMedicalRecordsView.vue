@@ -2,11 +2,11 @@
   <div class="public-page">
     <Navbar />
 
-    <div class="page-header" style="background: linear-gradient(135deg, #002244 0%, #0047AB 100%); color: white; padding: 2.5rem 0; text-align: left;">
+    <div class="page-header" style="background: #0047AB; color: white; padding: 2.5rem 0; text-align: left;">
       <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-          <h1 style="margin: 0; font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px;">Lịch sử khám & Đơn thuốc</h1>
-          <p style="margin: 0.5rem 0 0 0; font-size: 1rem; color: rgba(255,255,255,0.85); font-weight: 500;">
+          <h1 style="margin: 0; font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px; color: #ffffff !important;">Lịch sử khám & Đơn thuốc</h1>
+          <p style="margin: 0.5rem 0 0 0; font-size: 1rem; color: rgba(255,255,255,0.9) !important; font-weight: 500;">
             Tra cứu toàn bộ lịch sử bệnh án và các toa thuốc y khoa do bác sĩ chỉ định.
           </p>
         </div>

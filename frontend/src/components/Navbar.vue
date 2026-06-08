@@ -104,12 +104,51 @@
       </div>
     </div>
   </nav>
+
+  <!-- Notification Bell Button (Placed OUTSIDE the navbar to avoid backdrop-filter constraints) -->
+  <div v-if="authStore.isAuthenticated.value" class="notification-wrapper">
+    <button class="notification-btn" @click="showNotifDropdown = !showNotifDropdown" title="Thông báo">
+      <i class="fas fa-bell" />
+      <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+    </button>
+    
+    <div v-if="showNotifDropdown" class="notif-dropdown">
+      <div class="notif-header">
+        <span>Thông báo của bạn</span>
+        <button v-if="unreadCount > 0" @click="markAllAsRead">Đánh dấu tất cả đã đọc</button>
+      </div>
+      <div class="notif-list">
+        <div v-if="notifications.length === 0" class="notif-empty">
+          <i class="fas fa-bell-slash" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: #cbd5e1;" />
+          Không có thông báo mới
+        </div>
+        <div 
+          v-else 
+          v-for="notif in notifications" 
+          :key="notif.id" 
+          class="notif-item" 
+          :class="{ 'notif-item--unread': notif.unread }"
+          @click="readNotif(notif)"
+        >
+          <div class="notif-item__icon" :class="notif.type || 'info'">
+            <i class="fas" :class="notif.type === 'success' ? 'fa-check-circle' : 'fa-info-circle'" />
+          </div>
+          <div class="notif-item__body">
+            <b>{{ notif.title }}</b>
+            <p>{{ notif.message }}</p>
+            <small>{{ notif.time }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-  import { onMounted, onUnmounted, ref } from 'vue'
+  import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
+  import api from '@/services/api'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -166,17 +205,137 @@
     scrolled.value = window.scrollY > 50
   }
 
+  // User Notifications Feature
+  const notifications = ref(JSON.parse(localStorage.getItem('medicare_notifications') || '[]'))
+  const showNotifDropdown = ref(false)
+  const knownStatuses = ref({})
+  let pollInterval = null
+
+  const unreadCount = computed(() => notifications.value.filter(n => n.unread).length)
+
+  watch(notifications, (newVal) => {
+    localStorage.setItem('medicare_notifications', JSON.stringify(newVal))
+  }, { deep: true })
+
+  watch(authStore.isAuthenticated, (newVal) => {
+    if (newVal) {
+      seedStatuses()
+    } else {
+      knownStatuses.value = {}
+      notifications.value = []
+    }
+  })
+
+  function playSuccessSound () {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const playNote = (frequency, startTime, duration) => {
+        const osc = audioCtx.createOscillator()
+        const gainNode = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(frequency, startTime)
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gainNode)
+        gainNode.connect(audioCtx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      const now = audioCtx.currentTime
+      playNote(523.25, now, 0.4) // C5
+      playNote(659.25, now + 0.12, 0.5) // E5
+    } catch (error) {
+      console.error('Failed to play notification sound:', error)
+    }
+  }
+
+  async function checkAppointments () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+
+    try {
+      const res = await api.get('/Appointments/my')
+      const apps = res.data
+      let hasNewNotification = false
+
+      apps.forEach(app => {
+        const prev = knownStatuses.value[app.id]
+        if (prev === 0 && app.status === 1) {
+          hasNewNotification = true
+          notifications.value.unshift({
+            id: Date.now() + Math.random(),
+            title: 'Lịch hẹn đã được duyệt',
+            message: `Lịch hẹn khám #${app.id.substring(0, 8).toUpperCase()} với BS. ${app.doctorName} đã được phê duyệt thành công!`,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            unread: true,
+            type: 'success'
+          })
+        }
+        knownStatuses.value[app.id] = app.status
+      })
+
+      if (hasNewNotification) {
+        playSuccessSound()
+      }
+    } catch (e) {
+      console.error('Lỗi khi kiểm tra lịch hẹn từ Navbar:', e)
+    }
+  }
+
+  async function seedStatuses () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+    try {
+      const res = await api.get('/Appointments/my')
+      res.data.forEach(app => {
+        knownStatuses.value[app.id] = app.status
+      })
+    } catch (e) {
+      console.error('Lỗi khởi tạo trạng thái lịch hẹn:', e)
+    }
+  }
+
+  function markAllAsRead () {
+    notifications.value.forEach(n => n.unread = false)
+  }
+
+  function readNotif (notif) {
+    notif.unread = false
+    router.push('/my-appointments')
+    showNotifDropdown.value = false
+  }
+
+  function handleDocumentClick (e) {
+    const wrapper = document.querySelector('.notification-wrapper')
+    if (wrapper && !wrapper.contains(e.target)) {
+      showNotifDropdown.value = false
+    }
+  }
+
   onMounted(() => {
     window.addEventListener('scroll', handleScroll)
+    window.addEventListener('click', handleDocumentClick)
+    
+    if (authStore.isAuthenticated.value) {
+      seedStatuses()
+      pollInterval = setInterval(checkAppointments, 8000)
+    }
   })
 
   onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('click', handleDocumentClick)
+    if (pollInterval) {
+      clearInterval(pollInterval)
+    }
   })
 </script>
 
 <style scoped>
-@import '@/styles/navbar.css';
+@import '../styles/navbar.css';
 
 .btn-outline-nav {
   padding: 0.45rem 1rem;
@@ -343,4 +502,8 @@
     margin-left: 8px !important;
   }
 }
+</style>
+
+<style>
+@import '../styles/notif.css';
 </style>

@@ -91,10 +91,13 @@
                 v-for="service in medicalServices"
                 :key="service.id"
                 class="card-item"
-                :class="{ 'card-item--active': selectedService?.id === service.id }"
-                @click="selectService(service)"
+                :class="{ 'card-item--active': selectedServices.some(s => s.id === service.id) }"
+                @click="toggleService(service)"
               >
-                <div class="card-item__icon"><i class="fas fa-stethoscope" /></div>
+                <div class="card-item__icon">
+                  <i v-if="selectedServices.some(s => s.id === service.id)" class="fas fa-check" style="color: var(--primary); font-size: 1.25rem;" />
+                  <i v-else class="fas fa-stethoscope" />
+                </div>
                 <div class="card-item__info">
                   <h3>{{ service.name }}</h3>
                   <p>{{ service.description }}</p>
@@ -107,7 +110,7 @@
               <button class="btn-main btn-back-v" @click="$router.push('/')">
                 <i class="fas fa-chevron-left" /> Quay lại trang chủ
               </button>
-              <button class="btn-main btn-primary-v" :disabled="!selectedService" @click="currentStep = 2">
+              <button class="btn-main btn-primary-v" :disabled="selectedServices.length === 0" @click="currentStep = 2">
                 Chọn bác sĩ <i class="fas fa-chevron-right" />
               </button>
             </div>
@@ -117,7 +120,7 @@
           <section v-if="currentStep === 2">
             <div class="section-title">
               <h2>Chọn bác sĩ chuyên khoa phụ trách</h2>
-              <p>Dịch vụ đã chọn: <b style="color: #0047AB;">{{ selectedService?.name }}</b></p>
+              <p>Dịch vụ đã chọn: <b style="color: #0047AB;">{{ selectedServices.map(s => s.name).join(', ') }}</b></p>
             </div>
 
             <div v-if="loadingDoctors" class="loading-state">
@@ -175,11 +178,11 @@
               <!-- Sleek Modern Calendar Date Picker Card -->
               <div
                 class="date-card-v"
-                style="min-width: 95px; background: rgba(37, 99, 235, 0.05); border: 1.5px dashed rgba(37, 99, 235, 0.4); justify-content: center; align-items: center; color: var(--primary); gap: 6px; position: relative; cursor: pointer;"
+                style="min-width: 68px; max-width: 110px; flex: 1; background: rgba(37, 99, 235, 0.05); border: 1.5px dashed rgba(37, 99, 235, 0.4); justify-content: center; align-items: center; color: var(--primary); gap: 2px; position: relative; cursor: pointer;"
                 @click="openDatePicker"
               >
-                <i class="fas fa-calendar-plus" style="font-size: 1.35rem;" />
-                <span style="font-size: 0.8rem; font-weight: 800; white-space: nowrap;">Chọn ngày</span>
+                <i class="fas fa-calendar-plus" style="font-size: 1.15rem;" />
+                <span style="font-size: 0.68rem; font-weight: 800; white-space: nowrap;">Chọn ngày</span>
                 <input
                   type="date"
                   ref="customDatePicker"
@@ -227,100 +230,161 @@
 
           <!-- STEP 4: FINAL SPLIT SCREEN CONFIRMATION -->
           <section v-if="currentStep === 4" class="step-final" style="margin-top: -1rem;">
-            <div class="section-title" style="margin-bottom: 1rem; text-align: center;">
-              <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Xác nhận thủ tục đăng ký</h2>
-              <p style="font-size: 0.85rem; margin: 0; opacity: 0.85;">Hồ sơ lịch hẹn sẽ được duyệt tức thời bởi lễ tân lâm sàng.</p>
+            <div class="section-title" style="margin-bottom: 1.5rem; text-align: center;">
+              <h2 style="font-size: 1.6rem; margin-bottom: 0.35rem;">Xác nhận thủ tục đăng ký</h2>
+              <p style="font-size: 0.9rem; margin: 0; opacity: 0.85;">Hồ sơ lịch hẹn sẽ được duyệt tức thời bởi lễ tân lâm sàng.</p>
             </div>
 
-            <div class="final-grid" style="gap: 1.5rem; align-items: stretch;">
-              <!-- Left Column: Patient Profile Form Details -->
-              <div class="final-form-col" style="background: white; border: 1.5px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <div class="final-grid" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
+              <!-- Top Column: Patient Profile Form Details -->
+              <div class="final-form-col" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box;">
                 <div class="summary-section" style="border: none; padding: 0;">
-                  <h3 style="font-size: 1.05rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-id-card text-blue" /> Thông tin bệnh nhân trực tuyến
+                  <h3 style="font-size: 1.2rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-id-card text-blue" style="font-size: 1.35rem;" />
+                    <span>Thông tin bệnh nhân trực tuyến</span>
                   </h3>
                   
-                  <div class="final-form-fields" style="gap: 0.75rem; margin-top: 0;">
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Họ và tên bệnh nhân:</label>
-                      <input v-model="patientForm.fullName" placeholder="Nhập họ và tên..." type="text" class="final-input" style="height: 38px; font-size: 0.85rem;" />
+                  <div class="final-form-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 0;">
+                    <div class="form-field" style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-user" style="color: var(--primary); font-size: 0.9rem;" /> Họ và tên bệnh nhân <span style="color: #ef4444;">*</span>:
+                      </label>
+                      <input v-model="patientForm.fullName" placeholder="Nhập họ và tên..." type="text" class="final-input" />
                     </div>
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Số điện thoại liên hệ:</label>
-                      <input v-model="patientForm.phone" placeholder="Số điện thoại di động..." type="tel" class="final-input" style="height: 38px; font-size: 0.85rem;" />
+                    <div class="form-field" style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-phone" style="color: var(--primary); font-size: 0.9rem;" /> Số điện thoại liên hệ <span style="color: #ef4444;">*</span>:
+                      </label>
+                      <input v-model="patientForm.phone" placeholder="Số điện thoại di động..." type="tel" class="final-input" />
                     </div>
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Địa chỉ Email nhận kết quả:</label>
-                      <input v-model="patientForm.email" placeholder="Nhập địa chỉ email nhận kết quả..." type="email" class="final-input" style="height: 38px; font-size: 0.85rem;" />
+                    <div class="form-field" style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-envelope" style="color: var(--primary); font-size: 0.9rem;" /> Địa chỉ Email nhận kết quả <span style="color: #ef4444;">*</span>:
+                      </label>
+                      <input v-model="patientForm.email" placeholder="Nhập địa chỉ email..." type="email" class="final-input" />
                     </div>
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Ngày tháng năm sinh:</label>
-                      <input v-model="patientForm.dob" type="date" class="final-input" style="height: 38px; font-size: 0.85rem;" />
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                      <div class="form-field" style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                          <i class="fas fa-calendar" style="color: var(--primary); font-size: 0.9rem;" /> Ngày sinh <span style="color: #ef4444;">*</span>:
+                        </label>
+                        <input v-model="patientForm.dob" type="date" class="final-input" />
+                      </div>
+                      <div class="form-field" style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                          <i class="fas fa-venus-mars" style="color: var(--primary); font-size: 0.9rem;" /> Giới tính <span style="color: #ef4444;">*</span>:
+                        </label>
+                        <select v-model="patientForm.gender" class="final-input" style="padding: 0 1rem; background: white;">
+                          <option value="">Chọn giới tính</option>
+                          <option value="Nam">Nam</option>
+                          <option value="Nữ">Nữ</option>
+                          <option value="Khác">Khác</option>
+                        </select>
+                      </div>
                     </div>
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Giới tính sinh học:</label>
-                      <select v-model="patientForm.gender" class="final-input" style="height: 38px; font-size: 0.85rem; padding: 0 1rem; background: white;">
-                        <option value="">-- Chọn giới tính --</option>
-                        <option value="Nam">Nam</option>
-                        <option value="Nữ">Nữ</option>
-                        <option value="Khác">Khác</option>
-                      </select>
+                     <!-- Quick Address Selector API Integration -->
+                    <div class="form-field" style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px;">
+                      <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 0.9rem;" /> Địa chỉ thường trú <span style="color: #ef4444;">*</span>:
+                      </label>
+                      <div style="display: flex; flex-direction: column; gap: 0.65rem; width: 100%;">
+                        <select v-model="selectedProvince" @change="handleProvinceChange" class="final-input" style="padding: 0 1rem; background: white; width: 100%; box-sizing: border-box;">
+                          <option :value="null">-- Chọn Tỉnh / Thành phố --</option>
+                          <option v-for="p in provinces" :key="p.code" :value="p.code">{{ p.name }}</option>
+                        </select>
+                        <select v-model="selectedDistrict" @change="handleDistrictChange" :disabled="!selectedProvince" class="final-input" style="padding: 0 1rem; background: white; width: 100%; box-sizing: border-box;">
+                          <option :value="null">-- Chọn Quận / Huyện --</option>
+                          <option v-for="d in districts" :key="d.code" :value="d.code">{{ d.name }}</option>
+                        </select>
+                        <input v-model="streetAddress" @input="handleWardOrStreetChange" placeholder="Số nhà, tên đường, phường/xã..." type="text" class="final-input" style="width: 100%; box-sizing: border-box;" />
+                      </div>
+                      <div v-if="patientForm.address" style="font-size: 0.78rem; color: var(--slate-500); font-style: italic; margin-top: 4px;">
+                        Địa chỉ đầy đủ: {{ patientForm.address }}
+                      </div>
                     </div>
-                    <div class="form-field">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Địa chỉ thường trú:</label>
-                      <input v-model="patientForm.address" placeholder="Nơi ở hiện tại của bệnh nhân..." type="text" class="final-input" style="height: 38px; font-size: 0.85rem;" />
-                    </div>
-                    <div class="form-field full-width" style="margin-top: 0.25rem;">
-                      <label style="font-size: 0.78rem; font-weight: 750;">Triệu chứng & Lý do khám bệnh:</label>
-                      <textarea v-model="reason" placeholder="Ví dụ: Đau đầu kéo dài, sốt nhẹ vào chiều tối..." rows="2" class="final-textarea" style="height: 52px; font-size: 0.85rem; padding: 0.5rem 1rem;" />
+
+                    <div class="form-field" style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 0.85rem; font-weight: 750; color: #334155; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-notes-medical" style="color: var(--primary); font-size: 0.9rem;" /> Triệu chứng & Lý do khám bệnh (Không bắt buộc):
+                      </label>
+                      <textarea v-model="reason" placeholder="Ví dụ: Đau đầu kéo dài, sốt nhẹ vào chiều tối..." rows="3" class="final-textarea" style="padding: 0.75rem 1rem;" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Right Column: Receipt Summary and Book Button Integrated -->
-              <div class="final-summary-col">
-                <div class="summary-card shadow-light" style="padding: 1.25rem; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border: 1.5px solid var(--slate-200); border-radius: var(--radius-lg); overflow: hidden;">
-                  <div>
-                    <h3 style="font-size: 1.05rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
-                      <i class="fas fa-receipt text-blue" /> Phiếu đặt lịch khám
-                    </h3>
-                    
-                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
-                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Chuyên khoa khám</span>
-                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">{{ selectedService?.name }}</span>
+              <!-- Bottom Column: Receipt Summary and Book Button Integrated -->
+              <div class="final-summary-col" style="width: 100%; display: flex; flex-direction: column;">
+                <div class="summary-card shadow-light" style="padding: 2rem; background: #ffffff; border: 1.5px solid var(--slate-200); border-radius: 16px; overflow: hidden; position: relative; width: 100%; box-sizing: border-box;">
+                  <h3 style="font-size: 1.2rem; font-weight: 850; color: #0f172a; margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-receipt text-blue" style="font-size: 1.35rem;" /> Phiếu đặt lịch khám
+                  </h3>
+                  
+                  <!-- Horizontal 3-Column Summary Details Grid -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; border-bottom: 2px dashed var(--slate-300); padding-bottom: 1.5rem;">
+                    <!-- Column 1: Services & Fees -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.5px;">Dịch vụ khám</span>
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div v-for="svc in selectedServices" :key="svc.id" style="font-weight: 800; color: var(--dark-slate); font-size: 0.95rem;">
+                          {{ svc.name }}
+                        </div>
+                      </div>
+                      <div style="margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--slate-200);">
+                        <span style="font-size: 0.8rem; color: var(--slate-500);">Phí tạm tính:</span>
+                        <div style="font-size: 1.45rem; font-weight: 900; color: var(--primary);">{{ formatPrice(totalPrice) }}</div>
+                      </div>
                     </div>
-                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
-                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Bác sĩ phụ trách</span>
-                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">BS. {{ selectedDoctor?.fullName }}</span>
+
+                    <!-- Column 2: Doctor in charge -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--slate-200); padding-left: 1.5rem;">
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.5px;">Bác sĩ phụ trách</span>
+                      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                        <div style="width: 42px; height: 42px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                          <i class="fas fa-user-md" style="font-size: 1.25rem;" />
+                        </div>
+                        <div>
+                          <div style="font-weight: 800; color: var(--dark-slate); font-size: 0.95rem;">BS. {{ selectedDoctor?.fullName }}</div>
+                          <div style="font-size: 0.78rem; color: var(--slate-500); font-weight: 600;">{{ selectedDoctor?.specialty }}</div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="summary-row" style="padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px dashed var(--slate-200);">
-                      <span class="summary-label" style="color: var(--slate-600); font-weight: 550;">Thời gian khám</span>
-                      <span class="summary-value" style="font-weight: 800; color: var(--dark-slate);">{{ formatDateFull(selectedDate) }} - {{ formatTime(selectedSlot?.startTime) }}</span>
-                    </div>
-                    
-                    <div class="summary-row total-row" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 2px dashed var(--slate-300);">
-                      <span class="summary-label" style="font-weight: 750; color: var(--slate-800);">Phí tạm tính</span>
-                      <span class="summary-value total-value" style="font-size: 1.35rem; font-weight: 900; color: var(--primary);">
-                        {{ formatPrice(selectedService?.price || 0) }}
-                      </span>
+
+                    <!-- Column 3: Appt Time -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--slate-200); padding-left: 1.5rem;">
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.5px;">Thời gian hẹn</span>
+                      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                        <div style="width: 42px; height: 42px; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; color: var(--success);">
+                          <i class="fas fa-clock" style="font-size: 1.2rem;" />
+                        </div>
+                        <div>
+                          <div style="font-weight: 800; color: var(--dark-slate); font-size: 0.95rem;">{{ formatTime(selectedSlot?.startTime) }}</div>
+                          <div style="font-size: 0.78rem; color: var(--slate-500); font-weight: 600;">{{ formatDateFull(selectedDate) }}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--slate-200);">
-                    <p class="confirm-note" style="margin-bottom: 0.75rem; font-size: 0.76rem; color: var(--slate-600); line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
-                      <i class="fas fa-info-circle text-blue" style="margin-top: 2px;" /> Lịch hẹn sẽ được gửi tức thời đến Cổng tiếp nhận. Bạn sẽ được cấp số thứ tự ngay khi duyệt.
-                    </p>
-                    <button class="btn-book-final shadow-light" :disabled="submitting" @click="bookAppointment" style="padding: 0.8rem 1.25rem; font-size: 0.92rem; width: 100%; border-radius: var(--radius-md); font-weight: 850; background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);">
-                      <span v-if="submitting"><i class="fas fa-spinner fa-spin" /> ĐANG TRUYỀN DỮ LIỆU...</span>
-                      <span v-else><i class="fas fa-check-double" /> XÁC NHẬN ĐẶT LỊCH NGAY</span>
-                    </button>
-                    <button 
-                      style="width: 100%; margin-top: 0.5rem; background: #f8fafc; border: 1.5px solid var(--slate-300); color: var(--slate-600); padding: 0.6rem; border-radius: var(--radius-md); font-weight: 750; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;"
-                      @click="currentStep = 3"
-                    >
-                      <i class="fas fa-chevron-left" /> Quay lại chọn ngày
-                    </button>
+                  <!-- Footer Actions & Note -->
+                  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; align-items: center; margin-top: 1.5rem;">
+                    <div>
+                      <p style="margin: 0; font-size: 0.82rem; color: var(--slate-600); line-height: 1.5; display: flex; align-items: flex-start; gap: 8px;">
+                        <i class="fas fa-info-circle text-blue" style="margin-top: 2px; font-size: 0.9rem;" /> 
+                        <span>Lịch hẹn sẽ được gửi tức thời đến Cổng tiếp nhận. Bạn sẽ được cấp số thứ tự khám ngay khi lễ tân duyệt hồ sơ.</span>
+                      </p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <button class="btn-book-final shadow-light" :disabled="submitting" @click="bookAppointment" style="padding: 1rem 1.5rem; font-size: 1rem; width: 100%; border-radius: var(--radius-md); font-weight: 850; background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);">
+                        <span v-if="submitting"><i class="fas fa-spinner fa-spin" /> ĐANG TRUYỀN DỮ LIỆU...</span>
+                        <span v-else><i class="fas fa-check-double" /> XÁC NHẬN ĐẶT LỊCH NGAY</span>
+                      </button>
+                      <button 
+                        style="width: 100%; background: #f8fafc; border: 1.5px solid var(--slate-300); color: var(--slate-600); padding: 0.75rem; border-radius: var(--radius-md); font-weight: 750; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;"
+                        @click="currentStep = 3"
+                      >
+                        <i class="fas fa-chevron-left" /> Quay lại chọn ngày
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -384,7 +448,7 @@
   const currentStep = ref(1)
   const medicalServices = ref([])
   const loadingServices = ref(false)
-  const selectedService = ref(null)
+  const selectedServices = ref([])
   const selectedDoctor = ref(null)
   const selectedDate = ref('')
   const selectedSlot = ref(null)
@@ -438,7 +502,71 @@
     history: '',
   })
 
+  // Vietnam Provinces API Integration for Quick Address Selection
+  const provinces = ref([])
+  const districts = ref([])
+  const wards = ref([])
+  const selectedProvince = ref(null)
+  const selectedDistrict = ref(null)
+  const selectedWard = ref(null)
+  const streetAddress = ref('')
+
+  async function fetchProvinces() {
+    try {
+      const res = await fetch('https://provinces.open-api.vn/api/p/')
+      if (res.ok) {
+        provinces.value = await res.json()
+      }
+    } catch (e) {
+      console.error('Lỗi tải danh sách tỉnh thành', e)
+    }
+  }
+
+  async function handleProvinceChange() {
+    districts.value = []
+    wards.value = []
+    selectedDistrict.value = null
+    selectedWard.value = null
+    updateAddressString()
+    
+    if (!selectedProvince.value) return
+    try {
+      const res = await fetch(`https://provinces.open-api.vn/api/p/${selectedProvince.value}?depth=2`)
+      if (res.ok) {
+        const data = await res.json()
+        districts.value = data.districts || []
+      }
+    } catch (e) {
+      console.error('Lỗi tải danh sách quận huyện', e)
+    }
+  }
+
+  function handleDistrictChange() {
+    updateAddressString()
+  }
+
+  function handleWardOrStreetChange() {
+    updateAddressString()
+  }
+
+  function updateAddressString() {
+    const provObj = provinces.value.find(p => p.code === selectedProvince.value)
+    const distObj = districts.value.find(d => d.code === selectedDistrict.value)
+    
+    const parts = [
+      streetAddress.value ? streetAddress.value.trim() : '',
+      distObj ? distObj.name : '',
+      provObj ? provObj.name : ''
+    ]
+    patientForm.value.address = parts.filter(Boolean).join(', ')
+  }
+
   function addToast (title, message, type = 'success') {
+    const duplicate = toasts.value.find(t => t.title === title && t.message === message)
+    if (duplicate) return
+    if (toasts.value.length >= 3) {
+      toasts.value.shift()
+    }
     const id = Date.now()
     toasts.value.push({ id, title, message, type })
     setTimeout(() => removeToast(id), 4000)
@@ -449,7 +577,31 @@
   }
 
   const loadingDoctors = computed(() => doctorStore.loading.value)
-  const filteredDoctors = computed(() => doctorStore.doctors.value)
+  const filteredDoctors = computed(() => {
+    const list = doctorStore.doctors.value || []
+    if (selectedServices.value.length === 0) return list
+    
+    const removeDiacritics = (str) => {
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+    }
+
+    const matched = list.filter(doc => {
+      const spec = removeDiacritics((doc.specialty || '').toLowerCase())
+      return selectedServices.value.some(svc => {
+        const svcName = removeDiacritics((svc.name || '').toLowerCase())
+        const svcDesc = removeDiacritics((svc.description || '').toLowerCase())
+        
+        return svcName.includes(spec) || spec.includes(svcName) || 
+               svcDesc.includes(spec) || 
+               spec.split(' ').some(word => word.length > 1 && svcName.includes(word))
+      })
+    })
+    
+    // Fallback: display all doctors if no specific specialty match is found
+    return matched.length > 0 ? matched : list
+  })
+
+  const totalPrice = computed(() => selectedServices.value.reduce((sum, s) => sum + (s.price || 0), 0))
 
   const customDatePicker = ref(null)
   const customDate = ref('')
@@ -527,9 +679,16 @@
     }
   }
 
-  function selectService (service) {
-    selectedService.value = service
-    addToast('Đã chọn chuyên khoa', service.name)
+  function toggleService (service) {
+    const index = selectedServices.value.findIndex(s => s.id === service.id)
+    if (index > -1) {
+      selectedServices.value.splice(index, 1)
+      addToast('Đã bỏ chọn dịch vụ', service.name)
+    } else {
+      selectedServices.value.push(service)
+      addToast('Đã chọn dịch vụ', service.name)
+    }
+    selectedDoctor.value = null
   }
 
   function selectDoctor (doc) {
@@ -556,26 +715,59 @@
   }
 
   async function bookAppointment () {
+    if (selectedServices.value.length === 0) {
+      addToast('Chưa chọn dịch vụ', 'Vui lòng chọn ít nhất một dịch vụ khám để tiếp tục', 'warning')
+      return
+    }
+
+    const form = patientForm.value
+    if (!form.fullName || !form.fullName.trim()) {
+      addToast('Thiếu thông tin', 'Vui lòng điền họ và tên bệnh nhân', 'warning')
+      return
+    }
+    if (!form.phone || !form.phone.trim()) {
+      addToast('Thiếu thông tin', 'Vui lòng điền số điện thoại liên hệ', 'warning')
+      return
+    }
+    if (!form.email || !form.email.trim()) {
+      addToast('Thiếu thông tin', 'Vui lòng nhập địa chỉ email nhận kết quả', 'warning')
+      return
+    }
+    if (!form.dob) {
+      addToast('Thiếu thông tin', 'Vui lòng chọn ngày tháng năm sinh', 'warning')
+      return
+    }
+    if (!form.gender) {
+      addToast('Thiếu thông tin', 'Vui lòng chọn giới tính sinh học', 'warning')
+      return
+    }
+    if (!form.address || !form.address.trim()) {
+      addToast('Thiếu thông tin', 'Vui lòng nhập địa chỉ thường trú hiện tại', 'warning')
+      return
+    }
+
     submitting.value = true
     try {
+      const servicesString = selectedServices.value.map(s => s.name).join(', ')
       // Compile rich clinical details to the reason field to pass seamlessly to the backend DB without database schema breakage
       const richReason = `[KHÁM CHUYÊN KHOA]
-- Lý do khám: ${reason.value || 'Khám tổng quát'}
-- Bệnh nhân: ${patientForm.value.fullName}
-- Ngày sinh: ${patientForm.value.dob || 'Chưa cung cấp'}
-- Giới tính: ${patientForm.value.gender || 'Chưa cung cấp'}
-- SĐT liên hệ: ${patientForm.value.phone}
-- Địa chỉ thường trú: ${patientForm.value.address}`
+- Lý do khám: ${(reason.value || '').trim() || 'Khám tổng quát'}
+- Các dịch vụ đã chọn: ${servicesString}
+- Bệnh nhân: ${form.fullName.trim()}
+- Ngày sinh: ${form.dob}
+- Giới tính: ${form.gender}
+- SĐT liên hệ: ${form.phone.trim()}
+- Địa chỉ thường trú: ${form.address.trim()}`
 
       const data = {
         patientId: authStore.user.value?.id,
         slotId: selectedSlot.value?.id || '',
-        medicalServiceId: selectedService.value?.id || '',
+        medicalServiceId: selectedServices.value[0]?.id || '',
         reason: richReason,
-        patientEmail: patientForm.value.email,
+        patientEmail: form.email.trim(),
       }
       const response = await appointmentService.bookAppointment(data)
-      successData.value = { ...response, patientName: patientForm.value.fullName }
+      successData.value = { ...response, patientName: form.fullName.trim() }
     } catch (error) {
       addToast('Đặt lịch thất bại', error.response?.data?.message || 'Có lỗi xảy ra trong quá trình đặt lịch', 'error')
     } finally {
@@ -594,6 +786,7 @@
   onMounted(() => {
     fetchServices()
     doctorStore.fetchDoctors()
+    fetchProvinces()
     // Pre-populate fields from the logged in user store safely and robustly
     const u = authStore.user.value || authStore.user
     if (u) {
@@ -601,6 +794,7 @@
       patientForm.value.email = u.email || (u.username && u.username.includes('@') ? u.username : '') || ''
       patientForm.value.phone = u.phoneNumber || u.phone || ''
       patientForm.value.address = u.address || ''
+      streetAddress.value = u.address || ''
       patientForm.value.dob = u.dob ? u.dob.split('T')[0] : '2000-01-01'
       patientForm.value.gender = u.gender || 'Nam'
       patientForm.value.insurance = u.insurance || ''

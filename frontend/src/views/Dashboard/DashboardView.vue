@@ -21,7 +21,7 @@
         <div class="sidebar__divider">QUẢN TRỊ CHIẾN LƯỢC</div>
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'overview' }" @click="activeTab = 'overview'">
           <span class="nav-icon"><i class="fas fa-cubes" /></span>
-          <span>Tổng Quan Liên Thông</span>
+          <span>Dashboard</span>
         </div>
 
         <div class="sidebar__divider">1. PHÂN HỆ LỊCH KHÁM</div>
@@ -105,66 +105,193 @@
       <!-- PAGE CONTAINER -->
       <div class="page-container">
 
-        <!-- TAB 1: COCKPIT OVERVIEW -->
-        <div v-if="activeTab === 'overview'" class="tab-content">
-          <div class="section-header-cockpit">
-            <h2 class="section-title-clinical">Phân tích hệ thống real-time phân hệ lịch khám</h2>
-            <button class="btn-primary-cockpit" :disabled="loading" @click="fetchAllData">
-              <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }" /> Đồng bộ số liệu liên thông
-            </button>
-          </div>
-
-          <!-- KPI Cards (Appointment Service - ACTIVE) -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-card__label">Tổng Lượt Hẹn Khám</span>
-              <h3 class="stat-card__value">{{ stats.totalAppointments }}</h3>
-              <p class="stat-card__trend text-blue"><i class="fas fa-calendar-check"></i> Cổng Lịch Hẹn</p>
-              <div class="stat-card__icon bg-blue-light"><i class="fas fa-plus-square text-blue" /></div>
-            </div>
-
-            <div class="stat-card">
-              <span class="stat-card__label">Đơn Chờ Duyệt</span>
-              <h3 class="stat-card__value" style="color: #ea580c;">{{ stats.pendingAppointments }}</h3>
-              <p class="stat-card__trend text-orange"><i class="fas fa-hourglass-half"></i> Tiếp nhận lâm sàng</p>
-              <div class="stat-card__icon bg-orange-light"><i class="fas fa-user-clock text-orange" /></div>
-            </div>
-
-
-          </div>
-
-          <!-- Unified Charts & Feeds -->
-          <div class="dashboard-main-grid">
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>Xu hướng Lượt Khám & Hoạt động (7 ngày qua)</h3>
-                <span class="dot trend-dot" /> <small>Lượt hoạt động</small>
+        <!-- TAB 1: COCKPIT OVERVIEW (Dabang Redesign) -->
+        <div v-if="activeTab === 'overview'" class="tab-content dashboard-overview-redesign">
+          
+          <!-- Top Analytics Row -->
+          <div class="analytics-row">
+            
+            <!-- Left Side: Today's Sales & Total Revenue & Customer Satisfaction & Top Products -->
+            <div class="analytics-left">
+              
+              <!-- Today's Sales Widget -->
+              <div class="widget-card todays-sales-widget">
+                <div class="widget-header-row">
+                  <div>
+                    <h3 class="widget-title">Hoạt động Hôm nay</h3>
+                    <p class="widget-subtitle">Tóm tắt hoạt động khám chữa bệnh</p>
+                  </div>
+                  <button class="btn-export-widget" @click="fetchAllData">
+                    <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }" /> Đồng bộ
+                  </button>
+                </div>
+                
+                <div class="sales-cards-grid">
+                  <!-- Pink Card -->
+                  <div class="sales-card pink-card">
+                    <div class="sales-card-icon"><i class="fas fa-chart-line" /></div>
+                    <div class="sales-card-value">{{ stats.totalAppointments }}</div>
+                    <div class="sales-card-label">Tổng Lượt Hẹn</div>
+                    <div class="sales-card-trend">+8% so với hôm qua</div>
+                  </div>
+                  
+                  <!-- Orange Card -->
+                  <div class="sales-card orange-card">
+                    <div class="sales-card-icon"><i class="fas fa-hourglass-half" /></div>
+                    <div class="sales-card-value">{{ stats.pendingAppointments }}</div>
+                    <div class="sales-card-label">Chờ Phê Duyệt</div>
+                    <div class="sales-card-trend">+5% so với hôm qua</div>
+                  </div>
+                  
+                  <!-- Green Card -->
+                  <div class="sales-card green-card">
+                    <div class="sales-card-icon"><i class="fas fa-file-prescription" /></div>
+                    <div class="sales-card-value">124</div>
+                    <div class="sales-card-label">Đơn Thuốc Đã Kê</div>
+                    <div class="sales-card-trend">+1.2% so với hôm qua</div>
+                  </div>
+                  
+                  <!-- Purple Card -->
+                  <div class="sales-card purple-card">
+                    <div class="sales-card-icon"><i class="fas fa-user-plus" /></div>
+                    <div class="sales-card-value">48</div>
+                    <div class="sales-card-label">Bệnh Nhân Mới</div>
+                    <div class="sales-card-trend">+0.5% so với hôm qua</div>
+                  </div>
+                </div>
               </div>
-              <div class="canvas-wrapper">
-                <canvas id="trendChart" />
-              </div>
-            </div>
 
-            <!-- Activity Logs (Appointment Service) -->
-            <div class="top-services-panel">
-              <div class="panel-header">
-                <h3>Hoạt Động Lâm Sàng Gần Đây</h3>
+              <!-- Second Row: Total Revenue & Customer Satisfaction & Target vs Reality -->
+              <div class="widgets-middle-grid">
+                <!-- Total Revenue Chart -->
+                <div class="widget-card revenue-chart-widget">
+                  <h3 class="widget-title">Doanh Thu Phòng Khám</h3>
+                  <div class="canvas-wrapper">
+                    <canvas id="revenueChart" />
+                  </div>
+                </div>
+                
+                <!-- Customer Satisfaction Chart -->
+                <div class="widget-card satisfaction-widget">
+                  <h3 class="widget-title">Độ Hài Lòng (CSAT)</h3>
+                  <div class="canvas-wrapper">
+                    <canvas id="satisfactionChart" />
+                  </div>
+                  <div class="satisfaction-legend">
+                    <div class="legend-item"><span class="dot last-month-dot"></span> Tháng trước <span>$3,004</span></div>
+                    <div class="legend-item"><span class="dot this-month-dot"></span> Tháng này <span>$4,504</span></div>
+                  </div>
+                </div>
               </div>
-              <div class="activity-scroller">
-                <div class="activity-feed-list">
-                  <div v-for="log in unifiedActivities" :key="log.time" class="activity-feed-item">
-                    <div class="activity-icon-circle" :class="log.colorClass">
-                      <i :class="log.icon" />
+
+              <!-- Third Row: Top Products & Sales Mapping -->
+              <div class="widgets-bottom-grid">
+                <!-- Top Products (Medical Services) -->
+                <div class="widget-card top-products-widget">
+                  <h3 class="widget-title">Dịch Vụ Phổ Biến</h3>
+                  <div class="products-list">
+                    <div class="product-item">
+                      <span class="product-num">01</span>
+                      <div class="product-info">
+                        <span class="product-name">Khám sức khỏe tổng quát</span>
+                        <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 85%; background: #0047AB;"></div></div>
+                      </div>
+                      <span class="product-percent badge-blue">85%</span>
                     </div>
-                    <div class="activity-details">
-                      <p class="activity-text" v-html="log.text"></p>
-                      <span class="activity-time-stamp">{{ log.time }}</span>
+                    <div class="product-item">
+                      <span class="product-num">02</span>
+                      <div class="product-info">
+                        <span class="product-name">Xét nghiệm huyết học</span>
+                        <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 72%; background: #10B981;"></div></div>
+                      </div>
+                      <span class="product-percent badge-green">72%</span>
+                    </div>
+                    <div class="product-item">
+                      <span class="product-num">03</span>
+                      <div class="product-info">
+                        <span class="product-name">Chụp X-Quang Tim Phổi</span>
+                        <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 48%; background: #F59E0B;"></div></div>
+                      </div>
+                      <span class="product-percent badge-yellow">48%</span>
+                    </div>
+                    <div class="product-item">
+                      <span class="product-num">04</span>
+                      <div class="product-info">
+                        <span class="product-name">Siêu âm Doppler Tim</span>
+                        <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 30%; background: #8B5CF6;"></div></div>
+                      </div>
+                      <span class="product-percent badge-purple">30%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sales Mapping by Area -->
+                <div class="widget-card mapping-widget">
+                  <h3 class="widget-title">Lượt Khám Theo Quận</h3>
+                  <div class="mapping-list">
+                    <div class="mapping-item">
+                      <div class="mapping-lead">
+                        <i class="fas fa-map-marker-alt" style="color: #EF4444;" />
+                        <span>Quận 1, TP. HCM</span>
+                      </div>
+                      <span class="mapping-val">45%</span>
+                    </div>
+                    <div class="mapping-item">
+                      <div class="mapping-lead">
+                        <i class="fas fa-map-marker-alt" style="color: #F59E0B;" />
+                        <span>Quận 3, TP. HCM</span>
+                      </div>
+                      <span class="mapping-val">29%</span>
+                    </div>
+                    <div class="mapping-item">
+                      <div class="mapping-lead">
+                        <i class="fas fa-map-marker-alt" style="color: #10B981;" />
+                        <span>Bình Thạnh, TP. HCM</span>
+                      </div>
+                      <span class="mapping-val">18%</span>
+                    </div>
+                    <div class="mapping-item">
+                      <div class="mapping-lead">
+                        <i class="fas fa-map-marker-alt" style="color: #3B82F6;" />
+                        <span>Thủ Đức, TP. HCM</span>
+                      </div>
+                      <span class="mapping-val">8%</span>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
+
+            <!-- Right Side: Visitor Insights & Target vs Reality & Volume vs Service Level -->
+            <div class="analytics-right">
+              <!-- Visitor Insights (Line Chart) -->
+              <div class="widget-card visitor-insights-widget">
+                <h3 class="widget-title">Nhật Ký Lượt Khám</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="visitorInsightsChart" />
+                </div>
+              </div>
+
+              <!-- Target vs Reality Chart -->
+              <div class="widget-card target-reality-widget">
+                <h3 class="widget-title">Chỉ Tiêu Hoạt Động</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="targetRealityChart" />
+                </div>
+              </div>
+
+              <!-- Volume vs Service Level Chart -->
+              <div class="widget-card volume-service-widget">
+                <h3 class="widget-title">Lượng Khám Theo Chuyên Khoa</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="volumeServiceChart" />
+                </div>
+              </div>
+            </div>
+
           </div>
+
         </div>
 
         <!-- #-------------------------------------------------- -->
@@ -173,80 +300,103 @@
 
         <!-- TAB 2: APPOINTMENTS LIST (Receptions) -->
         <div v-if="activeTab === 'appointments'" class="tab-content">
-          <div class="filter-bar">
-            <div class="filter-group">
-              <label>Lọc Trạng Thái:</label>
-              <select v-model="filterStatus" class="filter-select">
-                <option value="all">Tất cả trạng thái</option>
-                <option value="0">Chờ duyệt</option>
-                <option value="1">Đã duyệt</option>
-                <option value="2">Đã khám</option>
-                <option value="3">Đã hủy</option>
-              </select>
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Lọc Trạng Thái:</span>
+              <a-select v-model:value="filterStatus" style="width: 180px;">
+                <a-select-option value="all">Tất cả trạng thái</a-select-option>
+                <a-select-option value="0">Chờ duyệt</a-select-option>
+                <a-select-option value="1">Đã duyệt</a-select-option>
+                <a-select-option value="2">Đã khám</a-select-option>
+                <a-select-option value="3">Đã hủy</a-select-option>
+              </a-select>
             </div>
-            <div class="filter-group">
-              <label>Tìm kiếm:</label>
-              <input placeholder="Họ tên bệnh nhân..." type="text" v-model="searchPatientQuery" class="filter-input" />
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm:</span>
+              <a-input v-model:value="searchPatientQuery" placeholder="Họ tên bệnh nhân..." allow-clear />
             </div>
-            <div class="filter-stats">
-              Tìm thấy: <b>{{ filteredAppointments.length }}</b> lịch hẹn
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+              Tìm thấy: <strong style="color: #0f172a; font-size: 1rem;">{{ filteredAppointments.length }}</strong> lịch hẹn
             </div>
           </div>
 
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn</th>
-                  <th>Bệnh nhân</th>
-                  <th>Bác sĩ khám</th>
-                  <th>Thời gian</th>
-                  <th>Dịch vụ</th>
-                  <th>STT</th>
-                  <th>Trạng thái</th>
-                  <th style="text-align: center;">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredAppointments.length === 0">
-                  <td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;">
-                    Không tìm thấy lịch hẹn nào.
-                  </td>
-                </tr>
-                <tr v-for="app in filteredAppointments" :key="app.id">
-                  <td><code>#{{ app.id.substring(0, 8).toUpperCase() }}</code></td>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar-cell">{{ app.patientName?.charAt(0) }}</div>
-                      <div><p style="font-weight: 700;">{{ app.patientName }}</p></div>
-                    </div>
-                  </td>
-                  <td><span class="doctor-name">BS. {{ app.doctorName }}</span></td>
-                  <td>
-                    <p style="font-weight: 600;">{{ formatTime(app.time) }}</p>
-                    <p style="font-size: 0.75rem; color: #64748b;">{{ formatDate(app.date) }}</p>
-                  </td>
-                  <td><span class="badge badge--service">{{ app.serviceName }}</span></td>
-                  <td>
-                    <span v-if="app.queueNumber" class="queue-number">#{{ app.queueNumber }}</span>
-                    <span v-else style="color: #94a3b8; font-style: italic;">Chưa cấp</span>
-                  </td>
-                  <td><span class="badge" :class="getStatusClass(app.status)">{{ getStatusText(app.status) }}</span></td>
-                  <td>
-                    <div class="action-btns" style="justify-content: center;">
-                      <button v-if="app.status === 0" class="btn-icon btn-icon--check" @click="approve(app.id)" title="Duyệt đơn">
-                        <i class="fas fa-check" />
-                      </button>
-                      <button v-if="app.status === 0" class="btn-icon btn-icon--close" @click="cancel(app.id)" title="Hủy đơn">
-                        <i class="fas fa-times" />
-                      </button>
-                      <span v-else style="color: #94a3b8; font-size: 0.8rem;">Đã xử lý</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <a-table 
+            :columns="columnsAppointments" 
+            :data-source="filteredAppointments" 
+            row-key="id" 
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table"
+          >
+            <template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+              <div style="padding: 8px">
+                <a-input
+                  :placeholder="`Tìm kiếm ${column.title}...`"
+                  :value="selectedKeys[0]"
+                  style="width: 188px; margin-bottom: 8px; display: block;"
+                  @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+                  @pressEnter="confirm()"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    style="flex: 1; background-color: var(--primary); border-color: var(--primary);"
+                    @click="confirm()"
+                  >
+                    Tìm
+                  </a-button>
+                  <a-button size="small" style="flex: 1;" @click="clearFilters(); confirm()">
+                    Xóa
+                  </a-button>
+                </div>
+              </div>
+            </template>
+            <template #customFilterIcon="{ filtered }">
+              <i class="fas fa-search" :style="{ color: filtered ? '#3b82f6' : '#bfbfbf', fontSize: '0.85rem' }" />
+            </template>
+            <template #bodyCell="{ record, column, index }">
+              <template v-if="column.key === 'stt'">
+                <strong style="color: #64748b;">{{ index + 1 }}</strong>
+              </template>
+              <template v-else-if="column.key === 'id'">
+                <code>#{{ record.id.substring(0, 8).toUpperCase() }}</code>
+              </template>
+              <template v-else-if="column.key === 'patientName'">
+                <div class="user-cell" style="display: flex; align-items: center; gap: 8px;">
+                  <div class="avatar-cell" style="width: 32px; height: 32px; line-height: 32px; border-radius: 50%; background: #e0f2fe; color: #0369a1; text-align: center; font-weight: 700;">{{ record.patientName?.charAt(0) }}</div>
+                  <div><p style="font-weight: 700; margin: 0; color: #1e293b;">{{ record.patientName }}</p></div>
+                </div>
+              </template>
+              <template v-else-if="column.key === 'doctorName'">
+                <span class="doctor-name" style="font-weight: 600; color: #0047AB;">BS. {{ record.doctorName }}</span>
+              </template>
+              <template v-else-if="column.key === 'dateTime'">
+                <p style="font-weight: 700; margin: 0; color: #1e293b;">{{ formatTime(record.time) }}</p>
+                <p style="font-size: 0.75rem; color: #64748b; margin: 0; font-weight: 500;">{{ formatDate(record.date) }}</p>
+              </template>
+              <template v-else-if="column.key === 'serviceName'">
+                <span class="badge badge--service" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem;">{{ record.serviceName }}</span>
+              </template>
+              <template v-else-if="column.key === 'queueNumber'">
+                <span v-if="record.queueNumber" class="queue-number" style="font-weight: 700; color: #0f172a; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">#{{ record.queueNumber }}</span>
+                <span v-else style="color: #94a3b8; font-style: italic;">Chưa cấp</span>
+              </template>
+              <template v-else-if="column.key === 'status'">
+                <span class="badge" :class="getStatusClass(record.status)">{{ getStatusText(record.status) }}</span>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <div class="action-btns" style="display: flex; justify-content: center; gap: 8px;">
+                  <button v-if="record.status === 0" class="btn-icon btn-icon--check" @click="approve(record.id)" title="Duyệt đơn" style="border: none; background: #ecfdf5; color: #10b981; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                    <i class="fas fa-check" />
+                  </button>
+                  <button v-if="record.status === 0" class="btn-icon btn-icon--close" @click="cancel(record.id)" title="Hủy đơn" style="border: none; background: #fef2f2; color: #ef4444; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                    <i class="fas fa-times" />
+                  </button>
+                  <span v-else style="color: #94a3b8; font-size: 0.8rem; font-weight: 600;">Đã xử lý</span>
+                </div>
+              </template>
+            </template>
+          </a-table>
         </div>
 
         <!-- TAB 3: SHIFT SCHEDULES -->
@@ -310,172 +460,312 @@
 
         <!-- TAB 4: DOCTORS DIRECTORY -->
         <div v-if="activeTab === 'doctors'" class="tab-content">
-          <div class="section-header-cockpit">
-            <h2 class="section-title-clinical">Đội ngũ bác sĩ của Medicare ({{ doctorsList.length }} nhân sự)</h2>
-            <button class="btn-primary-cockpit" @click="showDoctorModal = true">
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm bác sĩ:</span>
+              <a-input v-model:value="searchDoctorQuery" placeholder="Họ tên, chuyên khoa, học vị..." allow-clear />
+            </div>
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+              Tổng số bác sĩ: <strong style="color: #0f172a; font-size: 1rem;">{{ filteredDoctors.length }}</strong> bác sĩ
+            </div>
+            <button class="btn-primary-cockpit" @click="showDoctorModal = true" style="margin-left: auto;">
               <i class="fas fa-user-plus" /> Thêm bác sĩ mới
             </button>
           </div>
 
-          <div class="doctors-grid-cards">
-            <div v-for="doc in doctorsList" :key="doc.id" class="doctor-premium-card shadow-light">
-              <div class="doc-card-top">
-                <div class="doc-avatar-large">{{ doc.fullName.charAt(4) || doc.fullName.charAt(0) }}</div>
-                <div class="doc-meta-info">
-                  <h3 class="doc-card-name">{{ doc.fullName }}</h3>
-                  <span class="doc-card-spec">{{ doc.specialty }}</span>
+          <a-table 
+            :columns="columnsDoctors" 
+            :data-source="filteredDoctors" 
+            row-key="id" 
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table"
+          >
+            <template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+              <div style="padding: 8px">
+                <a-input
+                  :placeholder="`Tìm kiếm ${column.title}...`"
+                  :value="selectedKeys[0]"
+                  style="width: 188px; margin-bottom: 8px; display: block;"
+                  @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+                  @pressEnter="confirm()"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    style="flex: 1; background-color: var(--primary); border-color: var(--primary);"
+                    @click="confirm()"
+                  >
+                    Tìm
+                  </a-button>
+                  <a-button size="small" style="flex: 1;" @click="clearFilters(); confirm()">
+                    Xóa
+                  </a-button>
                 </div>
               </div>
-              <div class="doc-card-body">
-                <p class="doc-card-detail">Học vị lâm sàng: <b>{{ doc.degree || 'Bác sĩ' }}</b></p>
-                <p class="doc-card-detail">Phí khám cơ bản: <b style="color: var(--cobalt);">{{ formatCurrency(doc.consultationFee || 150000) }}</b></p>
-              </div>
-              <div class="doc-card-footer">
-                <button class="btn-doc-action" style="background: #3b82f6; color: white;" @click="viewDoctorInfo(doc)">
-                  <i class="fas fa-info-circle" /> Xem thông tin bác sĩ
-                </button>
-              </div>
-            </div>
-          </div>
+            </template>
+            <template #customFilterIcon="{ filtered }">
+              <i class="fas fa-search" :style="{ color: filtered ? '#3b82f6' : '#bfbfbf', fontSize: '0.85rem' }" />
+            </template>
+              <template #bodyCell="{ record, column, index }">
+                <template v-if="column.key === 'stt'">
+                  <strong style="color: #64748b;">{{ index + 1 }}</strong>
+                </template>
+                <template v-else-if="column.key === 'avatar'">
+                  <div class="avatar-cell" style="width: 32px; height: 32px; line-height: 32px; border-radius: 50%; background: #eff6ff; color: var(--primary); text-align: center; font-weight: 700; font-size: 0.9rem; margin: 0 auto;">
+                    {{ record.fullName.charAt(0) }}
+                  </div>
+                </template>
+                <template v-else-if="column.key === 'fullName'">
+                  <strong style="color: #1e293b;">{{ record.fullName }}</strong>
+                </template>
+                <template v-else-if="column.key === 'consultationFee'">
+                  <span style="font-weight: 700; color: #0f172a;">{{ formatCurrency(record.consultationFee || 150000) }}</span>
+                </template>
+                <template v-else-if="column.key === 'action'">
+                  <button class="btn-primary-cockpit" style="padding: 6px 12px !important; font-size: 0.8rem !important; border-radius: 8px !important; white-space: nowrap !important; height: auto !important; min-height: 0 !important; font-weight: 600 !important;" @click="viewDoctorInfo(record)">
+                    <i class="fas fa-key" style="font-size: 0.75rem;" /> Xem tài khoản
+                  </button>
+                </template>
+              </template>
+          </a-table>
         </div>
 
         <!-- TAB 5: SERVICES DIRECTORY -->
         <div v-if="activeTab === 'services'" class="tab-content">
-          <div class="section-header-cockpit">
-            <h2 class="section-title-clinical">Danh mục kỹ thuật & Dịch vụ y tế ({{ servicesList.length }} dịch vụ)</h2>
-            <button class="btn-primary-cockpit" @click="showServiceModal = true">
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm dịch vụ:</span>
+              <a-input v-model:value="searchServiceQuery" placeholder="Tên dịch vụ, mô tả..." allow-clear />
+            </div>
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+              Tổng số dịch vụ: <strong style="color: #0f172a; font-size: 1rem;">{{ filteredServices.length }}</strong> dịch vụ
+            </div>
+            <button class="btn-primary-cockpit" @click="showServiceModal = true" style="margin-left: auto;">
               <i class="fas fa-plus" /> Thêm dịch vụ mới
             </button>
           </div>
 
-          <div class="services-grid-cards">
-            <div v-for="svc in servicesList" :key="svc.id" class="service-premium-card shadow-light">
-              <div class="svc-card-header">
-                <div class="svc-card-icon-wrapper"><i class="fas fa-stethoscope" /></div>
-                <h3 class="svc-card-name">{{ svc.name }}</h3>
+          <a-table 
+            :columns="columnsServices" 
+            :data-source="filteredServices" 
+            row-key="id" 
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table"
+          >
+            <template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+              <div style="padding: 8px">
+                <a-input
+                  :placeholder="`Tìm kiếm ${column.title}...`"
+                  :value="selectedKeys[0]"
+                  style="width: 188px; margin-bottom: 8px; display: block;"
+                  @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+                  @pressEnter="confirm()"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    style="flex: 1; background-color: var(--primary); border-color: var(--primary);"
+                    @click="confirm()"
+                  >
+                    Tìm
+                  </a-button>
+                  <a-button size="small" style="flex: 1;" @click="clearFilters(); confirm()">
+                    Xóa
+                  </a-button>
+                </div>
               </div>
-              <p class="svc-card-desc">{{ svc.description }}</p>
-              <div class="svc-card-footer">
-                <span class="svc-card-price">{{ formatCurrency(svc.price) }}</span>
-                <span class="svc-status-tag"><i class="fas fa-check-circle" /> Đang hoạt động</span>
-              </div>
-            </div>
-          </div>
+            </template>
+            <template #customFilterIcon="{ filtered }">
+              <i class="fas fa-search" :style="{ color: filtered ? '#3b82f6' : '#bfbfbf', fontSize: '0.85rem' }" />
+            </template>
+            <template #bodyCell="{ record, column, index }">
+              <template v-if="column.key === 'stt'">
+                <strong style="color: #64748b;">{{ index + 1 }}</strong>
+              </template>
+              <template v-else-if="column.key === 'name'">
+                <strong style="color: #1e293b;">{{ record.name }}</strong>
+              </template>
+              <template v-else-if="column.key === 'price'">
+                <span style="font-weight: 700; color: #16a34a;">{{ formatCurrency(record.price) }}</span>
+              </template>
+              <template v-else-if="column.key === 'status'">
+                <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem;">
+                  <i class="fas fa-check-circle" style="margin-right: 4px;" /> Đang hoạt động
+                </span>
+              </template>
+            </template>
+          </a-table>
         </div>
 
         <!-- TAB 6: MEDICAL RECORDS -->
         <div v-if="activeTab === 'medical-records'" class="tab-content">
-          <div class="filter-bar">
-            <div class="filter-group">
-              <label>Tìm kiếm bệnh án:</label>
-              <input placeholder="Triệu chứng, chẩn đoán..." type="text" v-model="searchRecordQuery" class="filter-input" style="width: 250px;" />
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm bệnh án:</span>
+              <a-input v-model:value="searchRecordQuery" placeholder="Triệu chứng, chẩn đoán..." allow-clear />
             </div>
-            <div class="filter-stats">
-              Tổng số bệnh án: <b>{{ allMedicalRecords.length }}</b> bản ghi
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+              Tổng số bệnh án: <strong style="color: #0f172a; font-size: 1rem;">{{ allMedicalRecords.length }}</strong> bản ghi
             </div>
           </div>
 
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Mã BA</th>
-                  <th>Mã Bệnh nhân</th>
-                  <th>Triệu chứng</th>
-                  <th>Chẩn đoán</th>
-                  <th>Đơn thuốc</th>
-                  <th>Ngày khám</th>
-                  <th style="text-align: center;">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredRecords.length === 0">
-                  <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
-                    Không tìm thấy bệnh án nào.
-                  </td>
-                </tr>
-                <tr v-for="rec in filteredRecords" :key="rec.id">
-                  <td><code>#{{ rec.id?.substring(0, 8).toUpperCase() }}</code></td>
-                  <td>
-                    <span style="font-family: monospace; font-size: 0.8rem; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px;">
-                      {{ rec.patientId?.substring(24) }}
-                    </span>
-                  </td>
-                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ rec.symptoms }}</td>
-                  <td><span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">{{ rec.diagnosis }}</span></td>
-                  <td>
-                    <span v-if="rec.prescription" class="badge badge--service" style="background: #fdf2f2; color: #991b1b; border: 1px solid #fca5a5;">
-                      <i class="fas fa-pills" /> Có kê đơn
-                    </span>
-                    <span v-else style="color: #94a3b8; font-style: italic;">Không kê đơn</span>
-                  </td>
-                  <td>{{ formatDate(rec.createdAt) }}</td>
-                  <td style="text-align: center;">
-                    <button class="btn-primary-cockpit" style="padding: 4px 10px; font-size: 0.8rem;" @click="viewRecordDetails(rec)">
-                      <i class="fas fa-eye" /> Chi tiết
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <a-table 
+            :columns="columnsMedicalRecords" 
+            :data-source="filteredRecords" 
+            row-key="id" 
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table"
+          >
+            <template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+              <div style="padding: 8px">
+                <a-input
+                  :placeholder="`Tìm kiếm ${column.title}...`"
+                  :value="selectedKeys[0]"
+                  style="width: 188px; margin-bottom: 8px; display: block;"
+                  @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+                  @pressEnter="confirm()"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    style="flex: 1; background-color: var(--primary); border-color: var(--primary);"
+                    @click="confirm()"
+                  >
+                    Tìm
+                  </a-button>
+                  <a-button size="small" style="flex: 1;" @click="clearFilters(); confirm()">
+                    Xóa
+                  </a-button>
+                </div>
+              </div>
+            </template>
+            <template #customFilterIcon="{ filtered }">
+              <i class="fas fa-search" :style="{ color: filtered ? '#3b82f6' : '#bfbfbf', fontSize: '0.85rem' }" />
+            </template>
+              <template #bodyCell="{ record, column, index }">
+                <template v-if="column.key === 'stt'">
+                  <strong style="color: #64748b;">{{ index + 1 }}</strong>
+                </template>
+                <template v-else-if="column.key === 'id'">
+                  <code>#{{ record.id?.substring(0, 8).toUpperCase() }}</code>
+                </template>
+                <template v-else-if="column.key === 'patientId'">
+                  <span style="font-family: monospace; font-size: 0.8rem; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ record.patientId?.substring(24) }}
+                  </span>
+                </template>
+                <template v-else-if="column.key === 'symptoms'">
+                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.symptoms">
+                    {{ record.symptoms }}
+                  </div>
+                </template>
+                <template v-else-if="column.key === 'diagnosis'">
+                  <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 2px 8px; border-radius: 6px;">
+                    {{ record.diagnosis }}
+                  </span>
+                </template>
+                <template v-else-if="column.key === 'prescription'">
+                  <span v-if="record.prescription" class="badge badge--service" style="background: #fdf2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 600; padding: 2px 8px; border-radius: 6px;">
+                    <i class="fas fa-pills" /> Có kê đơn
+                  </span>
+                  <span v-else style="color: #94a3b8; font-style: italic;">Không kê đơn</span>
+                </template>
+                <template v-else-if="column.key === 'createdAt'">
+                  {{ formatDate(record.createdAt) }}
+                </template>
+                <template v-else-if="column.key === 'action'">
+                  <button class="btn-primary-cockpit" style="padding: 6px 12px !important; font-size: 0.8rem !important; border-radius: 8px !important; white-space: nowrap !important; height: auto !important; min-height: 0 !important; font-weight: 600 !important;" @click="viewRecordDetails(record)">
+                    <i class="fas fa-eye" style="font-size: 0.75rem;" /> Chi tiết
+                  </button>
+                </template>
+              </template>
+          </a-table>
         </div>
 
         <!-- TAB 7: PATIENT REGISTRY -->
         <div v-if="activeTab === 'patient-registry'" class="tab-content">
-          <div class="filter-bar">
-            <div class="filter-group">
-              <label>Tìm kiếm bệnh nhân:</label>
-              <input placeholder="Họ tên bệnh nhân..." type="text" v-model="searchPatientRegistryQuery" class="filter-input" style="width: 250px;" />
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm bệnh nhân:</span>
+              <a-input v-model:value="searchPatientRegistryQuery" placeholder="Họ tên bệnh nhân..." allow-clear />
             </div>
-            <div class="filter-stats">
-              Tổng số bệnh nhân: <b>{{ allPatientsList.length }}</b> người
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+              Tổng số bệnh nhân: <strong style="color: #0f172a; font-size: 1rem;">{{ allPatientsList.length }}</strong> người
             </div>
           </div>
 
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Mã số</th>
-                  <th>Họ và tên</th>
-                  <th>Ngày sinh</th>
-                  <th>Giới tính</th>
-                  <th>Tiền sử bệnh lý</th>
-                  <th>Dị ứng</th>
-                  <th style="text-align: center;">Chi tiết</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredPatientRegistry.length === 0">
-                  <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
-                    Không tìm thấy bệnh nhân nào.
-                  </td>
-                </tr>
-                <tr v-for="pat in filteredPatientRegistry" :key="pat.id">
-                  <td><code>#{{ pat.id?.substring(24) }}</code></td>
-                  <td><strong style="color: #0f172a;">{{ pat.fullName }}</strong></td>
-                  <td>{{ formatDate(pat.dateOfBirth) }}</td>
-                  <td>
-                    <span class="badge" :class="pat.gender === 'Nam' ? 'badge--confirmed' : 'badge--pending'">
-                      {{ pat.gender }}
-                    </span>
-                  </td>
-                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="pat.medicalHistory">
-                    {{ pat.medicalHistory || 'Chưa cập nhật' }}
-                  </td>
-                  <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626;" :title="pat.allergies">
-                    {{ pat.allergies || 'Không dị ứng' }}
-                  </td>
-                  <td style="text-align: center;">
-                    <button class="btn-primary-cockpit" style="padding: 4px 10px; font-size: 0.8rem; background: #64748b;" @click="viewPatientDetails(pat)">
-                      <i class="fas fa-user-shield" /> Xem hồ sơ
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <a-table 
+            :columns="columnsPatients" 
+            :data-source="filteredPatientRegistry" 
+            row-key="id" 
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table"
+          >
+            <template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+              <div style="padding: 8px">
+                <a-input
+                  :placeholder="`Tìm kiếm ${column.title}...`"
+                  :value="selectedKeys[0]"
+                  style="width: 188px; margin-bottom: 8px; display: block;"
+                  @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+                  @pressEnter="confirm()"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    style="flex: 1; background-color: var(--primary); border-color: var(--primary);"
+                    @click="confirm()"
+                  >
+                    Tìm
+                  </a-button>
+                  <a-button size="small" style="flex: 1;" @click="clearFilters(); confirm()">
+                    Xóa
+                  </a-button>
+                </div>
+              </div>
+            </template>
+            <template #customFilterIcon="{ filtered }">
+              <i class="fas fa-search" :style="{ color: filtered ? '#3b82f6' : '#bfbfbf', fontSize: '0.85rem' }" />
+            </template>
+              <template #bodyCell="{ record, column, index }">
+                <template v-if="column.key === 'stt'">
+                  <strong style="color: #64748b;">{{ index + 1 }}</strong>
+                </template>
+                <template v-else-if="column.key === 'id'">
+                  <code>#{{ record.id?.substring(24) }}</code>
+                </template>
+                <template v-else-if="column.key === 'fullName'">
+                  <strong style="color: #1e293b;">{{ record.fullName }}</strong>
+                </template>
+                <template v-else-if="column.key === 'dateOfBirth'">
+                  {{ formatDate(record.dateOfBirth) }}
+                </template>
+                <template v-else-if="column.key === 'gender'">
+                  <span class="badge" :class="record.gender === 'Nam' ? 'badge--confirmed' : 'badge--pending'" style="font-weight: 700;">
+                    {{ record.gender }}
+                  </span>
+                </template>
+                <template v-else-if="column.key === 'medicalHistory'">
+                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.medicalHistory">
+                    {{ record.medicalHistory || 'Chưa cập nhật' }}
+                  </div>
+                </template>
+                <template v-else-if="column.key === 'allergies'">
+                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626; font-weight: 600;" :title="record.allergies">
+                    {{ record.allergies || 'Không dị ứng' }}
+                  </div>
+                </template>
+                <template v-else-if="column.key === 'action'">
+                  <button class="btn-primary-cockpit" style="padding: 6px 12px !important; font-size: 0.8rem !important; background: #64748b !important; border-radius: 8px !important; white-space: nowrap !important; height: auto !important; min-height: 0 !important; font-weight: 600 !important;" @click="viewPatientDetails(record)">
+                    <i class="fas fa-user-shield" style="font-size: 0.75rem;" /> Xem hồ sơ
+                  </button>
+                </template>
+              </template>
+          </a-table>
         </div>
 
       </div>
@@ -745,7 +1035,7 @@
 </template>
 
 <script setup>
-  import { computed, nextTick, onMounted, ref } from 'vue'
+  import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import api, { publicApi } from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
@@ -756,11 +1046,283 @@
   const authStore = useAuthStore()
   const loading = ref(false)
 
+  // Columns Definitions for Ant Design Tables
+  const columnsAppointments = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: '60px',
+      align: 'center'
+    },
+    {
+      title: 'Mã đơn',
+      dataIndex: 'id',
+      key: 'id',
+      width: '120px',
+      sorter: (a, b) => a.id.localeCompare(b.id)
+    },
+    {
+      title: 'Bệnh nhân',
+      dataIndex: 'patientName',
+      key: 'patientName',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.patientName || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.patientName.localeCompare(b.patientName)
+    },
+    {
+      title: 'Bác sĩ khám',
+      dataIndex: 'doctorName',
+      key: 'doctorName',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.doctorName || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.doctorName.localeCompare(b.doctorName)
+    },
+    {
+      title: 'Thời gian',
+      key: 'dateTime',
+      sorter: (a, b) => new Date(a.date + 'T' + a.time).getTime() - new Date(b.date + 'T' + b.time).getTime()
+    },
+    {
+      title: 'Dịch vụ',
+      dataIndex: 'serviceName',
+      key: 'serviceName',
+      sorter: (a, b) => a.serviceName.localeCompare(b.serviceName)
+    },
+    {
+      title: 'STT Khám',
+      dataIndex: 'queueNumber',
+      key: 'queueNumber',
+      sorter: (a, b) => (a.queueNumber || 0) - (b.queueNumber || 0)
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      sorter: (a, b) => a.status - b.status,
+      filters: [
+        { text: 'Chờ duyệt', value: 0 },
+        { text: 'Đã duyệt', value: 1 },
+        { text: 'Đã khám', value: 2 },
+        { text: 'Đã hủy', value: 3 }
+      ],
+      onFilter: (value, record) => record.status === value
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: '150px',
+      align: 'center'
+    }
+  ]
+
+  const columnsMedicalRecords = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: '60px',
+      align: 'center'
+    },
+    {
+      title: 'Mã BA',
+      dataIndex: 'id',
+      key: 'id',
+      width: '120px',
+      sorter: (a, b) => a.id.localeCompare(b.id)
+    },
+    {
+      title: 'Mã Bệnh nhân',
+      dataIndex: 'patientId',
+      key: 'patientId',
+      sorter: (a, b) => a.patientId.localeCompare(b.patientId)
+    },
+    {
+      title: 'Triệu chứng',
+      dataIndex: 'symptoms',
+      key: 'symptoms',
+      sorter: (a, b) => (a.symptoms || '').localeCompare(b.symptoms || '')
+    },
+    {
+      title: 'Chẩn đoán',
+      dataIndex: 'diagnosis',
+      key: 'diagnosis',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.diagnosis || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => (a.diagnosis || '').localeCompare(b.diagnosis || '')
+    },
+    {
+      title: 'Đơn thuốc',
+      key: 'prescription',
+      sorter: (a, b) => (a.prescription ? 1 : 0) - (b.prescription ? 1 : 0),
+      filters: [
+        { text: 'Có kê đơn', value: true },
+        { text: 'Không kê đơn', value: false }
+      ],
+      onFilter: (value, record) => !!record.prescription === value
+    },
+    {
+      title: 'Ngày khám',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: '120px',
+      align: 'center'
+    }
+  ]
+
+  const columnsPatients = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: '60px',
+      align: 'center'
+    },
+    {
+      title: 'Mã số',
+      dataIndex: 'id',
+      key: 'id',
+      width: '120px',
+      sorter: (a, b) => a.id.localeCompare(b.id)
+    },
+    {
+      title: 'Họ và tên',
+      dataIndex: 'fullName',
+      key: 'fullName',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.fullName || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.fullName.localeCompare(b.fullName)
+    },
+    {
+      title: 'Ngày sinh',
+      dataIndex: 'dateOfBirth',
+      key: 'dateOfBirth',
+      sorter: (a, b) => new Date(a.dateOfBirth).getTime() - new Date(b.dateOfBirth).getTime()
+    },
+    {
+      title: 'Giới tính',
+      dataIndex: 'gender',
+      key: 'gender',
+      sorter: (a, b) => a.gender.localeCompare(b.gender),
+      filters: [
+        { text: 'Nam', value: 'Nam' },
+        { text: 'Nữ', value: 'Nữ' }
+      ],
+      onFilter: (value, record) => record.gender === value
+    },
+    {
+      title: 'Tiền sử bệnh lý',
+      dataIndex: 'medicalHistory',
+      key: 'medicalHistory',
+      sorter: (a, b) => (a.medicalHistory || '').localeCompare(b.medicalHistory || '')
+    },
+    {
+      title: 'Dị ứng',
+      dataIndex: 'allergies',
+      key: 'allergies',
+      sorter: (a, b) => (a.allergies || '').localeCompare(b.allergies || '')
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: '120px',
+      align: 'center'
+    }
+  ]
+
+  const columnsDoctors = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: '60px',
+      align: 'center'
+    },
+    {
+      title: 'Ảnh',
+      key: 'avatar',
+      width: '70px',
+      align: 'center'
+    },
+    {
+      title: 'Họ và tên bác sĩ',
+      dataIndex: 'fullName',
+      key: 'fullName',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.fullName || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.fullName.localeCompare(b.fullName)
+    },
+    {
+      title: 'Chuyên khoa',
+      dataIndex: 'specialty',
+      key: 'specialty',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.specialty || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.specialty.localeCompare(b.specialty)
+    },
+    {
+      title: 'Học vị',
+      dataIndex: 'degree',
+      key: 'degree',
+      sorter: (a, b) => (a.degree || '').localeCompare(b.degree || '')
+    },
+    {
+      title: 'Phí khám cơ bản',
+      dataIndex: 'consultationFee',
+      key: 'consultationFee',
+      sorter: (a, b) => (a.consultationFee || 150000) - (b.consultationFee || 150000)
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: '180px',
+      align: 'center'
+    }
+  ]
+
+  const columnsServices = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: '60px',
+      align: 'center'
+    },
+    {
+      title: 'Tên dịch vụ y khoa',
+      dataIndex: 'name',
+      key: 'name',
+      customFilterDropdown: true,
+      onFilter: (value, record) => (record.name || '').toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.name.localeCompare(b.name)
+    },
+    {
+      title: 'Mô tả dịch vụ',
+      dataIndex: 'description',
+      key: 'description',
+      sorter: (a, b) => a.description.localeCompare(b.description)
+    },
+    {
+      title: 'Đơn giá',
+      dataIndex: 'price',
+      key: 'price',
+      sorter: (a, b) => a.price - b.price
+    },
+    {
+      title: 'Trạng thái',
+      key: 'status',
+      width: '160px',
+      align: 'center'
+    }
+  ]
+
   // Navigation control
   const activeTab = ref('overview')
   const quickSearchQuery = ref('')
   const filterStatus = ref('all')
   const searchPatientQuery = ref('')
+  const searchDoctorQuery = ref('')
+  const searchServiceQuery = ref('')
 
   // Modal display toggles (Appointment Service - ACTIVE)
   const showSlotModal = ref(false)
@@ -816,6 +1378,31 @@
         p.fullName?.toLowerCase().includes(q) || 
         p.medicalHistory?.toLowerCase().includes(q) ||
         p.allergies?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  })
+
+  const filteredDoctors = computed(() => {
+    let list = [...doctorsList.value]
+    if (searchDoctorQuery.value) {
+      const q = searchDoctorQuery.value.toLowerCase()
+      list = list.filter(d => 
+        d.fullName?.toLowerCase().includes(q) || 
+        d.specialty?.toLowerCase().includes(q) ||
+        d.degree?.toLowerCase().includes(q)
+      )
+    }
+    return list
+  })
+
+  const filteredServices = computed(() => {
+    let list = [...servicesList.value]
+    if (searchServiceQuery.value) {
+      const q = searchServiceQuery.value.toLowerCase()
+      list = list.filter(s => 
+        s.name?.toLowerCase().includes(q) || 
+        s.description?.toLowerCase().includes(q)
       )
     }
     return list
@@ -1159,56 +1746,249 @@
     }
   }
 
-  // Charts trend setup
-  let trendChartInstance = null
+  // Charts setup
+  let visitorInsightsChartInstance = null
+  let revenueChartInstance = null
+  let satisfactionChartInstance = null
+  let targetRealityChartInstance = null
+  let volumeServiceChartInstance = null
+
   function initCharts () {
-    const trendCtx = document.querySelector('#trendChart')
-    if (!trendCtx) return
+    // 1. Visitor Insights Chart
+    const visitorCtx = document.querySelector('#visitorInsightsChart')
+    if (visitorCtx) {
+      if (visitorInsightsChartInstance) visitorInsightsChartInstance.destroy()
+      
+      // Calculate dynamic values for the past 7 days based on actual appointments
+      const days = []
+      const counts = []
+      const approvedCounts = []
+      const pendingCounts = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const label = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+        days.push(label)
 
-    if (trendChartInstance) trendChartInstance.destroy()
+        const total = appointments.value.filter(a => {
+          const appDate = new Date(a.date).toLocaleDateString('vi-VN')
+          return appDate === d.toLocaleDateString('vi-VN')
+        }).length
+        
+        const approved = appointments.value.filter(a => {
+          const appDate = new Date(a.date).toLocaleDateString('vi-VN')
+          return appDate === d.toLocaleDateString('vi-VN') && a.status === 1
+        }).length
+        
+        const pending = appointments.value.filter(a => {
+          const appDate = new Date(a.date).toLocaleDateString('vi-VN')
+          return appDate === d.toLocaleDateString('vi-VN') && a.status === 0
+        }).length
 
-    const days = []
-    const counts = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const label = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
-      days.push(label)
+        counts.push(total)
+        approvedCounts.push(approved)
+        pendingCounts.push(pending)
+      }
 
-      const count = appointments.value.filter(a => {
-        const appDate = new Date(a.date).toLocaleDateString('vi-VN')
-        return appDate === d.toLocaleDateString('vi-VN')
-      }).length
-      counts.push(count)
+      visitorInsightsChartInstance = new window.Chart(visitorCtx, {
+        type: 'line',
+        data: {
+          labels: days,
+          datasets: [
+            {
+              label: 'Tổng lượt hẹn',
+              data: counts,
+              borderColor: '#8B5CF6',
+              backgroundColor: 'transparent',
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointBackgroundColor: '#8B5CF6'
+            },
+            {
+              label: 'Đã duyệt',
+              data: approvedCounts,
+              borderColor: '#10B981',
+              backgroundColor: 'transparent',
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointBackgroundColor: '#10B981'
+            },
+            {
+              label: 'Chờ duyệt',
+              data: pendingCounts,
+              borderColor: '#FF947A',
+              backgroundColor: 'transparent',
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointBackgroundColor: '#FF947A'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      })
     }
 
-    trendChartInstance = new window.Chart(trendCtx, {
-      type: 'line',
-      data: {
-        labels: days,
-        datasets: [{
-          label: 'Lượt khám y tế',
-          data: counts,
-          borderColor: '#0047AB',
-          backgroundColor: 'rgba(0, 71, 171, 0.05)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 3,
-          pointBackgroundColor: '#0047AB',
-          pointRadius: 5,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { stepSize: 1 } },
-          x: { grid: { display: false } },
+    // 2. Revenue Chart
+    const revenueCtx = document.querySelector('#revenueChart')
+    if (revenueCtx) {
+      if (revenueChartInstance) revenueChartInstance.destroy()
+      revenueChartInstance = new window.Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+          datasets: [
+            {
+              label: 'Khám Bảo Hiểm',
+              data: [12, 19, 15, 8, 22, 14, 6],
+              backgroundColor: '#0047AB',
+              borderRadius: 6
+            },
+            {
+              label: 'Dịch vụ tự nguyện',
+              data: [18, 11, 23, 17, 15, 20, 10],
+              backgroundColor: '#FF947A',
+              borderRadius: 6
+            }
+          ]
         },
-      }
-    })
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      })
+    }
+
+    // 3. Satisfaction Chart (CSAT Area Chart)
+    const satCtx = document.querySelector('#satisfactionChart')
+    if (satCtx) {
+      if (satisfactionChartInstance) satisfactionChartInstance.destroy()
+      satisfactionChartInstance = new window.Chart(satCtx, {
+        type: 'line',
+        data: {
+          labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+          datasets: [
+            {
+              label: 'Tháng này',
+              data: [82, 88, 85, 91, 94, 96, 95],
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointBackgroundColor: '#10B981'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { display: false },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      })
+    }
+
+    // 4. Target vs Reality Chart
+    const targetCtx = document.querySelector('#targetRealityChart')
+    if (targetCtx) {
+      if (targetRealityChartInstance) targetRealityChartInstance.destroy()
+      targetRealityChartInstance = new window.Chart(targetCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6'],
+          datasets: [
+            {
+              label: 'Chỉ tiêu',
+              data: [150, 180, 200, 220, 250, 280],
+              backgroundColor: '#FFE2E5',
+              borderColor: '#FA5A7D',
+              borderWidth: 1.5,
+              borderRadius: 6
+            },
+            {
+              label: 'Thực tế',
+              data: [135, 192, 188, 230, 265, 290],
+              backgroundColor: '#0047AB',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      })
+    }
+
+    // 5. Volume vs Service Level Chart (Stacked Specialties)
+    const volCtx = document.querySelector('#volumeServiceChart')
+    if (volCtx) {
+      if (volumeServiceChartInstance) volumeServiceChartInstance.destroy()
+      volumeServiceChartInstance = new window.Chart(volCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Nội', 'Ngoại', 'Nhi', 'Sản', 'Răng', 'Tai Mũi'],
+          datasets: [
+            {
+              label: 'Đã khám',
+              data: [42, 30, 38, 25, 20, 18],
+              backgroundColor: '#10B981',
+              borderRadius: 4
+            },
+            {
+              label: 'Chờ khám',
+              data: [15, 8, 12, 10, 6, 7],
+              backgroundColor: '#FFF4DE',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } } },
+          scales: {
+            y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } },
+            x: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      })
+    }
   }
+
+  // Watch activeTab to re-initialize charts when switching back to Overview
+  watch(activeTab, (newVal) => {
+    if (newVal === 'overview') {
+      nextTick(() => {
+        initCharts()
+      })
+    }
+  })
 
   onMounted(() => {
     fetchAllData()
@@ -1217,3 +1997,23 @@
 
 <style src="@/styles/dashboard.css"></style>
 <style src="@/styles/notif.css"></style>
+
+<style scoped>
+.custom-antd-table :deep(.ant-table-thead > tr > th) {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+}
+.custom-antd-table :deep(.ant-table-tbody > tr > td) {
+  padding: 12px 16px;
+  color: #334155;
+  font-size: 0.9rem;
+}
+.custom-antd-table :deep(.ant-table-tbody > tr:hover > td) {
+  background-color: #f8fafc;
+}
+.custom-antd-table :deep(.ant-table-pagination) {
+  margin: 16px 0;
+}
+</style>

@@ -300,7 +300,7 @@
                 <tr v-for="pat in filteredPatients" :key="pat.id">
                   <td>
                     <div class="patient-cell">
-                      <div class="patient-avatar" style="background: linear-gradient(135deg, #0f172a 0%, #475569 100%);">
+                      <div class="patient-avatar" style="background: #0f172a;">
                         {{ pat.fullName?.charAt(0) || '?' }}
                       </div>
                       <div>
@@ -595,7 +595,7 @@
     <!-- CREATE MEDICAL RECORD & PRESCRIPTION MODAL -->
     <div v-if="completingApp" class="detail-modal-overlay" style="z-index: 100000;" @click.self="closeCompleteModal">
       <div class="detail-modal-card animate-scale-up" style="width: 760px;">
-        <div class="modal-header" style="background: linear-gradient(135deg, #002244 0%, #0047AB 100%); color: white;">
+        <div class="modal-header" style="background: #0047AB; color: white;">
           <div class="modal-header__title">
             <span class="ref-code-lg" style="color: rgba(255,255,255,0.7);">LẬP BỆNH ÁN #{{ completingApp.id.toUpperCase() }}</span>
             <h3 style="color: white; margin: 0;">Ghi bệnh án & Đơn thuốc lâm sàng</h3>
@@ -1496,7 +1496,7 @@
 }
 
 .nav-item--active {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  background: #eff6ff;
   color: #0047AB;
 }
 
@@ -1544,7 +1544,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #0047AB 0%, #002244 100%);
+  background: #0047AB;
   color: white;
   display: flex;
   align-items: center;
@@ -1825,7 +1825,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0047AB 0%, #3b82f6 100%);
+  background: #0047AB;
   color: white;
   display: flex;
   align-items: center;
