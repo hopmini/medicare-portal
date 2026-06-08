@@ -18,6 +18,32 @@
 
     <div class="container" style="padding: 2rem 1rem 4rem 1rem; max-width: 1100px; margin: 0 auto;">
       
+      <!-- Notification Banner for new records -->
+      <div v-if="records.length > 0 && newRecordCount > 0" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <div style="background: #16a34a; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+          <i class="fas fa-check" />
+        </div>
+        <div style="flex: 1; text-align: left;">
+          <div style="font-weight: 800; color: #166534; font-size: 0.95rem;">Có {{ newRecordCount }} bệnh án mới được ghi nhận</div>
+          <div style="font-size: 0.82rem; color: #15803d; margin-top: 2px;">Bác sĩ đã cập nhật kết quả khám và đơn thuốc mới nhất cho bạn.</div>
+        </div>
+        <button @click="scrollToNewRecords" style="background: #16a34a; color: white; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap; transition: 0.15s;">
+          <i class="fas fa-arrow-down" /> Xem ngay
+        </button>
+      </div>
+
+      <!-- In-page notification alerts from backend -->
+      <div v-if="notifications.length > 0" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
+        <div v-for="n in notifications" :key="n.id" :style="n.type === 'success' ? 'background: #f0fdf4; border: 1px solid #86efac; color: #166534;' : 'background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;'" style="border-radius: 10px; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 10px; text-align: left;">
+          <i class="fas" :class="n.type === 'success' ? 'fa-check-circle' : 'fa-bell'" style="font-size: 1.1rem;" />
+          <div style="flex: 1;">
+            <div style="font-weight: 800; font-size: 0.88rem;">{{ n.title }}</div>
+            <div style="font-size: 0.82rem; opacity: 0.85; margin-top: 1px;">{{ n.message }}</div>
+          </div>
+          <span style="font-size: 0.72rem; font-weight: 600; opacity: 0.6; white-space: nowrap;">{{ n.time }}</span>
+        </div>
+      </div>
+
       <!-- Patient Information Summary Card (Read-only) -->
       <div style="background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.01); display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center;">
         <div style="background: #eff6ff; color: #0047AB; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800;">
@@ -83,6 +109,9 @@
                 </span>
                 <button v-if="rec.prescription" class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="printPrescription(rec)">
                   <i class="fas fa-print" /> In toa thuốc
+                </button>
+                <button class="btn-print btn-delete-record" style="background: white; border: 1px solid #fecaca; color: #dc2626; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="confirmDelete(rec)">
+                  <i class="fas fa-trash-alt" /> Xóa
                 </button>
               </div>
             </div>
@@ -226,9 +255,10 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onMounted, ref, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import Navbar from '@/components/Navbar.vue'
+  import api from '@/services/api'
   import { medicalRecordService, MedicalRecord } from '@/services/medicalRecordService'
   import { useAuthStore } from '@/stores/authStore'
 
@@ -240,6 +270,35 @@
   
   const records = ref<MedicalRecord[]>([])
   const printTarget = ref<MedicalRecord | null>(null)
+  const notifications = ref<any[]>([])
+
+  const newRecordCount = computed(() => {
+    const now = Date.now()
+    const dayAgo = now - 24 * 60 * 60 * 1000
+    return records.value.filter(r => {
+      const t = r.createdAt ? new Date(r.createdAt).getTime() : 0
+      return t >= dayAgo && t <= now
+    }).length
+  })
+
+  function scrollToNewRecords() {
+    const el = document.querySelector('.records-list')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  async function fetchNotifications() {
+    try {
+      const res = await api.get('/Notifications/my')
+      const list = res.data || []
+      notifications.value = list.slice(0, 3).map((n: any) => ({
+        id: n.id,
+        title: n.title || 'Thông báo y khoa',
+        message: n.message || '',
+        type: n.type === 'info' ? 'medical' : n.type,
+        time: n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''
+      }))
+    } catch { }
+  }
 
   const patientInfo = ref({
     fullName: '',
@@ -278,6 +337,24 @@
       records.value = res || []
     } catch (e) {
       console.error('Không tải được danh sách bệnh án:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function confirmDelete(rec: MedicalRecord) {
+    if (!confirm(`Xác nhận xóa bệnh án #${rec.id?.substring(0, 8).toUpperCase()}?`)) return
+    loading.value = true
+    try {
+      const res = await medicalRecordService.deleteRecord(rec.id!)
+      if (res.success) {
+        alert(res.message || 'Đã xóa thành công!')
+        await fetchRecords()
+      } else {
+        alert(res.message || 'Xóa thất bại.')
+      }
+    } catch (e: any) {
+      alert('Lỗi: ' + (e.message || e))
     } finally {
       loading.value = false
     }
@@ -333,6 +410,7 @@
     }
     await fetchProfile()
     await fetchRecords()
+    await fetchNotifications()
   })
 </script>
 
@@ -348,6 +426,12 @@
   border-color: #0047AB !important;
   color: #0047AB !important;
   background-color: #f0f7ff !important;
+}
+
+.btn-delete-record:hover {
+  border-color: #dc2626 !important;
+  color: #b91c1c !important;
+  background-color: #fef2f2 !important;
 }
 
 .btn-book-now:hover {

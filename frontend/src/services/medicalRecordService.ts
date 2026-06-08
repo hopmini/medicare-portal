@@ -143,6 +143,38 @@ export const medicalRecordService = {
     }
   },
 
+  async deletePatient(patientId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await medicalApi.delete(`/Patients/${patientId}`)
+      return {
+        success: true,
+        message: response.data?.message
+      }
+    } catch (error: any) {
+      console.error('Failed to delete patient:', error)
+      return {
+        success: false,
+        message: error.response?.data || 'Không thể xóa hồ sơ bệnh nhân.'
+      }
+    }
+  },
+
+  async deleteRecord(recordId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await medicalApi.delete(`/MedicalRecords/${recordId}`)
+      return {
+        success: true,
+        message: response.data?.message
+      }
+    } catch (error: any) {
+      console.error('Failed to delete medical record:', error)
+      return {
+        success: false,
+        message: error.response?.data || 'Không thể xóa bệnh án.'
+      }
+    }
+  },
+
   async createPrescription(data: {
     medicalRecordId: string
     instructions?: string

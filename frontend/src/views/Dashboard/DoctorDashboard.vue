@@ -293,7 +293,7 @@
                   <th>Giới tính</th>
                   <th>Tiền sử bệnh lý</th>
                   <th>Dị ứng</th>
-                  <th style="text-align: right; width: 200px;">Thao tác</th>
+                  <th style="text-align: right; width: 280px;">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,9 +324,14 @@
                     </span>
                   </td>
                   <td style="text-align: right;">
-                    <button class="btn-table-action btn-detail" @click="viewPatientHistory(pat)">
-                      <i class="fas fa-folder-open" /> Hồ sơ bệnh án
-                    </button>
+                    <div class="action-cell-row">
+                      <button class="btn-table-action btn-detail" @click="viewPatientHistory(pat)">
+                        <i class="fas fa-folder-open" /> Hồ sơ
+                      </button>
+                      <button class="btn-table-action btn-danger" @click="confirmDeletePatient(pat)">
+                        <i class="fas fa-trash-alt" /> Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -392,9 +397,14 @@
                   </td>
                   <td>{{ rec.createdAt ? formatDateWithTime(rec.createdAt) : '--' }}</td>
                   <td style="text-align: right;">
-                    <button class="btn-table-action btn-detail" @click="viewRecordDetail(rec)">
-                      <i class="fas fa-eye" /> Chi tiết
-                    </button>
+                    <div class="action-cell-row">
+                      <button class="btn-table-action btn-detail" @click="viewRecordDetail(rec)">
+                        <i class="fas fa-eye" /> Chi tiết
+                      </button>
+                      <button class="btn-table-action btn-danger" @click="confirmDeleteRecord(rec)">
+                        <i class="fas fa-trash-alt" /> Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -1256,6 +1266,42 @@
     selectedRecord.value = rec
   }
 
+  async function confirmDeletePatient(pat: any) {
+    if (!confirm(`Xác nhận xóa hồ sơ bệnh nhân "${pat.fullName}" và toàn bộ bệnh án liên quan?`)) return
+    loadingTab.value = true
+    try {
+      const res = await medicalRecordService.deletePatient(pat.id)
+      if (res.success) {
+        alert(res.message || 'Đã xóa thành công!')
+        await loadPatients()
+      } else {
+        alert(res.message || 'Xóa thất bại.')
+      }
+    } catch (e: any) {
+      alert('Lỗi: ' + (e.message || e))
+    } finally {
+      loadingTab.value = false
+    }
+  }
+
+  async function confirmDeleteRecord(rec: any) {
+    if (!confirm(`Xác nhận xóa bệnh án #${rec.id?.substring(0, 8).toUpperCase()}?`)) return
+    loadingTab.value = true
+    try {
+      const res = await medicalRecordService.deleteRecord(rec.id)
+      if (res.success) {
+        alert(res.message || 'Đã xóa thành công!')
+        await loadRecords()
+      } else {
+        alert(res.message || 'Xóa thất bại.')
+      }
+    } catch (e: any) {
+      alert('Lỗi: ' + (e.message || e))
+    } finally {
+      loadingTab.value = false
+    }
+  }
+
   // Completing Appointment flow with record creation
   function openCompleteModal (app: any) {
     completingApp.value = app
@@ -1379,6 +1425,7 @@
           message: `Bác sĩ đã hoàn tất bệnh án và kê đơn thuốc cho bạn. Chẩn đoán: ${formDiagnosis.value}. Vui lòng kiểm tra lịch sử bệnh án.`,
           type: 'info'
         })
+        console.log('✅ Đã gửi thông báo đến bệnh nhân thành công!')
       } catch (notifError) {
         console.error('Không thể gửi thông báo cho bệnh nhân:', notifError)
       }
@@ -2029,6 +2076,18 @@
   background: #002244;
   border-color: #002244;
   transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: white;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.btn-danger:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 /* STATE WRAPPER */
