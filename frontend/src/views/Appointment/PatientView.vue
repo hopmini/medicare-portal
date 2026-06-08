@@ -476,11 +476,31 @@
                       >
                         <i class="fas fa-chevron-left" /> Quay lại chọn ngày
                       </button>
+<<<<<<< HEAD
                 </div>
               </div>
             </div>
           </div>
           </div>
+=======
+                    </div>
+                  <p class="confirm-note">
+                    <i class="fas fa-info-circle text-blue" /> Đơn đặt lịch sẽ được chuyển tức thời đến Cổng tiếp nhận. Bạn sẽ nhận số thứ tự tại cổng sau khi được duyệt.
+                  </p>
+                  <button class="btn-book-final shadow-light" :disabled="submitting" @click="bookAppointment">
+                    <span v-if="submitting"><i class="fas fa-spinner fa-spin" /> Đang truyền dữ liệu...</span>
+                    <span v-else><i class="fas fa-check-double" /> XÁC NHẬN ĐẶT LỊCH NGAY</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-footer" style="margin-top: 2rem;">
+              <button class="btn-main btn-back-v" @click="currentStep = 3">
+                <i class="fas fa-chevron-left" /> Quay lại chọn ngày
+              </button>
+            </div>
+>>>>>>> e65df8edbcbf4527cda23de499a4d81af727c2b0
           </section>
         </div>
       </main>

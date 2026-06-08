@@ -87,6 +87,9 @@ static async Task EnsureDefaultUsers(IdentityDbContext db)
     {
         new { Username = "admin",        Password = "admin",        FullName = "Hệ thống Admin",      Email = "admin@medicare.vn",        Role = "Admin" },
         new { Username = "receptionist", Password = "receptionist", FullName = "Lễ tân Medicare",      Email = "receptionist@medicare.vn", Role = "Receptionist" },
+        new { Username = "doctor",       Password = "doctor",       FullName = "Bác sĩ Nguyễn Văn A", Email = "doctora@medicare.vn",      Role = "Doctor" },
+        new { Username = "pharmacist",   Password = "pharmacist",   FullName = "Dược sĩ Trần Thị B",  Email = "pharmacist@medicare.vn",   Role = "Pharmacist" },
+        new { Username = "patient",      Password = "patient",      FullName = "Bệnh nhân Trần Văn B",Email = "patient@medicare.vn",      Role = "Patient" },
     };
 
     foreach (var u in defaultUsers)
