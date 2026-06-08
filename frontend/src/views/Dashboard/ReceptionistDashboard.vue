@@ -11,20 +11,35 @@
             </svg>
           </div>
 
-          <div class="logo__text" style="font-weight: 800; font-size: 1.2rem; margin-left: 8px;">
-            Medicare<span style="color: #E53935;">.</span>
+          <div class="logo__text" style="font-weight: 800; font-size: 1.25rem; margin-left: 10px; color: #0f172a; letter-spacing: -0.5px;">
+            Medicare<span style="color: #0047AB;">.</span>
           </div>
         </div>
       </div>
 
       <nav class="sidebar__nav">
+        <div class="sidebar__divider">TIẾP TÂN</div>
+
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">
-          <span>📊</span>
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </span>
           <span>Dashboard tiếp tân</span>
         </div>
 
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'appointments' }" @click="activeTab = 'appointments'">
-          <span>📅</span>
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </span>
           <span>Danh sách lịch hẹn</span>
         </div>
 
@@ -40,8 +55,24 @@
       </nav>
 
       <div class="sidebar__footer">
-        <div class="nav-item logout-btn" @click="authStore.logout()">
-          <span>🚪</span>
+        <div v-if="authStore.user?.value" class="user-brief">
+          <div class="avatar-small">
+            {{ (authStore.user.value.fullName || authStore.user.value.username || 'AD').substring(0, 2).toUpperCase() }}
+          </div>
+          <div class="user-brief-info">
+            <p class="user-brief-name">{{ authStore.user.value.fullName }}</p>
+            <p class="user-brief-role">Quản trị Tiếp tân</p>
+          </div>
+        </div>
+
+        <div class="logout-btn" @click="authStore.logout()">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </span>
           <span>Đăng xuất</span>
         </div>
       </div>
@@ -87,38 +118,108 @@
 
         <!-- STATS GRID -->
         <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-card__label">Tổng lịch hẹn</span>
-            <span class="stat-card__value">{{ stats.total }}</span>
-            <span class="stat-card__trend trend--up">Cập nhật thời gian thực</span>
+          <div class="stat-card stat-card--blue">
+            <div class="stat-card__content">
+              <span class="stat-card__label">Tổng lịch hẹn</span>
+              <p class="stat-card__value">{{ stats.total }}</p>
+              <span class="stat-card__trend">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;" class="fa-spin">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                Cập nhật thời gian thực
+              </span>
+            </div>
+            <div class="stat-card__icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
           </div>
 
-          <div class="stat-card">
-            <span class="stat-card__label">Chờ duyệt</span>
-            <span class="stat-card__value" style="color: #c2410c;">{{ stats.pending }}</span>
-            <span class="stat-card__trend">Cần xử lý ngay</span>
+          <div class="stat-card stat-card--amber">
+            <div class="stat-card__content">
+              <span class="stat-card__label">Chờ duyệt</span>
+              <p class="stat-card__value" style="color: #d97706;">{{ stats.pending }}</p>
+              <span class="stat-card__trend">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Cần xử lý ngay
+              </span>
+            </div>
+            <div class="stat-card__icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
           </div>
 
-          <div class="stat-card">
-            <span class="stat-card__label">Đã xác nhận</span>
-            <span class="stat-card__value" style="color: #047857;">{{ stats.confirmed }}</span>
-            <span class="stat-card__trend trend--up">Lịch hẹn hợp lệ</span>
+          <div class="stat-card stat-card--emerald">
+            <div class="stat-card__content">
+              <span class="stat-card__label">Đã xác nhận</span>
+              <p class="stat-card__value" style="color: #16a34a;">{{ stats.confirmed }}</p>
+              <span class="stat-card__trend" style="color: #10b981;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Lịch hẹn hợp lệ
+              </span>
+            </div>
+            <div class="stat-card__icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
           </div>
 
-          <div class="stat-card">
-            <span class="stat-card__label">Vai trò hiện tại</span>
-            <span class="stat-card__value" style="font-size: 1.25rem; font-weight: 800; color: #0047AB;">{{ authStore.user?.value?.role }}</span>
-            <span class="stat-card__trend">Quyền hạn hệ thống</span>
+          <div class="stat-card stat-card--blue">
+            <div class="stat-card__content">
+              <span class="stat-card__label">Vai trò hiện tại</span>
+              <p class="stat-card__value" style="font-size: 1.35rem; color: #0047AB; margin-top: 10px; font-weight: 800; text-transform: capitalize;">{{ authStore.user?.value?.role }}</p>
+              <span class="stat-card__trend">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 12px; height: 12px; margin-right: 4px;">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                Quyền hạn hệ thống
+              </span>
+            </div>
+            <div class="stat-card__icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
           </div>
         </div>
 
         <!-- RECENT APPOINTMENTS -->
-        <section class="content-section">
-          <div class="section-header">
-            <h2 class="section-title">{{ activeTab === 'dashboard' ? 'Danh sách chờ duyệt chuyên khoa' : 'Tất cả lịch hẹn đăng ký' }}</h2>
-            <button class="btn-ghost" style="padding: 0.4rem 0.875rem; font-size: 0.85rem; border: 1.5px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; font-weight: 700;" @click="fetchData">
-              <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }" /> Làm mới dữ liệu
-            </button>
+        <div class="table-card">
+          <div class="table-card__header">
+            <h3 class="table-card__title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0047AB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              {{ activeTab === 'dashboard' ? 'Danh sách chờ duyệt chuyên khoa' : 'Tất cả lịch hẹn đăng ký' }}
+            </h3>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="table-card__badge">{{ filteredAppointments.length }} lịch hẹn</span>
+              <button class="btn-refresh" @click="fetchData" :disabled="loading">
+                <svg :class="{ 'fa-spin': loading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Làm mới dữ liệu
+              </button>
+            </div>
           </div>
 
           <div v-if="loading" class="empty-state">Đang tải dữ liệu lịch hẹn...</div>
@@ -146,7 +247,7 @@
                 <td>
                   <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.8rem; background: #0047AB;">
-                      {{ app.patientName?.charAt(0) }}
+                      {{ (app.patientName || 'K').charAt(0) }}
                     </div>
 
                     <div style="text-align: left;">
@@ -177,26 +278,37 @@
                 <td style="text-align: right;">
                   <div class="action-cell-row">
                     <button class="btn-table-action btn-detail" @click="viewDetail(app)">
-                      <i class="fas fa-eye" /> Chi tiết
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      Chi tiết
                     </button>
                     <button v-if="app.status === 0" class="btn-table-action btn-approve" @click="approve(app.id)">
-                      <i class="fas fa-check" /> Duyệt
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Duyệt
                     </button>
                     <button v-if="app.status === 0 || app.status === 1" class="btn-table-action btn-cancel" @click="cancel(app.id)">
-                      <i class="fas fa-times" /> Hủy
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                      Hủy
                     </button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
-        </section>
+        </div>
       </div>
     </main>
 
     <!-- CLINICAL DETAILS MODAL (POPUP ON REQUEST) -->
     <div v-if="selectedApp" class="detail-modal-overlay" @click.self="closeDetail">
-      <div class="detail-modal-card animate-scale-up">
+      <div class="detail-modal-card">
         <div class="modal-header">
           <div class="modal-header__title">
             <span class="ref-code-lg">#{{ String(selectedApp.id).toUpperCase() }}</span>
@@ -208,12 +320,23 @@
         <div class="modal-body">
           <!-- Status Banner -->
           <div class="modal-status-banner" :class="getStatusClass(selectedApp.status)">
-            <i class="fas fa-info-circle" /> Trạng thái duyệt hồ sơ: <strong>{{ getStatusText(selectedApp.status) }}</strong>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 4px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            Trạng thái duyệt hồ sơ: <strong>{{ getStatusText(selectedApp.status) }}</strong>
           </div>
 
           <!-- Section: Patient profile (parsed dynamically from booking reason note) -->
           <div class="clinical-section">
-            <h4 class="section-heading"><i class="fas fa-user-circle" /> Hồ sơ Hành chính Bệnh nhân</h4>
+            <h4 class="section-heading">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Hồ sơ Hành chính Bệnh nhân
+            </h4>
             
             <div class="clinical-details-grid">
               <div class="detail-cell">
@@ -241,7 +364,12 @@
 
           <!-- Section: Schedule allocation -->
           <div class="clinical-section">
-            <h4 class="section-heading"><i class="fas fa-notes-medical" /> Thông tin Chỉ định khám & Phân giờ</h4>
+            <h4 class="section-heading">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              Thông tin Chỉ định khám & Phân giờ
+            </h4>
             
             <div class="clinical-details-grid">
               <div class="detail-cell">
@@ -261,6 +389,10 @@
                 <span class="cell-value highlight-value">{{ formatTime(selectedApp.time) }}</span>
               </div>
               <div class="detail-cell">
+                <span class="cell-label">Thời lượng khám dự kiến:</span>
+                <span class="cell-value text-warning font-bold">{{ selectedApp.examinationDuration || 30 }} phút</span>
+              </div>
+              <div class="detail-cell">
                 <span class="cell-label">Số thứ tự xếp hàng (STT):</span>
                 <span class="cell-value text-success font-bold">{{ selectedApp.queueNumber ? '#' + selectedApp.queueNumber : 'Chưa cấp' }}</span>
               </div>
@@ -276,10 +408,17 @@
 
         <div class="modal-footer">
           <button v-if="selectedApp.status === 0" class="btn-modal-approve" @click="approveFromModal(selectedApp.id)">
-            <i class="fas fa-check" /> Phê duyệt & Cấp STT
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Phê duyệt & Cấp STT
           </button>
           <button v-if="selectedApp.status === 0 || selectedApp.status === 1" class="btn-modal-cancel" @click="cancelFromModal(selectedApp.id)">
-            <i class="fas fa-times" /> Hủy lịch hẹn
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            Hủy lịch hẹn
           </button>
           <button class="btn-modal-close" @click="closeDetail">Đóng</button>
         </div>

@@ -266,12 +266,13 @@
     submittingInfo.value = true
     setTimeout(() => {
       submittingInfo.value = false
-      if (authStore.user.value) {
-        authStore.user.value.fullName = profileForm.value.fullName
-        authStore.user.value.email = profileForm.value.email
-        authStore.user.value.phoneNumber = profileForm.value.phoneNumber
-        authStore.user.value.address = profileForm.value.address
-        localStorage.setItem('user', JSON.stringify(authStore.user.value))
+      const u = authStore.user.value
+      if (u) {
+        u.fullName = profileForm.value.fullName
+        u.email = profileForm.value.email
+        u.phoneNumber = profileForm.value.phoneNumber
+        u.address = profileForm.value.address
+        localStorage.setItem('user', JSON.stringify(u))
       }
       alert('Cập nhật hồ sơ cá nhân thành công! (Dữ liệu đã được đồng bộ liên thông)')
     }, 800)
@@ -323,7 +324,7 @@
 /* Banner accent */
 .profile-banner-accent {
   height: 180px;
-  background: linear-gradient(135deg, #0047AB 0%, #1565C0 100%);
+  background: #0047AB;
   border-radius: 24px;
   position: relative;
   overflow: hidden;
@@ -339,7 +340,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 50%);
+  background: transparent;
 }
 
 .banner-text {

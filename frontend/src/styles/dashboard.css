@@ -242,7 +242,7 @@
 
 .svc-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0047AB 0%, #3b82f6 100%);
+  background: #0047AB;
   border-radius: 10px;
   transition: width 1s ease-out;
 }
@@ -1478,5 +1478,333 @@ textarea.cockpit-input {
   color: #94a3b8;
   display: block;
   margin-top: 2px;
+}
+
+/* DYNAMICS REDESIGNED DASHBOARD STYLES (DABANG STYLE) */
+.dashboard-overview-redesign {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.analytics-row {
+  display: grid;
+  grid-template-columns: 2.3fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.analytics-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.analytics-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* WIDGET CARD */
+.widget-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.015);
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.widget-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.widget-subtitle {
+  font-size: 0.825rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+
+.btn-export-widget {
+  background: #f1f5f9;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-export-widget:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* TODAY'S SALES GRID */
+.sales-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.sales-card {
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.sales-card:hover {
+  transform: translateY(-2px);
+}
+
+.sales-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.sales-card-value {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.sales-card-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.sales-card-trend {
+  font-size: 0.725rem;
+  font-weight: 500;
+}
+
+/* CARD VARIATIONS */
+.pink-card { background-color: #FFE2E5; }
+.pink-card .sales-card-icon { background-color: #FA5A7D; color: white; }
+.pink-card .sales-card-trend { color: #FA5A7D; }
+
+.orange-card { background-color: #FFF4DE; }
+.orange-card .sales-card-icon { background-color: #FF947A; color: white; }
+.orange-card .sales-card-trend { color: #FF947A; }
+
+.green-card { background-color: #DCFCE7; }
+.green-card .sales-card-icon { background-color: #3CD856; color: white; }
+.green-card .sales-card-trend { color: #3CD856; }
+
+.purple-card { background-color: #F3E8FF; }
+.purple-card .sales-card-icon { background-color: #BF5AF2; color: white; }
+.purple-card .sales-card-trend { color: #BF5AF2; }
+
+/* MIDDLE GRID */
+.widgets-middle-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.5rem;
+}
+
+.canvas-wrapper {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+
+.revenue-chart-widget .canvas-wrapper {
+  height: 220px;
+}
+
+.satisfaction-widget .canvas-wrapper {
+  height: 180px;
+}
+
+.satisfaction-legend {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.satisfaction-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.satisfaction-legend .legend-item span {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.last-month-dot { background-color: #cbd5e1; }
+.this-month-dot { background-color: #10B981; }
+
+/* BOTTOM GRID */
+.widgets-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+}
+
+/* POPULAR SERVICES LIST */
+.products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.product-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.product-num {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #94a3b8;
+  width: 18px;
+}
+
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.progress-bar-container {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.product-percent {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badge-blue { background: #eff6ff; color: #2563eb; }
+.badge-green { background: #ecfdf5; color: #059669; }
+.badge-yellow { background: #fffbeb; color: #d97706; }
+.badge-purple { background: #faf5ff; color: #7c3aed; }
+
+/* MAPPING LIST */
+.mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  margin-top: 0.5rem;
+}
+
+.mapping-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.75rem;
+}
+
+.mapping-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mapping-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mapping-val {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* RIGHT COLUMN WIDGETS */
+.visitor-insights-widget .canvas-wrapper {
+  height: 200px;
+}
+
+.target-reality-widget .canvas-wrapper {
+  height: 180px;
+}
+
+.volume-service-widget .canvas-wrapper {
+  height: 180px;
+}
+
+/* RESPONSIVE LAYOUT BREAKPOINTS */
+@media (max-width: 1200px) {
+  .analytics-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sales-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .widgets-middle-grid,
+  .widgets-bottom-grid {
+    grid-template-columns: 1fr;
+  }
 }
 

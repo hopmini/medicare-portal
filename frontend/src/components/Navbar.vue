@@ -13,7 +13,7 @@
 
       <ul class="nav-links">
         <li><router-link to="/">Trang chủ</router-link></li>
-        <li>
+        <li v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
           <span class="dropdown">
             <span class="dropdown-toggle">Dịch vụ <i class="fas fa-chevron-down" /></span>
             <div class="dropdown-menu">
@@ -23,7 +23,9 @@
             </div>
           </span>
         </li>
-        <li><router-link to="/my-appointments">Lịch sử đặt hẹn</router-link></li>
+        <li v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
+          <router-link to="/my-appointments">Lịch sử đặt hẹn</router-link>
+        </li>
         <li><router-link to="/contact">Liên hệ</router-link></li>
       </ul>
 
@@ -73,10 +75,12 @@
 
     <div class="mobile-menu" :class="{ 'mobile-menu--open': mobileOpen }">
       <router-link to="/" @click="mobileOpen = false">Trang chủ</router-link>
-      <a href="#" @click.prevent="redirectToBooking(); mobileOpen = false"><i class="fas fa-calendar-check" /> Đặt lịch khám</a>
-      <a href="#" @click.prevent="redirectToMedicalRecord(); mobileOpen = false"><i class="fas fa-file-medical" /> Bệnh án điện tử</a>
-      <a href="#" @click.prevent="redirectToPharmacy(); mobileOpen = false"><i class="fas fa-pills" /> Hóa đơn & Thuốc</a>
-      <router-link to="/my-appointments" @click="mobileOpen = false">Lịch sử đặt hẹn</router-link>
+      <template v-if="!authStore.isAuthenticated.value || (authStore.user.value?.role || '').toLowerCase() === 'patient'">
+        <a href="#" @click.prevent="redirectToBooking(); mobileOpen = false"><i class="fas fa-calendar-check" /> Đặt lịch khám</a>
+        <a href="#" @click.prevent="redirectToMedicalRecord(); mobileOpen = false"><i class="fas fa-file-medical" /> Bệnh án điện tử</a>
+        <a href="#" @click.prevent="redirectToPharmacy(); mobileOpen = false"><i class="fas fa-pills" /> Hóa đơn & Thuốc</a>
+        <router-link to="/my-appointments" @click="mobileOpen = false">Lịch sử đặt hẹn</router-link>
+      </template>
       <router-link to="/contact" @click="mobileOpen = false">Liên hệ</router-link>
 
       <div class="mobile-menu__actions">
@@ -103,12 +107,67 @@
       </div>
     </div>
   </nav>
+
+  <!-- Notification Bell Button (Placed OUTSIDE the navbar to avoid backdrop-filter constraints) -->
+  <div v-if="authStore.isAuthenticated.value" class="notification-wrapper">
+    <button class="notification-btn" @click="showNotifDropdown = !showNotifDropdown; toastVisible = false" title="Thông báo">
+      <i class="fas fa-bell" />
+      <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+    </button>
+    
+    <!-- Toast Notification Popup -->
+    <transition name="toast-slide">
+      <div v-if="toastVisible && toastNotif" class="notif-toast" @click="handleToastClick">
+        <div class="notif-toast__icon" :class="toastNotif.type || 'info'">
+          <i class="fas" :class="toastNotif.type === 'success' ? 'fa-check-circle' : toastNotif.type === 'medical' ? 'fa-file-medical-alt' : 'fa-bell'" />
+        </div>
+        <div class="notif-toast__body">
+          <strong>{{ toastNotif.title }}</strong>
+          <p>{{ toastNotif.message }}</p>
+        </div>
+        <button class="notif-toast__close" @click.stop="toastVisible = false" title="Đóng">
+          <i class="fas fa-times" />
+        </button>
+      </div>
+    </transition>
+
+    <div v-if="showNotifDropdown" class="notif-dropdown">
+      <div class="notif-header">
+        <span>Thông báo của bạn</span>
+        <button v-if="unreadCount > 0" @click="markAllAsRead">Đánh dấu tất cả đã đọc</button>
+      </div>
+      <div class="notif-list">
+        <div v-if="notifications.length === 0" class="notif-empty">
+          <i class="fas fa-bell-slash" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: #cbd5e1;" />
+          Không có thông báo mới
+        </div>
+        <div 
+          v-else 
+          v-for="notif in notifications" 
+          :key="notif.id" 
+          class="notif-item" 
+          :class="{ 'notif-item--unread': notif.unread }"
+          @click="readNotif(notif)"
+        >
+          <div class="notif-item__icon" :class="notif.type || 'info'">
+            <i class="fas" :class="getNotifIcon(notif.type)" />
+          </div>
+          <div class="notif-item__body">
+            <b>{{ notif.title }}</b>
+            <p>{{ notif.message }}</p>
+            <small>{{ notif.time }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-  import { onMounted, onUnmounted, ref } from 'vue'
+  import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
+  import api from '@/services/api'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -152,24 +211,224 @@
   }
 
   function redirectToMedicalRecord () {
-    router.push('/medical-records')
+    if (authStore.isAuthenticated.value) {
+      const user = authStore.user.value
+      const role = (user?.role || '').toLowerCase()
+      if (role === 'doctor') {
+        router.push('/doctor')
+        return
+      }
+      if (role === 'patient') {
+        router.push('/my-medical-records')
+        return
+      }
+    }
+    router.push('/login')
   }
 
   function handleScroll () {
     scrolled.value = window.scrollY > 50
   }
 
+  // User Notifications Feature
+  const notifications = ref(JSON.parse(localStorage.getItem('medicare_notifications') || '[]'))
+  const showNotifDropdown = ref(false)
+  const knownStatuses = ref({})
+  const knownNotifIds = ref(new Set(JSON.parse(localStorage.getItem('medicare_known_notif_ids') || '[]')))
+  let pollInterval = null
+
+  // Toast popup state
+  const toastVisible = ref(false)
+  const toastNotif = ref(null)
+  let toastTimeout = null
+
+  const unreadCount = computed(() => notifications.value.filter(n => n.unread).length)
+
+  watch(notifications, (newVal) => {
+    localStorage.setItem('medicare_notifications', JSON.stringify(newVal))
+  }, { deep: true })
+
+  watch(authStore.isAuthenticated, (newVal) => {
+    if (newVal) {
+      seedStatuses()
+    } else {
+      knownStatuses.value = {}
+      knownNotifIds.value = new Set()
+      notifications.value = []
+    }
+  })
+
+  function showToast(notif) {
+    toastNotif.value = notif
+    toastVisible.value = true
+    if (toastTimeout) clearTimeout(toastTimeout)
+    toastTimeout = setTimeout(() => {
+      toastVisible.value = false
+    }, 8000)
+  }
+
+  function handleToastClick() {
+    toastVisible.value = false
+    showNotifDropdown.value = true
+  }
+
+  function getNotifIcon(type) {
+    switch (type) {
+      case 'success': return 'fa-check-circle'
+      case 'medical': return 'fa-file-medical-alt'
+      case 'warning': return 'fa-exclamation-triangle'
+      default: return 'fa-bell'
+    }
+  }
+
+  function playSuccessSound () {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const playNote = (frequency, startTime, duration) => {
+        const osc = audioCtx.createOscillator()
+        const gainNode = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(frequency, startTime)
+        gainNode.gain.setValueAtTime(0, startTime)
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gainNode)
+        gainNode.connect(audioCtx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      const now = audioCtx.currentTime
+      playNote(523.25, now, 0.4) // C5
+      playNote(659.25, now + 0.12, 0.5) // E5
+    } catch (error) {
+      console.error('Failed to play notification sound:', error)
+    }
+  }
+
+  async function checkAppointments () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+
+    try {
+      const res = await api.get('/Appointments/my')
+      const apps = res.data
+
+      apps.forEach(app => {
+        const prev = knownStatuses.value[app.id]
+        if (prev === 0 && app.status === 1) {
+          const newNotif = {
+            id: Date.now() + Math.random(),
+            title: 'Lịch hẹn đã được duyệt',
+            message: `Lịch hẹn khám #${String(app.id).substring(0, 8).toUpperCase()} với BS. ${app.doctorName} đã được phê duyệt thành công!`,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            unread: true,
+            type: 'success'
+          }
+          notifications.value.unshift(newNotif)
+          showToast(newNotif)
+          playSuccessSound()
+        }
+        knownStatuses.value[app.id] = app.status
+      })
+    } catch (e) {
+      console.error('Lỗi khi kiểm tra lịch hẹn từ Navbar:', e)
+    }
+  }
+
+  async function checkSystemNotifications () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+
+    try {
+      const res = await api.get('/Notifications/my')
+      const sysNotifs = res.data || []
+
+      sysNotifs.forEach(sn => {
+        const snKey = `sys_${sn.id}`
+        if (!knownNotifIds.value.has(snKey)) {
+          knownNotifIds.value.add(snKey)
+          const newNotif = {
+            id: snKey,
+            title: sn.title || 'Thông báo hệ thống',
+            message: sn.message || sn.content || '',
+            time: sn.createdAt ? new Date(sn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            unread: true,
+            type: sn.type || 'medical'
+          }
+          notifications.value.unshift(newNotif)
+          showToast(newNotif)
+          playSuccessSound()
+        }
+      })
+
+      // Persist known IDs
+      localStorage.setItem('medicare_known_notif_ids', JSON.stringify([...knownNotifIds.value]))
+    } catch (e) {
+      // API might not exist yet, silently fail
+    }
+  }
+
+  async function seedStatuses () {
+    if (!authStore.isAuthenticated.value) return
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role !== 'patient') return
+    try {
+      const res = await api.get('/Appointments/my')
+      res.data.forEach(app => {
+        knownStatuses.value[app.id] = app.status
+      })
+    } catch (e) {
+      console.error('Lỗi khởi tạo trạng thái lịch hẹn:', e)
+    }
+  }
+
+  function markAllAsRead () {
+    notifications.value.forEach(n => n.unread = false)
+  }
+
+  function readNotif (notif) {
+    notif.unread = false
+    const role = (authStore.user.value?.role || '').toLowerCase()
+    if (role === 'patient') {
+      router.push('/my-appointments')
+    }
+    showNotifDropdown.value = false
+  }
+
+  function handleDocumentClick (e) {
+    const wrapper = document.querySelector('.notification-wrapper')
+    if (wrapper && !wrapper.contains(e.target)) {
+      showNotifDropdown.value = false
+    }
+  }
+
   onMounted(() => {
     window.addEventListener('scroll', handleScroll)
+    window.addEventListener('click', handleDocumentClick)
+    
+    if (authStore.isAuthenticated.value) {
+      seedStatuses()
+      checkSystemNotifications()
+      pollInterval = setInterval(() => {
+        checkAppointments()
+        checkSystemNotifications()
+      }, 8000)
+    }
   })
 
   onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('click', handleDocumentClick)
+    if (pollInterval) {
+      clearInterval(pollInterval)
+    }
   })
 </script>
 
 <style scoped>
-@import '@/styles/navbar.css';
+@import '../styles/navbar.css';
 
 .btn-outline-nav {
   padding: 0.45rem 1rem;
@@ -306,4 +565,8 @@
   color: #0047AB;
   background: transparent;
 }
+</style>
+
+<style>
+@import '../styles/notif.css';
 </style>

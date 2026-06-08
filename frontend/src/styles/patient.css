@@ -5,8 +5,11 @@
 :root {
   --primary: #0047AB;
   --primary-hover: #003380;
+  --primary-gradient: #0047AB;
   --primary-light: #eff6ff;
+  --primary-light-hover: rgba(0, 71, 171, 0.12);
   --success: #10b981;
+  --success-gradient: #10b981;
   --success-light: #f0fdf4;
   --dark-slate: #0f172a;
   --slate-600: #475569;

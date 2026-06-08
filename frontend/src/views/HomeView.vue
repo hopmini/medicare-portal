@@ -325,7 +325,7 @@
         <!-- View all CTA -->
         <div class="doctors-more">
           <p>Và <strong>17 bác sĩ</strong> chuyên khoa khác đang chờ phục vụ bạn</p>
-          <button class="btn-outline" @click="redirectToBooking">Xem tất cả bác sĩ</button>
+          <button class="btn-outline" @click="router.push('/doctors')">Xem tất cả bác sĩ</button>
         </div>
       </div>
     </section>
@@ -458,7 +458,7 @@
               <i class="fas fa-calendar-alt" style="margin-right: 0.5rem;" /> Đặt lịch ngay
             </button>
 
-            <button class="btn-outline btn-outline--white" @click="$router.push('/receptionist')">
+            <button class="btn-outline btn-outline--white" @click="navigateToReceptionist">
               <i class="fas fa-hospital" style="margin-right: 0.5rem;" /> Cổng tiếp tân
             </button>
           </div>
@@ -616,6 +616,17 @@
       // If not logged in, route to patient booking (route guard will redirect to login)
       router.push('/patient')
     }
+  }
+
+  function navigateToReceptionist () {
+    if (authStore.isAuthenticated.value) {
+      const role = (authStore.user.value?.role || '').toLowerCase()
+      if (role !== 'receptionist' && role !== 'admin') {
+        alert('Bạn không có quyền truy cập Cổng tiếp tân. Vui lòng đăng nhập bằng tài khoản Lễ tân!')
+        return
+      }
+    }
+    router.push('/receptionist')
   }
 
   // ── State ──────────────────────────────────────────────────────────
