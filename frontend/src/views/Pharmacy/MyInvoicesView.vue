@@ -330,7 +330,7 @@ async function loadRealInvoices() {
     const response = await pharmacyApi.get('/Bills');
     const bills = response.data || [];
     
-    allInvoices.value = bills.map((b: any) => {
+    allInvoices.value = bills.map((b: any, idx: number) => {
       let type = 'Khám bệnh';
       if (b.examinationFee > 0 && b.medicineFee > 0) {
         type = 'Tổng hợp';
@@ -354,12 +354,11 @@ async function loadRealInvoices() {
         total: b.totalAmount,
         method: b.status === 'Paid' ? 'Chuyển khoản' : 'Chưa thanh toán',
         status: statusMap[b.status] || 'pending',
-        doctor: 'BS. Lê Minh C',
+        doctor: b.doctorName || 'Bác sĩ điều trị',
         discount: 0,
-        items: b.medicineFee > 0 ? [
-          { id: 1, name: 'Chi phí tiền thuốc', qty: 1, unit: 'Đợt', price: b.medicineFee, total: b.medicineFee }
-        ] : [
-          { id: 1, name: 'Chi phí khám bệnh', qty: 1, unit: 'Lần', price: b.examinationFee, total: b.examinationFee }
+        items: [
+          ...(b.examinationFee > 0 ? [{ id: 1, name: 'Chi phí khám bệnh', qty: 1, unit: 'Lần', price: b.examinationFee, total: b.examinationFee }] : []),
+          ...(b.medicineFee > 0 ? [{ id: 2, name: 'Chi phí tiền thuốc', qty: 1, unit: 'Đợt', price: b.medicineFee, total: b.medicineFee }] : [])
         ]
       };
     });

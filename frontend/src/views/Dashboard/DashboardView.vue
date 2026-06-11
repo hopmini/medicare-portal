@@ -41,6 +41,10 @@
           <span class="nav-icon"><i class="fas fa-concierge-bell text-blue" /></span>
           <span>Dịch vụ y khoa</span>
         </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'rooms' }" @click="activeTab = 'rooms'">
+          <span class="nav-icon"><i class="fas fa-door-open text-blue" /></span>
+          <span>Danh mục Phòng khám</span>
+        </div>
 
         <div class="sidebar__divider">2. PHÂN HỆ BỆNH ÁN ĐIỆN TỬ</div>
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'medical-records' }" @click="activeTab = 'medical-records'">
@@ -53,9 +57,37 @@
         </div>
 
         <div class="sidebar__divider">3. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
-        <div class="nav-item" @click="$router.push('/pharmacy/medicines')">
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-medicines' }" @click="activeTab = 'pharmacy-medicines'">
           <span class="nav-icon"><i class="fas fa-prescription-bottle-alt text-green" /></span>
-          <span>Quản lý Dược & Hóa đơn</span>
+          <span>Quản lý thuốc</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-suppliers' }" @click="activeTab = 'pharmacy-suppliers'">
+          <span class="nav-icon"><i class="fas fa-truck text-green" /></span>
+          <span>Nhà cung cấp</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-import-bills' }" @click="activeTab = 'pharmacy-import-bills'">
+          <span class="nav-icon"><i class="fas fa-file-import text-green" /></span>
+          <span>Phiếu nhập thuốc</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-batches' }" @click="activeTab = 'pharmacy-batches'">
+          <span class="nav-icon"><i class="fas fa-boxes text-green" /></span>
+          <span>Tồn kho theo lô</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-prescriptions' }" @click="activeTab = 'pharmacy-prescriptions'">
+          <span class="nav-icon"><i class="fas fa-file-prescription text-green" /></span>
+          <span>Đơn thuốc &amp; Bán lẻ</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-billing' }" @click="activeTab = 'pharmacy-billing'">
+          <span class="nav-icon"><i class="fas fa-receipt text-green" /></span>
+          <span>Hóa đơn bán thuốc</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-payments' }" @click="activeTab = 'pharmacy-payments'">
+          <span class="nav-icon"><i class="fas fa-credit-card text-green" /></span>
+          <span>Quản lý thanh toán</span>
+        </div>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'pharmacy-stock-history' }" @click="activeTab = 'pharmacy-stock-history'">
+          <span class="nav-icon"><i class="fas fa-history text-green" /></span>
+          <span>Lịch sử kho thuốc</span>
         </div>
 
 
@@ -430,9 +462,12 @@
                 <input v-model="selectedScheduleDate" type="date" class="filter-input" @change="loadActiveSlots" />
               </div>
             </div>
-            <button class="btn-primary-cockpit" @click="showSlotModal = true">
+            <button v-if="authStore.user?.role === 'Admin'" class="btn-primary-cockpit" @click="showSlotModal = true">
               <i class="fas fa-magic" /> Khởi tạo lịch trực
             </button>
+            <span v-else class="badge" style="background: #f1f5f9; color: #64748b; font-weight: 600; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+              <i class="fas fa-lock" style="margin-right: 6px;" /> Chỉ Admin mới được phân lịch trực
+            </span>
           </div>
 
           <div class="table-container shadow-light" style="padding: 2rem; background: white; border-radius: 20px; border: 1.5px solid #e2e8f0;">
@@ -453,7 +488,7 @@
               <div v-else-if="activeSlots.length === 0" class="empty-state-slots">
                 <i class="fas fa-clock" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;" />
                 <p>Ngày này bác sĩ chưa có ca khám trực nào được tạo.</p>
-                <button class="btn-primary-cockpit" style="margin-top: 1rem;" @click="formSlots.doctorId = selectedScheduleDoc; formSlots.date = selectedScheduleDate; showSlotModal = true">
+                <button v-if="authStore.user?.role === 'Admin'" class="btn-primary-cockpit" style="margin-top: 1rem;" @click="formSlots.doctorId = selectedScheduleDoc; formSlots.date = selectedScheduleDate; showSlotModal = true">
                   <i class="fas fa-plus" /> Khởi tạo ca trực ngay
                 </button>
               </div>
@@ -607,6 +642,69 @@
                 <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem;">
                   <i class="fas fa-check-circle" style="margin-right: 4px;" /> Đang hoạt động
                 </span>
+              </template>
+            </template>
+          </a-table>
+        </div>
+
+        <!-- TAB ROOMS: CLINIC ROOM MANAGEMENT -->
+        <div v-if="activeTab === 'rooms'" class="tab-content">
+          <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm phòng khám:</span>
+              <a-input v-model:value="searchRoomQuery" placeholder="Mã phòng, tên phòng, bác sĩ phụ trách..." allow-clear />
+            </div>
+            <div>
+              <button class="btn-main" style="background: linear-gradient(135deg, #0047AB 0%, #1e40af 100%); border: none;" @click="openAddRoomModal">
+                <i class="fas fa-plus" /> Thêm phòng khám mới
+              </button>
+            </div>
+          </div>
+
+          <a-table
+            :columns="columnsRooms"
+            :data-source="filteredRooms"
+            :pagination="{ pageSize: 8 }"
+            class="custom-antd-table shadow-light"
+            style="background: #ffffff; border-radius: 12px; overflow: hidden; border: 1.5px solid #e2e8f0;"
+            row-key="id"
+          >
+            <template #bodyCell="{ record, column, index }">
+              <template v-if="column.key === 'stt'">
+                <strong style="color: #64748b;">{{ index + 1 }}</strong>
+              </template>
+              <template v-else-if="column.key === 'code'">
+                <span style="font-family: monospace; font-weight: 800; color: #0f172a; font-size: 0.95rem; background: #f1f5f9; padding: 4px 8px; border-radius: 6px;">{{ record.code }}</span>
+              </template>
+              <template v-else-if="column.key === 'name'">
+                <strong style="color: #1e293b; font-size: 0.95rem;">{{ record.name }}</strong>
+              </template>
+              <template v-else-if="column.key === 'floor'">
+                <span style="color: #475569; font-weight: 600;"><i class="fas fa-layer-group" style="color: #94a3b8; margin-right: 6px;" />{{ record.floor }}</span>
+              </template>
+              <template v-else-if="column.key === 'doctorName'">
+                <span v-if="record.doctorName" style="color: #1e3a8a; font-weight: 700;">
+                  <i class="fas fa-user-md" style="color: #3b82f6; margin-right: 6px;" />{{ record.doctorName }}
+                </span>
+                <span v-else style="color: #94a3b8; font-style: italic;">Chưa phân công</span>
+              </template>
+              <template v-else-if="column.key === 'status'">
+                <span v-if="record.status === 'Hoạt động'" class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem;">
+                  <i class="fas fa-check-circle" style="margin-right: 4px;" /> Hoạt động
+                </span>
+                <span v-else class="badge badge--cancelled" style="background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; font-weight: 700; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem;">
+                  <i class="fas fa-tools" style="margin-right: 4px;" /> Bảo trì
+                </span>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                  <a-button type="primary" size="small" style="background: #3b82f6; border: none; display: flex; align-items: center; justify-content: center;" @click="openEditRoomModal(record)">
+                    <i class="fas fa-edit" />
+                  </a-button>
+                  <a-button type="primary" danger size="small" style="display: flex; align-items: center; justify-content: center;" @click="deleteRoom(record.id)">
+                    <i class="fas fa-trash-alt" />
+                  </a-button>
+                </div>
               </template>
             </template>
           </a-table>
@@ -779,6 +877,46 @@
                 </template>
               </template>
           </a-table>
+        </div>
+
+        <!-- TAB 8: PHARMACY MEDICINES -->
+        <div v-if="activeTab === 'pharmacy-medicines'" class="tab-content">
+          <MedicineManagement :inline="true" />
+        </div>
+
+        <!-- TAB 9: PHARMACY SUPPLIERS -->
+        <div v-if="activeTab === 'pharmacy-suppliers'" class="tab-content">
+          <SupplierManagement :inline="true" />
+        </div>
+
+        <!-- TAB 10: PHARMACY IMPORT BILLS -->
+        <div v-if="activeTab === 'pharmacy-import-bills'" class="tab-content">
+          <ImportBill :inline="true" />
+        </div>
+
+        <!-- TAB 11: PHARMACY BATCHES -->
+        <div v-if="activeTab === 'pharmacy-batches'" class="tab-content">
+          <BatchStock :inline="true" />
+        </div>
+
+        <!-- TAB 12: PHARMACY PRESCRIPTIONS -->
+        <div v-if="activeTab === 'pharmacy-prescriptions'" class="tab-content">
+          <PrescriptionManagement :inline="true" />
+        </div>
+
+        <!-- TAB 13: PHARMACY BILLING -->
+        <div v-if="activeTab === 'pharmacy-billing'" class="tab-content">
+          <BillingManagement :inline="true" />
+        </div>
+
+        <!-- TAB 14: PHARMACY PAYMENTS -->
+        <div v-if="activeTab === 'pharmacy-payments'" class="tab-content">
+          <PaymentManagement :inline="true" />
+        </div>
+
+        <!-- TAB 15: PHARMACY STOCK HISTORY -->
+        <div v-if="activeTab === 'pharmacy-stock-history'" class="tab-content">
+          <InventoryManagement :inline="true" />
         </div>
 
       </div>
@@ -1018,6 +1156,62 @@
       </div>
     </div>
   
+    <!-- Room Add/Edit Modal -->
+    <div v-if="showRoomModal" class="modal-backdrop">
+      <div class="modal-card shadow-lg animate-fade-in">
+        <div class="modal-header">
+          <h3>
+            <i class="fas fa-door-open text-blue" />
+            {{ isEditRoom ? 'Cập nhật thông tin phòng khám' : 'Thêm phòng khám mới' }}
+          </h3>
+          <button class="btn-close-modal" @click="showRoomModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="submitRoomForm" class="cockpit-form">
+            <div class="form-group-cockpit">
+              <label>Mã phòng khám (Ví dụ: P101, P204):</label>
+              <input v-model="formRoom.code" placeholder="Ví dụ: P101" required type="text" class="cockpit-input" />
+            </div>
+            <div class="form-group-cockpit">
+              <label>Tên phòng khám:</label>
+              <input v-model="formRoom.name" placeholder="Ví dụ: Phòng khám Nội 1" required type="text" class="cockpit-input" />
+            </div>
+            <div class="form-group-cockpit">
+              <label>Tầng / Vị trí:</label>
+              <select v-model="formRoom.floor" class="cockpit-input">
+                <option value="Tầng 1">Tầng 1</option>
+                <option value="Tầng 2">Tầng 2</option>
+                <option value="Tầng 3">Tầng 3</option>
+                <option value="Tầng 4">Tầng 4</option>
+              </select>
+            </div>
+            <div class="form-group-cockpit">
+              <label>Bác sĩ phụ trách:</label>
+              <select v-model="formRoom.doctorName" class="cockpit-input">
+                <option value="">-- Chưa phân công --</option>
+                <option v-for="doc in doctorsList" :key="doc.id" :value="'BS. ' + doc.fullName">
+                  BS. {{ doc.fullName }} ({{ doc.specialty }})
+                </option>
+              </select>
+            </div>
+            <div class="form-group-cockpit">
+              <label>Trạng thái vận hành:</label>
+              <select v-model="formRoom.status" class="cockpit-input">
+                <option value="Hoạt động">Hoạt động</option>
+                <option value="Bảo trì">Bảo trì</option>
+              </select>
+            </div>
+            <div class="modal-footer-btns">
+              <button type="button" class="btn-cancel-modal" @click="showRoomModal = false">Hủy</button>
+              <button type="submit" class="btn-primary-cockpit" style="background: linear-gradient(135deg, #0047AB 0%, #1d4ed8 100%);">
+                <i class="fas fa-save" /> Lưu thông tin
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+   
 
    
     <!-- 4. Medical Record Detail Modal -->
@@ -1112,6 +1306,14 @@
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { medicalRecordService } from '@/services/medicalRecordService'
+  import MedicineManagement from '@/views/Pharmacy/MedicineManagement.vue'
+  import SupplierManagement from '@/views/Pharmacy/SupplierManagement.vue'
+  import ImportBill from '@/views/Pharmacy/ImportBill.vue'
+  import BatchStock from '@/views/Pharmacy/BatchStock.vue'
+  import PrescriptionManagement from '@/views/Pharmacy/PrescriptionManagement.vue'
+  import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
+  import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
+  import InventoryManagement from '@/views/Pharmacy/InventoryManagement.vue'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -1388,12 +1590,119 @@
   ]
 
   // Navigation control
-  const activeTab = ref('overview')
+  const activeTab = ref(router.currentRoute.value.query.tab || 'overview')
+
+  // Watch for external route query updates (e.g. back/forward button navigation)
+  watch(() => router.currentRoute.value.query.tab, (newTab) => {
+    if (newTab && newTab !== activeTab.value) {
+      activeTab.value = newTab
+    }
+  })
+
+  // Watch for activeTab changes to update the router query
+  watch(activeTab, (newTab) => {
+    if (router.currentRoute.value.query.tab !== newTab) {
+      router.replace({ query: { ...router.currentRoute.value.query, tab: newTab } })
+    }
+  })
+
   const quickSearchQuery = ref('')
   const filterStatus = ref('all')
   const searchPatientQuery = ref('')
   const searchDoctorQuery = ref('')
   const searchServiceQuery = ref('')
+  const searchRoomQuery = ref('')
+  const showRoomModal = ref(false)
+  const isEditRoom = ref(false)
+  const editRoomId = ref(null)
+  const formRoom = ref({ code: '', name: '', floor: 'Tầng 1', status: 'Hoạt động', doctorName: '' })
+  const roomsList = ref([])
+
+  const initialRooms = [
+    { id: 1, code: 'P101', name: 'Phòng khám Nội 1', floor: 'Tầng 1', doctorName: 'BS. Nguyễn Văn A', status: 'Hoạt động' },
+    { id: 2, code: 'P102', name: 'Phòng khám Nội 2', floor: 'Tầng 1', doctorName: 'BS. Trần Thị B', status: 'Hoạt động' },
+    { id: 3, code: 'P204', name: 'Phòng khám Chuyên khoa 204', floor: 'Tầng 2', doctorName: 'BS. Phạm Văn C', status: 'Hoạt động' },
+    { id: 4, code: 'P301', name: 'Phòng Siêu âm', floor: 'Tầng 3', doctorName: 'BS. Lê Hoàng D', status: 'Hoạt động' },
+    { id: 5, code: 'P302', name: 'Phòng Xét nghiệm', floor: 'Tầng 3', doctorName: 'KTV. Nguyễn Văn E', status: 'Bảo trì' }
+  ]
+
+  function initRooms() {
+    const saved = localStorage.getItem('medicare_rooms')
+    if (saved) {
+      roomsList.value = JSON.parse(saved)
+    } else {
+      roomsList.value = [...initialRooms]
+      localStorage.setItem('medicare_rooms', JSON.stringify(initialRooms))
+    }
+  }
+
+  function saveRoomsToStorage() {
+    localStorage.setItem('medicare_rooms', JSON.stringify(roomsList.value))
+  }
+
+  const columnsRooms = [
+    { title: 'STT', key: 'stt', width: '60px', align: 'center' },
+    { title: 'Mã phòng', dataIndex: 'code', key: 'code', width: '120px', sorter: (a, b) => a.code.localeCompare(b.code) },
+    { title: 'Tên phòng khám', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Vị trí', dataIndex: 'floor', key: 'floor', sorter: (a, b) => a.floor.localeCompare(b.floor) },
+    { title: 'Bác sĩ phụ trách', dataIndex: 'doctorName', key: 'doctorName', sorter: (a, b) => a.doctorName.localeCompare(b.doctorName) },
+    { title: 'Trạng thái', key: 'status', width: '150px' },
+    { title: 'Thao tác', key: 'action', width: '120px', align: 'center' }
+  ]
+
+  const filteredRooms = computed(() => {
+    let list = [...roomsList.value]
+    if (searchRoomQuery.value) {
+      const q = searchRoomQuery.value.toLowerCase().trim()
+      list = list.filter(r => 
+        r.code.toLowerCase().includes(q) || 
+        r.name.toLowerCase().includes(q) ||
+        (r.doctorName && r.doctorName.toLowerCase().includes(q)) ||
+        r.floor.toLowerCase().includes(q)
+      )
+    }
+    return list
+  })
+
+  function openAddRoomModal() {
+    isEditRoom.value = false
+    editRoomId.value = null
+    formRoom.value = { code: '', name: '', floor: 'Tầng 1', status: 'Hoạt động', doctorName: '' }
+    showRoomModal.value = true
+  }
+
+  function openEditRoomModal(record) {
+    isEditRoom.value = true
+    editRoomId.value = record.id
+    formRoom.value = { ...record }
+    showRoomModal.value = true
+  }
+
+  function submitRoomForm() {
+    if (!formRoom.value.code || !formRoom.value.name) return
+    
+    if (isEditRoom.value) {
+      const idx = roomsList.value.findIndex(r => r.id === editRoomId.value)
+      if (idx > -1) {
+        roomsList.value[idx] = { ...roomsList.value[idx], ...formRoom.value }
+      }
+    } else {
+      const newId = roomsList.value.length ? Math.max(...roomsList.value.map(r => r.id)) + 1 : 1
+      roomsList.value.push({
+        id: newId,
+        ...formRoom.value
+      })
+    }
+    saveRoomsToStorage()
+    showRoomModal.value = false
+  }
+
+  function deleteRoom(id) {
+    if (confirm('Bạn có chắc chắn muốn xóa phòng khám này?')) {
+      roomsList.value = roomsList.value.filter(r => r.id !== id)
+      saveRoomsToStorage()
+    }
+  }
 
   // Modal display toggles (Appointment Service - ACTIVE)
   const showSlotModal = ref(false)
@@ -1623,8 +1932,17 @@
       case 'schedule': return 'Quản Lý Lịch Trực Bác Sĩ'
       case 'doctors': return 'Danh Mục Bác Sĩ Lâm Sàng'
       case 'services': return 'Dịch Vụ Y Khoa Toàn Viện'
+      case 'rooms': return 'Danh Mục Phòng Khám & Vận Hành Lâm Sàng'
       case 'medical-records': return 'Quản Lý Bệnh Án Điện Tử (N2)'
       case 'patient-registry': return 'Danh Sách Bệnh Nhân Hệ Thống (N2)'
+      case 'pharmacy-medicines': return 'Quản Lý Danh Mục Thuốc'
+      case 'pharmacy-suppliers': return 'Quản Lý Nhà Cung Cấp'
+      case 'pharmacy-import-bills': return 'Quản Lý Phiếu Nhập Thuốc'
+      case 'pharmacy-batches': return 'Tồn Kho Theo Lô'
+      case 'pharmacy-prescriptions': return 'Quản Lý Đơn Thuốc & Bán Lẻ'
+      case 'pharmacy-billing': return 'Hóa Đơn Bán Thuốc'
+      case 'pharmacy-payments': return 'Quản Lý Thanh Toán'
+      case 'pharmacy-stock-history': return 'Lịch Sử Kho Thuốc'
       default: return 'Medicare Master Cockpit'
     }
   }
@@ -2086,6 +2404,7 @@
 
   onMounted(() => {
     fetchAllData()
+    initRooms()
   })
 </script>
 

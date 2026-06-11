@@ -1,7 +1,7 @@
 /* NOTIFICATION DROPDOWN STYLES (FLOATING CHATBOT-STYLE FAB) */
 .notification-wrapper {
   position: fixed;
-  bottom: 30px;
+  top: 100px;
   right: 30px;
   z-index: 9999;
   display: flex;
@@ -48,7 +48,7 @@
 
 .notif-dropdown {
   position: absolute;
-  bottom: 70px;
+  top: 60px;
   right: 0;
   width: 360px;
   background: white;
@@ -57,11 +57,11 @@
   border: 1px solid #e2e8f0;
   z-index: 10000;
   overflow: hidden;
-  animation: slideUp 0.3s ease-out;
+  animation: slideDownNotif 0.3s ease-out;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes slideDownNotif {
+  from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -119,7 +119,7 @@
 /* TOAST NOTIFICATION POPUP */
 .notif-toast {
   position: absolute;
-  bottom: 70px;
+  top: 60px;
   right: 0;
   width: 380px;
   background: white;
@@ -132,23 +132,23 @@
   gap: 12px;
   cursor: pointer;
   z-index: 10001;
-  animation: toastBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toastBounceDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes toastBounce {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+@keyframes toastBounceDown {
+  from { opacity: 0; transform: translateY(-20px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .toast-slide-enter-active {
-  animation: toastBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: toastBounceDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .toast-slide-leave-active {
   transition: all 0.3s ease;
 }
 .toast-slide-leave-to {
   opacity: 0;
-  transform: translateY(10px) scale(0.95);
+  transform: translateY(-10px) scale(0.95);
 }
 
 .notif-toast__icon {

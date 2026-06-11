@@ -116,52 +116,69 @@
               </div>
 
               <!-- Services Grid -->
-              <div class="grid-container">
+              <div class="services-grid-premium">
                 <div
                   v-for="service in filteredServices"
                   :key="service.id"
-                  class="card-item"
-                  :class="{ 'card-item--active': selectedServices.some(s => s.id === service.id) }"
+                  class="service-card-premium"
+                  :class="{ 'service-card-premium--active': selectedServices.some(s => s.id === service.id) }"
                   @click="toggleService(service)"
-                  style="display: flex; flex-direction: column; height: auto;"
                 >
-                  <div style="display: flex; gap: 12px; align-items: flex-start; width: 100%;">
-                    <div class="card-item__icon">
-                      <i v-if="selectedServices.some(s => s.id === service.id)" class="fas fa-check" style="color: var(--primary); font-size: 1.25rem;" />
-                      <i v-else class="fas fa-stethoscope" />
+                  <!-- Badge for Category -->
+                  <span class="service-category-badge">{{ getServiceCategory(service) }}</span>
+                  
+                  <div class="service-card-header">
+                    <div class="service-premium-icon">
+                      <i v-if="selectedServices.some(s => s.id === service.id)" class="fas fa-check-circle text-primary" style="font-size: 1.4rem;" />
+                      <i v-else :class="getServiceIcon(service.name)" />
                     </div>
-                    <div class="card-item__info" style="flex: 1; text-align: left;">
-                      <h3>{{ service.name }}</h3>
-                      <p>{{ service.description }}</p>
-                      <div class="card-item__price">{{ formatPrice(service.price + getSubOptionPriceDiff(service.id)) }}</div>
+                    
+                    <div class="service-premium-price-block">
+                      <span class="price-label">Giá niêm yết</span>
+                      <span class="price-amount">{{ formatPrice(service.price + getSubOptionPriceDiff(service.id)) }}</span>
                     </div>
+                  </div>
+                  
+                  <div class="service-premium-body">
+                    <h3 class="service-title-text">{{ service.name }}</h3>
+                    <p class="service-desc-text">{{ service.description || 'Gói khám lâm sàng toàn diện được thực hiện bởi đội ngũ bác sĩ chuyên khoa đầu ngành.' }}</p>
                   </div>
                   
                   <!-- Dynamic Sub-Options for selected services -->
                   <div 
                     v-if="selectedServices.some(s => s.id === service.id) && hasSubOptions(service)"
                     @click.stop
-                    style="margin-top: 1rem; border-top: 1px dashed #cbd5e1; padding-top: 0.85rem; width: 100%; text-align: left;"
+                    class="sub-options-premium"
                   >
-                    <label style="font-size: 0.78rem; font-weight: 800; color: #475569; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">
-                      💡 Chọn phân loại khám chi tiết:
+                    <label class="sub-options-title">
+                      <i class="fas fa-sliders-h" /> Phân loại khám chi tiết:
                     </label>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="sub-options-list">
                       <label 
                         v-for="sub in getSubOptions(service)" 
                         :key="sub.name"
-                        style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #1e293b; cursor: pointer; padding: 4px 8px; border-radius: 6px; background: rgba(0, 71, 171, 0.03);"
+                        class="sub-option-item"
+                        :class="{ 'sub-option-item--selected': selectedSubOptions[service.id]?.name === sub.name }"
                       >
                         <input 
                           type="radio" 
                           :name="'sub-opt-' + service.id" 
                           :checked="selectedSubOptions[service.id]?.name === sub.name"
                           @change="selectSubOption(service.id, sub)"
-                          style="accent-color: #0047AB;"
                         />
-                        <span>{{ sub.name }} <b style="color: #0047AB;" v-if="sub.priceDiff > 0">(+{{ formatPrice(sub.priceDiff) }})</b></span>
+                        <span class="sub-option-text">
+                          {{ sub.name }} 
+                          <b class="price-diff-text" v-if="sub.priceDiff > 0">(+{{ formatPrice(sub.priceDiff) }})</b>
+                        </span>
                       </label>
                     </div>
+                  </div>
+                  
+                  <div class="service-card-footer">
+                    <span class="service-duration"><i class="far fa-clock" /> Thời gian: ~{{ getServiceDuration(service) }} phút</span>
+                    <button class="btn-select-service" :class="{ 'btn-select-service--active': selectedServices.some(s => s.id === service.id) }">
+                      {{ selectedServices.some(s => s.id === service.id) ? 'Đã chọn' : 'Chọn gói này' }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -189,19 +206,51 @@
               <p>Đang tải đội ngũ bác sĩ chuyên khoa lâm sàng...</p>
             </div>
 
-            <div v-else class="grid-container">
+            <div v-else class="doctors-grid-premium">
               <div
                 v-for="doc in filteredDoctors"
                 :key="doc.id"
-                class="card-item"
-                :class="{ 'card-item--active': selectedDoctor?.id === doc.id }"
+                class="doctor-card-premium"
+                :class="{ 'doctor-card-premium--active': selectedDoctor?.id === doc.id }"
                 @click="selectDoctor(doc)"
               >
-                <div class="card-item__icon"><i class="fas fa-user-md" /></div>
-                <div class="card-item__info">
-                  <h3>BS. {{ doc.fullName }}</h3>
-                  <span class="doc-spec-badge">{{ doc.specialty }}</span>
+                <!-- Selection Indicator Badge -->
+                <div class="selection-badge" v-if="selectedDoctor?.id === doc.id">
+                  <i class="fas fa-check-circle" /> Đang chọn
                 </div>
+                
+                <!-- Doctor Avatar / Photo Placeholder -->
+                <div class="doc-premium-avatar-wrapper">
+                  <div class="doc-premium-avatar" :style="{ background: getDoctorAvatarBg(doc.fullName) }">
+                    <i class="fas fa-user-md" />
+                  </div>
+                  <span class="doc-online-status">⚡ Sẵn sàng</span>
+                </div>
+                
+                <!-- Doctor Info -->
+                <div class="doc-premium-info">
+                  <h3 class="doc-premium-name">BS. {{ doc.fullName }}</h3>
+                  <span class="doc-premium-spec"><i class="fas fa-stethoscope" /> {{ doc.specialty || 'Chuyên khoa Nội' }}</span>
+                  
+                  <div class="doc-premium-stats">
+                    <span class="doc-stat-item"><i class="fas fa-star text-warning" /> 4.9</span>
+                    <span class="doc-stat-item"><i class="fas fa-user-check" /> 1.2k+ lượt khám</span>
+                  </div>
+                  
+                  <p class="doc-premium-bio">
+                    Bác sĩ giàu kinh nghiệm, chuyên khoa sâu, ân cần chu đáo và có tay nghề cao trong lĩnh vực điều trị lâm sàng.
+                  </p>
+                  
+                  <!-- Tag list -->
+                  <div class="doc-premium-tags">
+                    <span class="doc-tag">10+ năm kinh nghiệm</span>
+                    <span class="doc-tag">Tư vấn tận tâm</span>
+                  </div>
+                </div>
+                
+                <button class="btn-select-doc-premium">
+                  {{ selectedDoctor?.id === doc.id ? 'Đã lựa chọn' : 'Lựa chọn bác sĩ' }}
+                </button>
               </div>
             </div>
 
@@ -225,7 +274,7 @@
             <!-- Horizontal Dates Slider -->
             <div class="date-scroll-v">
               <div
-                v-for="date in nextFourteenDays"
+                v-for="date in selectableDays"
                 :key="date.iso"
                 class="date-card-v"
                 :class="{ 'date-card-v--active': selectedDate === date.iso }"
@@ -509,7 +558,9 @@
       <div class="success-card shadow-lg">
         <div class="success-icon"><i class="fas fa-check-circle" /></div>
         <h2>Đăng Ký Thành Công!</h2>
-        <div class="appointment-id">Mã đơn: #{{ (successData.appointmentId || successData.id || '').slice(0,8).toUpperCase() }}</div>
+        <div class="appointment-id" style="font-size: 1.15rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 10px 16px; border-radius: 10px; font-weight: 800; display: inline-block; margin: 10px 0;">
+          Mã tra cứu: {{ successData.qrToken || (successData.appointmentId || successData.id || '').slice(0,8).toUpperCase() }}
+        </div>
         
         <p style="margin: 1.25rem 0; color: #475569; font-weight: 500;">
           Medicare đã gửi thông tin xác nhận qua hòm thư <b>{{ authStore.user.value?.email }}</b>. Bạn có thể theo dõi tiến độ khám tại lịch sử đặt hẹn bất cứ lúc nào.
@@ -526,13 +577,14 @@
 
 <script setup>
   import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
   import api from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { useDoctorStore } from '@/stores/doctorStore'
 
   const router = useRouter()
+  const route = useRoute()
   const authStore = useAuthStore()
   const doctorStore = useDoctorStore()
 
@@ -797,6 +849,17 @@
   const loadingDoctors = computed(() => doctorStore.loading.value)
   const filteredDoctors = computed(() => {
     const list = doctorStore.doctors.value || []
+    
+    // Check autoSpecialty query param from AI Chatbot
+    const routeSpecialty = route.query.autoSpecialty
+    if (routeSpecialty) {
+      const normalizedRouteSpec = routeSpecialty.replace('Khoa ', '').toLowerCase().trim()
+      return list.filter(doc => {
+        const docSpec = (doc.specialty || '').toLowerCase().trim()
+        return docSpec.includes(normalizedRouteSpec) || normalizedRouteSpec.includes(docSpec)
+      })
+    }
+
     if (selectedServices.value.length === 0) return list
     
     const targetSpecs = selectedServices.value.map(svc => getServiceSpecialty(svc.name))
@@ -817,25 +880,112 @@
     }, 0)
   })
 
-  const nextFourteenDays = computed(() => {
-    const days = []
+  const customDatePicker = ref(null)
+  
+  // Calculate today as YYYY-MM-DD local string for min selectable date
+  const todayObj = new Date()
+  const y = todayObj.getFullYear()
+  const m = String(todayObj.getMonth() + 1).padStart(2, '0')
+  const d = String(todayObj.getDate()).padStart(2, '0')
+  const minSelectableDate = ref(`${y}-${m}-${d}`)
+
+  const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
+  
+  // Initialize with today + next 6 days (1 week)
+  const selectableDays = ref([])
+  
+  function initializeDays() {
+    const list = []
     const today = new Date()
-    const dayNames = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date()
       d.setDate(today.getDate() + i)
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      days.push({
-        iso: `${year}-${month}-${day}`,
+      const iso = `${year}-${month}-${day}`
+      list.push({
+        iso,
         dayNum: d.getDate(),
         month: d.getMonth() + 1,
         dayName: i === 0 ? 'Hôm nay' : dayNames[d.getDay()],
       })
     }
-    return days
-  })
+    selectableDays.value = list
+  }
+  
+  initializeDays()
+
+  function openDatePicker() {
+    if (customDatePicker.value) {
+      if (customDatePicker.value.showPicker) {
+        customDatePicker.value.showPicker()
+      } else {
+        customDatePicker.value.click()
+      }
+    }
+  }
+
+  function handleCustomDateChange(event) {
+    const val = event.target.value // YYYY-MM-DD
+    if (!val) return
+    
+    // Check if this date already exists in selectableDays
+    const exists = selectableDays.value.find(day => day.iso === val)
+    if (!exists) {
+      // Parse the custom date to display it beautifully in the card
+      const d = new Date(val)
+      const customDay = {
+        iso: val,
+        dayNum: d.getDate(),
+        month: d.getMonth() + 1,
+        dayName: dayNames[d.getDay()]
+      }
+      
+      // Add it and sort chronologically
+      selectableDays.value.push(customDay)
+      selectableDays.value.sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime())
+    }
+    
+    // Automatically select the newly chosen date
+    selectDate(val)
+  }
+
+  function getDoctorAvatarBg(name) {
+    const colors = [
+      'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', // sky-blue
+      'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', // teal
+      'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', // indigo
+      'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', // cobalt
+      'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)'  // cyan
+    ]
+    if (!name) return colors[0]
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const index = Math.abs(hash) % colors.length
+    return colors[index]
+  }
+
+  function getServiceIcon(name) {
+    const n = (name || '').toLowerCase()
+    if (n.includes('nội soi')) return 'fas fa-procedures'
+    if (n.includes('siêu âm')) return 'fas fa-wave-square'
+    if (n.includes('x-quang') || n.includes('chụp')) return 'fas fa-radiation'
+    if (n.includes('xét nghiệm') || n.includes('máu')) return 'fas fa-vial'
+    if (n.includes('mắt') || n.includes('thị lực')) return 'fas fa-eye'
+    if (n.includes('răng') || n.includes('nha')) return 'fas fa-tooth'
+    if (n.includes('sản') || n.includes('phụ')) return 'fas fa-baby'
+    return 'fas fa-stethoscope'
+  }
+
+  function getServiceDuration(service) {
+    const name = (service.name || '').toLowerCase()
+    if (name.includes('nội soi')) return 30
+    if (name.includes('siêu âm') || name.includes('x-quang') || name.includes('chụp')) return 20
+    return 15
+  }
 
   async function fetchServices () {
     loadingServices.value = true

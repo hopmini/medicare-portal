@@ -2,11 +2,24 @@
   <div class="app-container">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
-        <component :is="Component" />
+        <component :is="Component" :key="$route.path" />
       </transition>
     </router-view>
+    <AIConsultant v-if="showAIConsultant" />
   </div>
 </template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import AIConsultant from '@/components/AIConsultant.vue'
+
+const route = useRoute()
+const showAIConsultant = computed(() => {
+  const path = route.path || ''
+  return !path.startsWith('/dashboard') && !path.startsWith('/pharmacy')
+})
+</script>
 
 <style scoped>
 .app-container {

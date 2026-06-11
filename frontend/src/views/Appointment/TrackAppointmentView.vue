@@ -24,7 +24,7 @@
             <i class="fas fa-ticket-alt search-icon" />
             <input
               v-model="searchCode"
-              placeholder="Nhập mã lịch hẹn của bạn (Ví dụ: 550E8400)..."
+              placeholder="Nhập mã tra cứu (Ví dụ: MC-123456) hoặc mã lịch hẹn..."
               type="text"
               class="search-input"
               @keyup.enter="handleSearch"
@@ -45,8 +45,9 @@
             
             <div class="card-header-premium">
               <div class="header-left">
-                <span class="appointment-id-badge">Mã lịch hẹn: <strong>#{{ appointment.id.toString().substring(0, 8).toUpperCase() }}</strong></span>
-                <span class="created-date">Mã đầy đủ: {{ appointment.id }}</span>
+                <span class="appointment-id-badge">Mã tra cứu: <strong>{{ appointment.qrToken || appointment.id.toString().substring(0, 8).toUpperCase() }}</strong></span>
+                <span class="created-date" v-if="appointment.qrToken">Mã hệ thống: {{ appointment.id }}</span>
+                <span class="created-date" v-else style="font-size: 0.8rem; opacity: 0.8;">Mã đầy đủ: {{ appointment.id }}</span>
               </div>
               <div class="status-badge-wrapper">
                 <div class="status-badge-glow" :class="getStatusClass(appointment.status)">
@@ -356,7 +357,8 @@
       const newStatus = res.data.status
       if (lastStatus.value === 0 && newStatus === 1) {
         playSuccessSound()
-        alert(`🔔 Thông báo Medicare: Lịch hẹn khám #${appointment.value.id.toString().substring(0, 8).toUpperCase()} của bạn đã được phê duyệt thành công!`)
+        const displayCode = res.data.qrToken || appointment.value.id.toString().substring(0, 8).toUpperCase()
+        alert(`🔔 Thông báo Medicare: Lịch hẹn khám ${displayCode} của bạn đã được phê duyệt thành công!`)
       }
       lastStatus.value = newStatus
       appointment.value = res.data

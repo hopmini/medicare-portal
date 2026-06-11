@@ -113,30 +113,38 @@ const routes = [
     component: ProfileView,
     meta: { requiresAuth: true }
   },
-  // Pharmacy routes
-  { path: '/pharmacy/medicines', name: 'PharmacyMedicines', component: MedicineManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist'] } },
+  // Redirection for consolidated Pharmacy sub-modules in DashboardView SPA
+  { path: '/pharmacy/medicines', redirect: '/dashboard?tab=pharmacy-medicines' },
+  { path: '/pharmacy/suppliers', redirect: '/dashboard?tab=pharmacy-suppliers' },
+  { path: '/pharmacy/inventory', redirect: '/dashboard?tab=pharmacy-stock-history' },
+  { path: '/pharmacy/billing', redirect: '/dashboard?tab=pharmacy-billing' },
+  { path: '/pharmacy/create-bill', redirect: '/dashboard?tab=pharmacy-billing' },
+  { path: '/pharmacy/import-bill', redirect: '/dashboard?tab=pharmacy-import-bills' },
+  { path: '/pharmacy/batches', redirect: '/dashboard?tab=pharmacy-batches' },
+  { path: '/pharmacy/prescriptions', redirect: '/dashboard?tab=pharmacy-prescriptions' },
+  { path: '/pharmacy/dashboard', redirect: '/dashboard?tab=overview' },
+  { path: '/pharmacy/payments', redirect: '/dashboard?tab=pharmacy-payments' },
+  { path: '/pharmacy/payments/list', redirect: '/dashboard?tab=pharmacy-payments' },
+  { path: '/pharmacy/payments/history', redirect: '/dashboard?tab=pharmacy-payments' },
+  { path: '/pharmacy/payments/report', redirect: '/dashboard?tab=pharmacy-payments' },
   { path: '/pharmacy/users', name: 'PharmacyUsers', component: UserManagement, meta: { requiresAuth: true, roles: ['Admin'] } },
-  { path: '/pharmacy/suppliers', name: 'PharmacySuppliers', component: SupplierManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist'] } },
-  { path: '/pharmacy/inventory', name: 'PharmacyInventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist'] } },
-  { path: '/pharmacy/billing', name: 'PharmacyBilling', component: BillingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Receptionist', 'Cashier', 'Patient'] } },
-  { path: '/pharmacy/create-bill', name: 'PharmacyCreateBill', component: CreateBill, meta: { requiresAuth: true, roles: ['Admin', 'Receptionist', 'Cashier', 'Doctor', 'Pharmacist'] } },
-  { path: '/pharmacy/import-bill', name: 'PharmacyImportBill', component: ImportBill, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist'] } },
-  { path: '/pharmacy/batches', name: 'PharmacyBatches', component: BatchStock, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist'] } },
-  { path: '/pharmacy/prescriptions', name: 'PharmacyPrescriptions', component: PrescriptionManagement, meta: { requiresAuth: true, roles: ['Admin', 'Doctor', 'Pharmacist', 'Receptionist', 'Cashier', 'Patient'] } },
-  { path: '/pharmacy/dashboard', name: 'PharmacyDashboard', component: PharmacyDashboard, meta: { requiresAuth: true } },
-  // Payment routes - Admin, Cashier, Receptionist only
-  { path: '/pharmacy/payments', name: 'PharmacyPayments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Cashier', 'Receptionist'] } },
-  { path: '/pharmacy/payments/list', name: 'PharmacyPaymentsList', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Cashier', 'Receptionist'] } },
-  { path: '/pharmacy/payments/history', name: 'PharmacyPaymentsHistory', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Cashier', 'Receptionist'] } },
-  { path: '/pharmacy/payments/report', name: 'PharmacyPaymentsReport', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin'] } },
-  // Patient payment status route
   { path: '/pharmacy/payment-status', name: 'PaymentStatus', component: PaymentStatusView, meta: { requiresAuth: true, roles: ['Patient', 'Admin', 'Cashier', 'Receptionist'] } },
   { path: '/pharmacy/my-invoices', name: 'PatientMyInvoices', component: MyInvoicesView, meta: { requiresAuth: true, roles: ['Patient', 'Admin'] } },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (to.path === from.path) {
+      // Return false to prevent scrolling when only query parameters or hash change
+      return false
+    }
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  }
 })
 
 router.beforeEach((to, from, next) => {
@@ -160,9 +168,9 @@ router.beforeEach((to, from, next) => {
         } else if (userRole === 'doctor') {
           next({ path: '/doctor' })
         } else if (userRole === 'receptionist' || userRole === 'cashier') {
-          next({ path: '/pharmacy/dashboard' })
+          next({ path: '/dashboard' })
         } else if (userRole === 'pharmacist') {
-          next({ path: '/pharmacy/dashboard' })
+          next({ path: '/dashboard' })
         } else if (userRole === 'admin') {
           next({ path: '/dashboard' })
         } else {

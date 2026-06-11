@@ -201,13 +201,13 @@
       const user = authStore.user.value
       const role = (user?.role || '').toLowerCase()
       if (role === 'patient') {
-        router.push('/pharmacy/billing')
+        router.push('/pharmacy/my-invoices')
         return
       }
-      router.push('/pharmacy/dashboard')
+      router.push('/dashboard')
       return
     }
-    router.push('/pharmacy/dashboard')
+    router.push('/login?redirect=/pharmacy/my-invoices')
   }
 
   function redirectToMedicalRecord () {

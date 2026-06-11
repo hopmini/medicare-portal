@@ -1,16 +1,16 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
     <!-- Sidebar -->
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
 
     <!-- Main Layout -->
-    <a-layout style="background: #f8fafc;">
-      <AppHeader title="Lịch sử kho" welcome="Theo dõi và tra cứu các giao dịch nhập, xuất, điều chỉnh và hủy trong kho thuốc." />
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
+      <AppHeader v-if="!inline" title="Lịch sử kho" welcome="Theo dõi và tra cứu các giao dịch nhập, xuất, điều chỉnh và hủy trong kho thuốc." />
 
       <!-- Main Content Area -->
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
 
         <!-- 5 Stats Cards -->
         <div class="metrics-grid" style="margin-bottom: 24px;">
@@ -133,7 +133,9 @@
 
         <!-- Table Card -->
         <a-card :bordered="false" class="table-container-card">
-          <a-table
+          <a-spin :spinning="loading">
+          <a-empty v-if="!loading && filteredTransactions.length === 0" description="Không có giao dịch nào" />
+          <a-table v-if="filteredTransactions.length > 0"
             :columns="columns"
             :data-source="filteredTransactions"
             row-key="id"
@@ -203,6 +205,7 @@
               </template>
             </template>
           </a-table>
+          </a-spin>
         </a-card>
       </a-layout-content>
     </a-layout>
@@ -362,7 +365,29 @@ import dayjs, { Dayjs } from 'dayjs';
 import { message } from 'ant-design-vue';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { MEDICINE_FALLBACK } from '@/data/sharedPharmacyData';
+import { getInventoryTransactions, getMedicines } from '@/services/pharmacyService';
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
+const loading = ref(false)
+const LOCAL_MEDS = [
+  { id: 1, code: 'MED001', name: 'Paracetamol 500mg', unit: 'Viên' },
+  { id: 2, code: 'MED002', name: 'Amoxicillin 500mg', unit: 'Viên' },
+  { id: 3, code: 'MED003', name: 'Vitamin C 500mg', unit: 'Viên' },
+  { id: 4, code: 'MED004', name: 'Decolgen Forte', unit: 'Viên' },
+  { id: 5, code: 'MED005', name: 'Panadol Extra', unit: 'Viên' },
+  { id: 6, code: 'MED006', name: 'Ibuprofen 400mg', unit: 'Viên' },
+  { id: 7, code: 'MED007', name: 'Omeprazole 20mg', unit: 'Viên' },
+  { id: 8, code: 'MED008', name: 'Cetirizine 10mg', unit: 'Viên' },
+  { id: 9, code: 'MED009', name: 'Gaviscon Dual Action', unit: 'Gói' },
+  { id: 10, code: 'MED010', name: 'Salbutamol 2mg', unit: 'Viên' }
+];
 
 interface StockTransaction {
   id: number;
@@ -411,10 +436,10 @@ const enrichedSelectedTransaction = computed(() => {
   if (!selectedTransaction.value) return null;
   const tx = selectedTransaction.value;
   
-  // Find match in MEDICINE_FALLBACK
-  const matchingMed = MEDICINE_FALLBACK.find(m => m.name.toLowerCase() === tx.medicine.toLowerCase()) || 
-                      MEDICINE_FALLBACK.find(m => tx.medicine.toLowerCase().includes(m.name.toLowerCase())) ||
-                      MEDICINE_FALLBACK.find(m => m.name.toLowerCase().includes(tx.medicine.toLowerCase()));
+  // Find match in LOCAL_MEDS
+  const matchingMed = LOCAL_MEDS.find(m => m.name.toLowerCase() === tx.medicine.toLowerCase()) || 
+                      LOCAL_MEDS.find(m => tx.medicine.toLowerCase().includes(m.name.toLowerCase())) ||
+                      LOCAL_MEDS.find(m => m.name.toLowerCase().includes(tx.medicine.toLowerCase()));
   
   const medicineCode = matchingMed ? matchingMed.code : 'MED001';
   const unit = matchingMed ? matchingMed.unit : 'Viên';
@@ -505,212 +530,40 @@ const enrichedSelectedTransaction = computed(() => {
 
 
 
-// Hardcoded First 10 Items as shown in the image
-const imageFirst10: StockTransaction[] = [
-  {
-    id: 1,
-    code: 'GD250501-001',
-    type: 'Nhập kho',
-    medicine: 'Paracetamol 500mg',
-    batch: 'LO001',
-    qty: 10000,
-    tonTruoc: 2000,
-    tonSau: 12000,
-    document: 'HDNK-250501-012',
-    date: '01/05/2025 08:30',
-    pharmacist: 'Nguyễn Văn An'
-  },
-  {
-    id: 2,
-    code: 'GD250501-002',
-    type: 'Nhập kho',
-    medicine: 'Amoxicillin 500mg',
-    batch: 'LO002',
-    qty: 5000,
-    tonTruoc: 1500,
-    tonSau: 6500,
-    document: 'HDNK-250501-013',
-    date: '01/05/2025 09:15',
-    pharmacist: 'Trần Thị Bình'
-  },
-  {
-    id: 3,
-    code: 'GD250501-003',
-    type: 'Xuất kho',
-    medicine: 'Paracetamol 500mg',
-    batch: 'LO001',
-    qty: -150,
-    tonTruoc: 12000,
-    tonSau: 11850,
-    document: 'HDBT-250501-055',
-    date: '01/05/2025 10:05',
-    pharmacist: 'Lê Minh Đức'
-  },
-  {
-    id: 4,
-    code: 'GD250502-001',
-    type: 'Nhập kho',
-    medicine: 'Omeprazole 20mg',
-    batch: 'LO008',
-    qty: 3000,
-    tonTruoc: 0,
-    tonSau: 3000,
-    document: 'HDNK-250502-008',
-    date: '02/05/2025 08:45',
-    pharmacist: 'Nguyễn Văn An'
-  },
-  {
-    id: 5,
-    code: 'GD250502-002',
-    type: 'Xuất kho',
-    medicine: 'Amoxicillin 500mg',
-    batch: 'LO002',
-    qty: -200,
-    tonTruoc: 6500,
-    tonSau: 6300,
-    document: 'HDBT-250502-031',
-    date: '02/05/2025 11:20',
-    pharmacist: 'Phạm Thị Hoa'
-  },
-  {
-    id: 6,
-    code: 'GD250503-001',
-    type: 'Điều chỉnh',
-    medicine: 'Vitamin C 500mg',
-    batch: 'LO003',
-    qty: 300,
-    tonTruoc: 700,
-    tonSau: 1000,
-    document: 'DC-250503-001',
-    date: '03/05/2025 14:30',
-    pharmacist: 'Nguyễn Thị Lan'
-  },
-  {
-    id: 7,
-    code: 'GD250504-001',
-    type: 'Xuất kho',
-    medicine: 'Omeprazole 20mg',
-    batch: 'LO008',
-    qty: -120,
-    tonTruoc: 3000,
-    tonSau: 2880,
-    document: 'HDBT-250504-019',
-    date: '04/05/2025 09:10',
-    pharmacist: 'Lê Minh Đức'
-  },
-  {
-    id: 8,
-    code: 'GD250504-002',
-    type: 'Hủy',
-    medicine: 'Paracetamol 500mg',
-    batch: 'LO001',
-    qty: -50,
-    tonTruoc: 11850,
-    tonSau: 11800,
-    document: 'HDBT-250504-020',
-    date: '04/05/2025 09:25',
-    pharmacist: 'Trần Thị Bình'
-  },
-  {
-    id: 9,
-    code: 'GD250505-001',
-    type: 'Điều chỉnh',
-    medicine: 'Vitamin C 500mg',
-    batch: 'LO003',
-    qty: -100,
-    tonTruoc: 1000,
-    tonSau: 900,
-    document: 'DC-250505-002',
-    date: '05/05/2025 16:40',
-    pharmacist: 'Nguyễn Văn An'
-  },
-  {
-    id: 10,
-    code: 'GD250505-002',
-    type: 'Nhập kho',
-    medicine: 'Vitamin C 500mg',
-    batch: 'LO006',
-    qty: 2000,
-    tonTruoc: 900,
-    tonSau: 2900,
-    document: 'HDNK-250505-010',
-    date: '05/05/2025 17:05',
-    pharmacist: 'Phạm Thị Hoa'
-  }
-];
+async function loadTransactions() {
+  loading.value = true
+  try {
+    const txData = await getInventoryTransactions()
+    const medData = await getMedicines()
+    const medMap = new Map<number, { name: string; code: string }>()
+    medData.forEach((m: any) => medMap.set(m.id, { name: m.name, code: m.code || `MED${String(m.id).padStart(3, '0')}` }))
 
-function generateMockData() {
-  const result: StockTransaction[] = [...imageFirst10];
-
-  // We need Nhập kho: 56 total (currently 4, need 52 more)
-  // We need Xuất kho: 48 total (currently 3, need 45 more)
-  // We need Điều chỉnh: 18 total (currently 2, need 16 more)
-  // We need Hủy: 6 total (currently 1, need 5 more)
-  // Total to generate = 52 + 45 + 16 + 5 = 118 generated records.
-  
-  const toGenerate: Array<'Nhập kho' | 'Xuất kho' | 'Điều chỉnh' | 'Hủy'> = [
-    ...Array(52).fill('Nhập kho'),
-    ...Array(45).fill('Xuất kho'),
-    ...Array(16).fill('Điều chỉnh'),
-    ...Array(5).fill('Hủy')
-  ];
-
-  // Distribute deterministically
-  toGenerate.forEach((type, idx) => {
-    const dayNum = 6 + (idx % 25); // Days 6 to 30
-    const hour = 8 + (idx % 10);
-    const minute = (idx * 13) % 60;
-    const dayStr = String(dayNum).padStart(2, '0');
-    const hourStr = String(hour).padStart(2, '0');
-    const minStr = String(minute).padStart(2, '0');
-
-    const meds = MEDICINE_FALLBACK.map(m => {
+    transactions.value = (txData || []).map((tx: any, idx: number) => {
+      const medInfo = medMap.get(Number(tx.medicine?.replace(/\D/g, '')) || 0) || { name: tx.medicine || 'Thuốc', code: 'MED000' }
+      const isIn = tx.type === 'in' || tx.type === 'import' || tx.type === 'Nhập kho'
+      const qty = Math.abs(tx.qty || 0)
       return {
-        name: m.name,
-        batch: `LO${String(m.id).padStart(3, '0')}`
-      };
-    });
-
-    const med = meds[idx % meds.length];
-    const staff = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Minh Đức', 'Phạm Thị Hoa', 'Nguyễn Thị Lan'][idx % 5];
-
-    let qty = 100;
-    if (type === 'Nhập kho') qty = 500 + (idx * 50) % 5000;
-    else if (type === 'Xuất kho') qty = -(50 + (idx * 12) % 300);
-    else if (type === 'Điều chỉnh') qty = idx % 2 === 0 ? 300 : -200;
-    else if (type === 'Hủy') qty = -(10 + (idx * 7) % 150);
-
-    const tonTruoc = 1000 + (idx * 150) % 10000;
-    const tonSau = tonTruoc + qty;
-
-    // Build unique daily transaction code
-    const countForDay = result.filter(r => r.date.startsWith(`${dayStr}/05/2024`)).length + 1;
-    const code = `GD2405${dayStr}-${String(countForDay).padStart(3, '0')}`;
-
-    let doc = '';
-    if (type === 'Nhập kho') doc = `HDNK-2405${dayStr}-${String(10 + idx).padStart(3, '0')}`;
-    else if (type === 'Xuất kho') doc = `HDBT-2405${dayStr}-${String(10 + idx).padStart(3, '0')}`;
-    else if (type === 'Điều chỉnh') doc = `DC-2405${dayStr}-${String(1 + idx).padStart(3, '0')}`;
-    else if (type === 'Hủy') doc = `HUY-2405${dayStr}-${String(1 + idx).padStart(3, '0')}`;
-
-    result.push({
-      id: 11 + idx,
-      code,
-      type,
-      medicine: med.name,
-      batch: med.batch,
-      qty,
-      tonTruoc,
-      tonSau,
-      document: doc,
-      date: `${dayStr}/05/2025 ${hourStr}:${minStr}`,
-      pharmacist: staff,
-      note: type === 'Điều chỉnh' ? 'Điều chỉnh kiểm kho định kỳ' : type === 'Hủy' ? 'Thuốc cận date/hỏng bao bì' : undefined
-    });
-  });
-
-  // Sort by date/code descending
-  return result.sort((a, b) => b.code.localeCompare(a.code));
+        id: tx.id || idx + 1,
+        code: `GD${String(tx.id || idx + 1).padStart(8, '0')}`,
+        type: isIn ? 'Nhập kho' : 'Xuất kho',
+        medicine: medInfo.name,
+        batch: tx.batch || `LO${String(idx + 1).padStart(3, '0')}`,
+        qty: isIn ? qty : -qty,
+        tonTruoc: tx.beforeStock || 1000,
+        tonSau: tx.afterStock || 1000,
+        document: tx.document || `HD-${String(tx.id || idx + 1).padStart(6, '0')}`,
+        date: tx.date ? new Date(tx.date).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN'),
+        pharmacist: tx.staff || 'Hệ thống',
+        note: tx.note || ''
+      }
+    })
+  } catch (err) {
+    console.error('Failed to load inventory transactions:', err)
+    message.error('Không thể tải dữ liệu lịch sử kho!')
+    transactions.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 // Stats Calculations
@@ -812,7 +665,7 @@ function exportExcel() {
 }
 
 function refreshData() {
-  transactions.value = generateMockData();
+  loadTransactions();
   currentPage.value = 1;
   searchQuery.value = '';
   activeFilter.value = 'all';
@@ -821,7 +674,7 @@ function refreshData() {
 
 // Initialize
 onMounted(() => {
-  transactions.value = generateMockData();
+  loadTransactions();
 });
 </script>
 

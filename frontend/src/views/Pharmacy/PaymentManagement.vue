@@ -1,15 +1,15 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
     <!-- Sidebar -->
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
 
     <!-- Main Content -->
-    <a-layout style="background: #f8fafc;">
-      <AppHeader title="Quản lý thanh toán" />
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
+      <AppHeader v-if="!inline" title="Quản lý thanh toán" />
 
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
 
         <!-- Role-based Access Control Result -->
         <template v-if="!canManageBilling">
@@ -75,13 +75,15 @@
             <a-row :gutter="20">
               <a-col :xs="24" :lg="selectedBill ? 15 : 24">
                 <a-card :bordered="false" class="main-card">
-                  <a-table
+                  <a-spin :spinning="loading">
+                  <a-empty v-if="!loading && filteredBills.length === 0" description="Không có hóa đơn nào" />
+                  <a-table v-if="filteredBills.length > 0"
                     :columns="listColumns"
                     :data-source="filteredBills"
                     row-key="id"
-                    :pagination="{ pageSize: 8, showSizeChanger: true, locale: { items_per_page: '/ trang' } }"
+                    :pagination="{ pageSize: 8, showSizeChanger: true }"
                     size="middle"
-                    :row-class-name="(record: any) => record.id === selectedBill?.id ? 'selected-row' : ''"
+                    :customRow="customTableRow"
                   >
                     <template #bodyCell="{ text, record, column }">
                       <template v-if="column.key === 'code'">
@@ -139,6 +141,7 @@
                       </template>
                     </template>
                   </a-table>
+                  </a-spin>
                 </a-card>
               </a-col>
 
@@ -282,7 +285,9 @@
             <a-row :gutter="20">
               <a-col :xs="24" :lg="selectedTransaction ? 15 : 24">
                 <a-card :bordered="false" class="main-card">
-                  <a-table
+                  <a-spin :spinning="loading">
+                  <a-empty v-if="!loading && filteredTransactions.length === 0" description="Không có giao dịch nào" />
+                  <a-table v-if="filteredTransactions.length > 0"
                     :columns="historyListColumns"
                     :data-source="filteredTransactions"
                     row-key="id"
@@ -322,6 +327,7 @@
                       </template>
                     </template>
                   </a-table>
+                  </a-spin>
                 </a-card>
               </a-col>
 
@@ -767,11 +773,38 @@ import dayjs from 'dayjs';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { useAuthStore } from '@/stores/authStore';
-import { MOCK_BILLS, MOCK_PRESCRIPTIONS, STAFF_LIST, MEDICINE_FALLBACK, PATIENT_LIST } from '@/data/sharedPharmacyData';
+import { getBills, payBill, getPrescriptions } from '@/services/pharmacyService';
+import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService';
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+const loading = ref(false);
+
+interface PaymentTransaction {
+  id: number;
+  txCode: string;
+  billCode: string;
+  patientName: string;
+  amount: number;
+  payMethod: string;
+  staffName: string;
+  role: string;
+  time: string;
+  note?: string;
+  txStatus: 'Thành công' | 'Thất bại';
+}
+
+const transactionsList = ref<PaymentTransaction[]>([]);
 
 // Check if admin role
 const isAdmin = computed(() => {
@@ -798,6 +831,11 @@ const activeTabLabel = computed(() => {
 });
 
 // Staff list
+const STAFF_LIST = [
+  { id: 1, name: 'Lê Thị Mai' },
+  { id: 2, name: 'Nguyễn Văn D' },
+  { id: 3, name: 'Admin' },
+];
 const staffList = STAFF_LIST;
 
 // ----------------------------------------
@@ -869,209 +907,189 @@ function getActiveIngredient(name: string): string {
   return 'Đang cập nhật';
 }
 
-function initBills() {
-  const types = ['Theo đơn bác sĩ', 'Ngoài đơn', 'Tổng hợp'];
-  payBills.value = MOCK_BILLS.map((b: any, idx: number) => {
-    const billType = types[idx % 3];
-    const discountAmt = Math.round(b.total * 0.03);
-    const vatAmt = Math.round(b.total * 0.05);
+async function initBills() {
+  loading.value = true;
+  try {
+    const [billsData, presData, patientsData] = await Promise.all([
+      getBills().catch(() => []),
+      getPrescriptions().catch(() => []),
+      medicalRecordService.getAllPatients().catch(() => [])
+    ]);
 
-    // Calculate costs strictly based on bill type:
-    // - Theo đơn bác sĩ (PrescriptionSale): only medicines, exam fee = 0
-    // - Ngoài đơn (ExaminationOnly): only exam fee, medicines = 0
-    // - Tổng hợp (Combined): both
-    let medicineCost = 0;
-    let examCost = 0;
-
-    if (billType === 'Ngoài đơn') {
-      medicineCost = 0;
-      examCost = b.total + discountAmt - vatAmt;
-    } else if (billType === 'Theo đơn bác sĩ') {
-      examCost = 0;
-      medicineCost = b.total + discountAmt - vatAmt;
-    } else { // 'Tổng hợp'
-      examCost = Math.round(b.total * 0.3);
-      medicineCost = b.total + discountAmt - vatAmt - examCost;
-    }
-    
-    let paidAmount = 0;
-    let payStatus = b.payStatus;
-    let payMethod = '';
-    let paidDate = '';
-
-    if (b.payStatus === 'paid') {
-      paidAmount = b.total;
-      payMethod = ['cash', 'transfer', 'card'][idx % 3];
-      paidDate = b.createdDate + ' ' + b.createdTime;
-    } else if (b.payStatus === 'pending') {
-      if (idx % 5 === 1) {
-        paidAmount = Math.round(b.total * 0.45);
-        payStatus = 'partial';
-        payMethod = 'cash';
-        paidDate = b.createdDate + ' ' + b.createdTime;
-      } else {
-        paidAmount = 0;
-        payStatus = 'pending';
+    const patientMap = new Map<string, any>();
+    (patientsData || []).forEach((p: any) => {
+      if (p.id) {
+        patientMap.set(p.id.toLowerCase(), p);
       }
-    } else if (b.payStatus === 'cancelled') {
-      paidAmount = 0;
-      payStatus = 'cancelled';
-    }
+    });
 
-    const createdDateFull = b.createdDate + ' ' + b.createdTime;
-    
-    // Look up patient info from PATIENT_LIST
-    const patientObj = PATIENT_LIST.find(p => p.name === b.patientName);
-    const patientCode = patientObj ? `PT${String(patientObj.id).padStart(5, '0')}` : `PT${String(idx + 100).padStart(5, '0')}`;
-    const patientGender = idx % 2 === 0 ? 'Nam' : 'Nữ';
-    const patientDob = ['15/05/1990', '22/09/1985', '08/11/1993', '30/01/1998', '14/07/1976'][idx % 5];
+    payBills.value = (billsData || []).map((b: any, idx: number) => {
+      const billType = b.examinationFee > 0 ? 'Tổng hợp' : 'Theo đơn bác sĩ';
+      const total = b.totalAmount || 0;
+      const discountAmt = 0;
+      const vatAmt = 0;
 
-    // Appointment Info (for 'Ngoài đơn' or 'Tổng hợp')
-    const hasAppointment = billType === 'Ngoài đơn' || billType === 'Tổng hợp';
-    const appointmentId = hasAppointment ? `APT${String(idx + 12050).padStart(5, '0')}` : undefined;
-    const appointmentDoctor = hasAppointment ? ['Bác sĩ Nguyễn Văn A', 'Bác sĩ Phạm Văn C', 'Bác sĩ Lê Thị Mai', 'Bác sĩ Trần Quốc Anh'][idx % 4] : undefined;
-    const appointmentService = hasAppointment ? ['Khám tổng quát', 'Khám nội khoa', 'Khám chuyên khoa Tim mạch', 'Khám chuyên khoa Thần kinh'][idx % 4] : undefined;
-    const appointmentFee = hasAppointment ? examCost : undefined;
-    const appointmentDate = hasAppointment ? b.createdDate : undefined;
+      const medicineCost = b.medicineFee || 0;
+      const examCost = b.examinationFee || 0;
+      
+      let paidAmount = 0;
+      let payStatus = b.status?.toLowerCase() === 'paid' ? 'paid' : b.status?.toLowerCase() === 'cancelled' ? 'cancelled' : 'pending';
+      let payMethod = '';
+      let paidDate = '';
 
-    // Prescription Info & Medicine items (for 'Theo đơn bác sĩ' or 'Tổng hợp')
-    const hasPrescription = billType === 'Theo đơn bác sĩ' || billType === 'Tổng hợp';
-    const presc = hasPrescription ? MOCK_PRESCRIPTIONS[idx % MOCK_PRESCRIPTIONS.length] : undefined;
-    const prescriptionId = presc?.code;
-    const prescriptionDoctor = presc?.doctorName;
-    const prescriptionDate = presc?.date;
-    const prescriptionDiagnosis = hasPrescription ? ['Viêm họng cấp', 'Cao huyết áp nhẹ', 'Suy nhược cơ thể', 'Rối loạn tiêu hóa'][idx % 4] : undefined;
-    const prescriptionNote = hasPrescription ? 'Uống thuốc sau bữa ăn, nghỉ ngơi đầy đủ. Tái khám nếu có triệu chứng lạ.' : undefined;
+      if (payStatus === 'paid') {
+        paidAmount = total;
+        payMethod = 'cash';
+        paidDate = b.createdAt ? new Date(b.createdAt).toLocaleString('vi-VN') : '';
+      }
 
-    // Map medications to medicineItems
-    const medicineItems = presc ? presc.medications.map((med, medIdx) => {
-      const medInfo = MEDICINE_FALLBACK.find(m => m.name.toLowerCase() === med.name.toLowerCase());
-      const unit = medInfo?.unit || 'Viên';
-      const unitPrice = medInfo?.price || 1000;
-      const activeIngredient = getActiveIngredient(med.name);
+      const createdDateFull = b.createdAt ? new Date(b.createdAt).toLocaleString('vi-VN') : 'Vừa xong';
+      
+      const patientGuid = mapUserIdToGuid(b.patientId);
+      const patientProfile = patientMap.get(patientGuid);
+      
+      const patientName = patientProfile ? patientProfile.fullName : `Bệnh nhân #${b.patientId}`;
+      const patientGender = patientProfile ? (patientProfile.gender === 'male' || patientProfile.gender === 'Nam' ? 'Nam' : 'Nữ') : 'Nam';
+      const patientDob = patientProfile && patientProfile.dateOfBirth 
+        ? new Date(patientProfile.dateOfBirth).toLocaleDateString('vi-VN') 
+        : '01/01/1990';
+      const patientCode = `PT${String(b.patientId || 5).padStart(5, '0')}`;
+
+      const hasAppointment = b.appointmentId ? true : false;
+      const appointmentId = b.appointmentId;
+      const appointmentDoctor = hasAppointment ? 'Bác sĩ điều trị' : undefined;
+      const appointmentService = hasAppointment ? 'Dịch vụ khám bệnh' : undefined;
+      const appointmentFee = b.examinationFee;
+      const appointmentDate = b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : undefined;
+
+      const prescriptionId = b.prescriptionId ? `PRC${String(b.prescriptionId).padStart(5, '0')}` : undefined;
+      const prescriptionDoctor = 'Bác sĩ điều trị';
+      const prescriptionDate = b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : undefined;
+      const prescriptionDiagnosis = 'Chẩn đoán lâm sàng';
+      const prescriptionNote = 'Theo dõi và tái khám';
+
+      // Look up prescription details from presData or localStorage
+      let medicineItems: any[] = [];
+      const storedItemsStr = localStorage.getItem(`bill_items_${b.id}`);
+      if (storedItemsStr) {
+        try {
+          const parsed = JSON.parse(storedItemsStr);
+          medicineItems = parsed.map((m: any, medIdx: number) => ({
+            id: `MED_ITEM_${idx}_${medIdx}`,
+            name: m.name,
+            activeIngredient: getActiveIngredient(m.name),
+            quantity: m.qty,
+            unit: m.form || 'Viên',
+            dosage: m.dosage || 'Theo chỉ dẫn',
+            unitPrice: m.price || 1000,
+            lineTotal: m.total || (m.price * m.qty)
+          }));
+        } catch (e) {
+          medicineItems = [];
+        }
+      }
+
+      if (medicineItems.length === 0) {
+        const foundPres = (presData || []).find((p: any) => p.id === b.prescriptionId || p.code === b.prescriptionId);
+        if (foundPres && foundPres.medications) {
+          medicineItems = foundPres.medications.map((m: any, medIdx: number) => {
+            return {
+              id: `MED_ITEM_${idx}_${medIdx}`,
+              name: m.name,
+              activeIngredient: getActiveIngredient(m.name),
+              quantity: m.qty,
+              unit: 'Viên',
+              dosage: m.dosage || 'Theo chỉ dẫn',
+              unitPrice: m.price || 10000,
+              lineTotal: (m.price || 10000) * m.qty
+            };
+          });
+        }
+      }
+
+      if (medicineItems.length === 0 && medicineCost > 0) {
+        medicineItems = [{
+          id: `MED_ITEM_${idx}_0`,
+          name: 'Thuốc điều trị / Vật tư y tế',
+          activeIngredient: 'Đang cập nhật',
+          quantity: 1,
+          unit: 'Gói',
+          dosage: 'Theo chỉ dẫn của bác sĩ',
+          unitPrice: medicineCost,
+          lineTotal: medicineCost
+        }];
+      }
+
       return {
-        id: `MED_ITEM_${idx}_${medIdx}`,
-        name: med.name,
-        activeIngredient,
-        quantity: med.qty,
-        unit,
-        dosage: med.dosage,
-        unitPrice,
-        lineTotal: unitPrice * med.qty
+        id: b.id,
+        code: b.code || `INV${String(b.id).padStart(8, '0')}`,
+        patientName: patientName,
+        patientPhone: patientProfile ? patientProfile.phone || '0901234567' : '0901234567',
+        billType,
+        total,
+        paidAmount,
+        remaining: total - paidAmount,
+        medicineCost,
+        examCost,
+        discountAmt,
+        vatAmt,
+        payStatus,
+        payMethod,
+        paidBy: b.paidBy || (payStatus === 'paid' ? 'Thu ngân hệ thống' : ''),
+        createdDate: createdDateFull,
+        paidDate,
+        
+        patientCode,
+        patientGender,
+        patientDob,
+        
+        appointmentId,
+        appointmentDoctor,
+        appointmentService,
+        appointmentFee,
+        appointmentDate,
+        
+        prescriptionId,
+        prescriptionDoctor,
+        prescriptionDate,
+        prescriptionDiagnosis,
+        prescriptionNote,
+        medicineItems
       };
-    }) : undefined;
+    });
 
-    return {
-      id: b.id,
-      code: b.code || `INV${dayjs().format('YYMM')}${String(idx + 1).padStart(4, '0')}`,
-      patientName: b.patientName,
-      patientPhone: b.patientPhone,
-      billType,
-      total: b.total,
-      paidAmount,
-      remaining: b.total - paidAmount,
-      medicineCost,
-      examCost,
-      discountAmt,
-      vatAmt,
-      payStatus,
-      payMethod,
-      paidBy: b.paidBy || '',
-      createdDate: createdDateFull,
-      paidDate,
-      
-      patientCode,
-      patientGender,
-      patientDob,
-      
-      appointmentId,
-      appointmentDoctor,
-      appointmentService,
-      appointmentFee,
-      appointmentDate,
-      
-      prescriptionId,
-      prescriptionDoctor,
-      prescriptionDate,
-      prescriptionDiagnosis,
-      prescriptionNote,
-      medicineItems
-    };
-  });
+    // Initialize transactions from bills
+    const tList: PaymentTransaction[] = [];
+    let txId = 1;
+
+    payBills.value.forEach((bill) => {
+      if (bill.payStatus === 'paid') {
+        tList.push({
+          id: txId++,
+          txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
+          billCode: bill.code,
+          patientName: bill.patientName,
+          amount: bill.total,
+          payMethod: bill.payMethod || 'cash',
+          staffName: bill.paidBy || 'Thu ngân hệ thống',
+          role: 'Thu ngân',
+          time: bill.paidDate || bill.createdDate,
+          note: 'Thanh toán hoàn tất hóa đơn',
+          txStatus: 'Thành công',
+        });
+      }
+    });
+    transactionsList.value = tList;
+
+  } catch (err: any) {
+    message.error('Lỗi tải dữ liệu thanh toán: ' + err.message);
+  } finally {
+    loading.value = false;
+  }
 }
-
-// ----------------------------------------
-// MOCK DATA STRUCTURES FOR TRANSACTIONS (Tab 2)
-// ----------------------------------------
-interface PaymentTransaction {
-  id: number;
-  txCode: string;
-  billCode: string;
-  patientName: string;
-  amount: number;
-  payMethod: string;
-  staffName: string;
-  role: string;
-  time: string;
-  note: string;
-  txStatus: 'Thành công' | 'Thất bại';
-}
-
-const transactionsList = ref<PaymentTransaction[]>([]);
 
 function initTransactions() {
-  const tList: PaymentTransaction[] = [];
-  let txId = 1;
-
-  payBills.value.forEach((bill) => {
-    if (bill.payStatus === 'paid') {
-      tList.push({
-        id: txId++,
-        txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
-        billCode: bill.code,
-        patientName: bill.patientName,
-        amount: bill.total,
-        payMethod: bill.payMethod || 'cash',
-        staffName: bill.paidBy || 'Lê Thị Mai',
-        role: 'Thu ngân',
-        time: bill.paidDate || bill.createdDate,
-        note: 'Thanh toán hoàn tất hóa đơn',
-        txStatus: 'Thành công',
-      });
-    } else if (bill.payStatus === 'partial') {
-      // First partial payment transaction
-      tList.push({
-        id: txId++,
-        txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
-        billCode: bill.code,
-        patientName: bill.patientName,
-        amount: bill.paidAmount,
-        payMethod: bill.payMethod || 'cash',
-        staffName: bill.paidBy || 'Nguyễn Văn D',
-        role: 'Thu ngân',
-        time: bill.createdDate,
-        note: 'Thanh toán đợt 1 (một phần)',
-        txStatus: 'Thành công',
-      });
-    } else if (idxOf(bill.id) % 6 === 2) {
-      // Add a failed transaction
-      tList.push({
-        id: txId++,
-        txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
-        billCode: bill.code,
-        patientName: bill.patientName,
-        amount: bill.total,
-        payMethod: 'card',
-        staffName: 'Lê Thị Mai',
-        role: 'Thu ngân',
-        time: bill.createdDate,
-        note: 'Thẻ bị từ chối / Lỗi kết nối cổng thanh toán',
-        txStatus: 'Thất bại',
-      });
-    }
-  });
-  
-  transactionsList.value = tList;
+  // handled in initBills
 }
 
 function idxOf(id: number) {
@@ -1198,35 +1216,40 @@ function resetFilters() {
   filterDateRange.value = null;
 }
 
-function confirmPayment(bill: AdminPayBill) {
-  const staffName = authStore.user.value?.fullName || 'Thu ngân hệ thống';
-  const now = new Date();
-  const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+async function confirmPayment(bill: AdminPayBill) {
+  try {
+    await payBill(bill.id);
+    const staffName = authStore.user.value?.fullName || 'Thu ngân hệ thống';
+    const now = new Date();
+    const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-  bill.payStatus = 'paid';
-  bill.paidAmount = bill.total;
-  bill.remaining = 0;
-  bill.paidBy = staffName;
-  bill.paidDate = dateStr;
-  bill.payMethod = confirmPayMethod.value;
+    bill.payStatus = 'paid';
+    bill.paidAmount = bill.total;
+    bill.remaining = 0;
+    bill.paidBy = staffName;
+    bill.paidDate = dateStr;
+    bill.payMethod = confirmPayMethod.value;
 
-  // Also add a transaction record
-  const txId = transactionsList.value.length + 1;
-  transactionsList.value.unshift({
-    id: txId,
-    txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
-    billCode: bill.code,
-    patientName: bill.patientName,
-    amount: bill.total,
-    payMethod: bill.payMethod,
-    staffName: staffName,
-    role: 'Thu ngân',
-    time: dateStr,
-    note: 'Xác nhận thanh toán bởi ' + staffName,
-    txStatus: 'Thành công',
-  });
+    // Also add a transaction record
+    const txId = transactionsList.value.length + 1;
+    transactionsList.value.unshift({
+      id: txId,
+      txCode: `TX${String(15049 + txId).padStart(6, '0')}`,
+      billCode: bill.code,
+      patientName: bill.patientName,
+      amount: bill.total,
+      payMethod: bill.payMethod,
+      staffName: staffName,
+      role: 'Thu ngân',
+      time: dateStr,
+      note: 'Xác nhận thanh toán bởi ' + staffName,
+      txStatus: 'Thành công',
+    });
 
-  message.success(`Đã xác nhận thanh toán hóa đơn ${bill.code} thành công!`);
+    message.success(`Đã xác nhận thanh toán hóa đơn ${bill.code} thành công!`);
+  } catch (err: any) {
+    message.error('Lỗi xác nhận thanh toán: ' + err.message);
+  }
 }
 
 // ==================== TAB 2 Logic ====================

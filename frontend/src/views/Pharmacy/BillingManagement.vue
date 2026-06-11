@@ -1,13 +1,13 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
     
-    <a-layout style="background: #f8fafc;">
-      <AppHeader :title="viewMode === 'list' ? 'Hóa đơn bán thuốc' : createTitle" />
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
+      <AppHeader v-if="!inline" :title="viewMode === 'list' ? 'Hóa đơn bán thuốc' : createTitle" />
  
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
 
         <!-- ==================== LIST VIEW ==================== -->
         <template v-if="viewMode === 'list'">
@@ -119,7 +119,9 @@
 
           <!-- Main Table -->
           <a-card :bordered="false" class="main-card" style="overflow: hidden;">
-            <a-table
+            <a-spin :spinning="loading">
+            <a-empty v-if="!loading && filteredBills.length === 0" description="Không có hóa đơn nào" />
+            <a-table v-if="filteredBills.length > 0"
               :columns="columns"
               :data-source="filteredBills"
               row-key="id"
@@ -189,6 +191,7 @@
                 </template>
               </template>
             </a-table>
+            </a-spin>
           </a-card>
 
           <!-- Bottom Legend -->
@@ -665,9 +668,19 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import { useAuthStore } from '@/stores/authStore';
-import { getBills, getPrescriptions, getMedicines } from '@/services/pharmacyService';
+import { getBills, getPrescriptions, getMedicines, createBill } from '@/services/pharmacyService';
+import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
 
 interface BillItem {
   id: number;
@@ -690,7 +703,7 @@ interface BillItem {
 }
 
 const authStore = useAuthStore();
-import { MOCK_BILLS, MOCK_PRESCRIPTIONS, MEDICINE_FALLBACK, STAFF_LIST } from '@/data/sharedPharmacyData';
+const loading = ref(false);
 const viewMode = ref<'list' | 'create-rx' | 'create-otc' | 'create-combo'>('list');
 
 const createTitle = computed(() => {
@@ -707,7 +720,7 @@ const filterType = ref('all');
 const filterPayStatus = ref('all');
 
 // ===================== LIST VIEW DATA =====================
-const bills = ref<BillItem[]>([...MOCK_BILLS] as BillItem[]);
+const bills = ref<BillItem[]>([]);
 
 const columns = [
   { title: 'Mã hóa đơn', dataIndex: 'code', key: 'code', width: 160, sorter: (a: any, b: any) => a.code.localeCompare(b.code) },
@@ -745,15 +758,13 @@ function resetFilters() {
 const prescriptionList = ref<any[]>([]);
 const allMedicines = ref<any[]>([]);
 
-const tenMockPrescriptions = MOCK_PRESCRIPTIONS;
-
 function getMedicinePrice(name: string): number {
-  const med = MEDICINE_FALLBACK.find(m => m.name.toLowerCase() === name.toLowerCase());
+  const med = allMedicines.value.find(m => m.name.toLowerCase() === name.toLowerCase());
   return med ? med.price : 1500;
 }
 
 function getMedicineUnit(name: string): string {
-  const med = MEDICINE_FALLBACK.find(m => m.name.toLowerCase() === name.toLowerCase());
+  const med = allMedicines.value.find(m => m.name.toLowerCase() === name.toLowerCase());
   if (med) return med.unit;
   const lowercaseName = name.toLowerCase();
   if (lowercaseName.includes('oresol') || lowercaseName.includes('gaviscon')) return 'Gói';
@@ -818,45 +829,44 @@ const rxGrandTotal = computed(() => {
   return Math.max(0, total);
 });
 
-function submitRxBill() {
+async function submitRxBill() {
   if (!rxSelectedPrescription.value) {
     message.error('Vui lòng chọn đơn thuốc!');
     return;
   }
   const rx = rxInfo.value;
-  const newBill: BillItem = {
-    id: bills.value.length + 100,
-    code: 'INV' + new Date().getFullYear().toString().slice(2) + '05' + String(bills.value.length + 1).padStart(4, '0'),
-    billType: 'prescription',
-    patientName: rx.patient.split(' - ')[0] || rx.patient,
-    patientPhone: rx.patient.split(' - ')[1] || '0901234567',
-    createdDate: new Date().toLocaleDateString('vi-VN'),
-    createdTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    total: rxGrandTotal.value,
-    payStatus: 'paid',
-    billStatus: 'completed',
-    paidBy: authStore.user.value?.fullName || 'Nhân viên bán hàng',
-    items: rxDrugs.value.map(d => ({
-      name: d.name,
-      form: d.form,
-      qty: d.dispensed,
-      price: d.price,
-      total: d.dispensed * d.price
-    })),
-    subtotal: rxSubtotal.value,
-    discountPct: rxDiscount.value,
-    discountAmt: rxDiscountAmount.value,
-    vatPct: rxVat.value,
-    note: rxNote.value || 'Đơn thuốc theo đơn ngoại trú'
-  };
-  bills.value.unshift(newBill);
-  message.success('Đã tạo hóa đơn theo đơn bác sĩ thành công!');
-  rxSelectedPrescription.value = undefined;
-  rxNote.value = '';
-  rxDiscount.value = 0;
-  rxDiscountAmount.value = 0;
-  rxVat.value = 0;
-  viewMode.value = 'list';
+  const patientIdStr = rx.patient.replace(/\D/g, '') || '5';
+
+  try {
+    const newBill = await createBill({
+      patientCode: patientIdStr,
+      consultFee: 0,
+      medicines: rxDrugs.value.map(d => ({
+        price: d.price,
+        qty: d.dispensed
+      }))
+    });
+    if (newBill && newBill.id) {
+      const itemsToSave = rxDrugs.value.map(d => ({
+        name: d.name,
+        form: d.form,
+        qty: d.dispensed,
+        price: d.price,
+        total: d.dispensed * d.price
+      }));
+      localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
+    }
+    message.success('Đã tạo hóa đơn theo đơn bác sĩ thành công!');
+    await loadData();
+    rxSelectedPrescription.value = undefined;
+    rxNote.value = '';
+    rxDiscount.value = 0;
+    rxDiscountAmount.value = 0;
+    rxVat.value = 0;
+    viewMode.value = 'list';
+  } catch (err: any) {
+    message.error('Lỗi khi tạo hóa đơn: ' + err.message);
+  }
 }
 
 // ===================== COLUMN 2: Tạo hóa đơn ngoài đơn =====================
@@ -916,46 +926,43 @@ function addOtcDrug() {
   selectedOtcMedicineId.value = undefined;
 }
 
-function submitOtcBill() {
+async function submitOtcBill() {
   if (otcDrugs.value.length === 0) {
     message.error('Vui lòng thêm ít nhất một thuốc vào hóa đơn!');
     return;
   }
-  const newBill: BillItem = {
-    id: bills.value.length + 100,
-    code: 'INV' + new Date().getFullYear().toString().slice(2) + '05' + String(bills.value.length + 1).padStart(4, '0'),
-    billType: 'otc',
-    patientName: otcCustomer.value.name || 'Khách lẻ',
-    patientPhone: otcCustomer.value.phone || '',
-    createdDate: new Date().toLocaleDateString('vi-VN'),
-    createdTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    total: otcGrandTotal.value,
-    payStatus: 'paid',
-    billStatus: 'completed',
-    paidBy: authStore.user.value?.fullName || 'Nhân viên bán hàng',
-    items: otcDrugs.value.map(d => ({
-      name: d.name,
-      form: d.form,
-      qty: d.qty,
-      price: d.price,
-      total: d.qty * d.price
-    })),
-    subtotal: otcSubtotal.value,
-    discountPct: otcDiscountPct.value,
-    discountAmt: otcDiscountAmt.value,
-    vatPct: otcVat.value,
-    note: otcNote.value || 'Hóa đơn bán lẻ ngoài đơn.'
-  };
-  bills.value.unshift(newBill);
-  message.success('Đã tạo hóa đơn ngoài đơn thành công!');
-  otcCustomer.value = { name: '', phone: '', address: '' };
-  otcIsWalkIn.value = false;
-  otcDrugs.value = [];
-  otcNote.value = '';
-  otcDiscountPct.value = 0;
-  otcDiscountAmt.value = 0;
-  otcVat.value = 0;
-  viewMode.value = 'list';
+  try {
+    const newBill = await createBill({
+      patientCode: '5', // Walk-in default patient id
+      consultFee: 0,
+      medicines: otcDrugs.value.map(d => ({
+        price: d.price,
+        qty: d.qty
+      }))
+    });
+    if (newBill && newBill.id) {
+      const itemsToSave = otcDrugs.value.map(d => ({
+        name: d.name,
+        form: d.form,
+        qty: d.qty,
+        price: d.price,
+        total: d.qty * d.price
+      }));
+      localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
+    }
+    message.success('Đã tạo hóa đơn ngoài đơn thành công!');
+    await loadData();
+    otcCustomer.value = { name: '', phone: '', address: '' };
+    otcIsWalkIn.value = false;
+    otcDrugs.value = [];
+    otcNote.value = '';
+    otcDiscountPct.value = 0;
+    otcDiscountAmt.value = 0;
+    otcVat.value = 0;
+    viewMode.value = 'list';
+  } catch (err: any) {
+    message.error('Lỗi khi tạo hóa đơn ngoài đơn: ' + err.message);
+  }
 }
 
 // ===================== COLUMN 3: Tạo hóa đơn tổng hợp =====================
@@ -1017,53 +1024,53 @@ const billDetailItemCols = [
 ];
 
 function showBillDetails(bill: BillItem) {
-  if (!bill.items || bill.items.length === 0) {
-    const itemNames = [
-      { name: 'Paracetamol 500mg', form: 'Viên', price: 1000 },
-      { name: 'Amoxicillin 500mg', form: 'Viên', price: 2500 },
-      { name: 'Vitamin C 500mg', form: 'Viên', price: 1500 },
-      { name: 'Decolgen Forte', form: 'Viên', price: 1800 },
-      { name: 'Panadol Extra', form: 'Viên', price: 2200 }
-    ];
-    const generated: any[] = [];
-    let remaining = bill.total;
-    let idx = 0;
-    while (remaining > 0 && idx < 3) {
-      const template = itemNames[Math.floor(Math.random() * itemNames.length)];
-      if (generated.some(g => g.name === template.name)) {
-        idx++;
-        continue;
-      }
-      const qty = Math.max(1, Math.floor(remaining / template.price / (4 - idx)));
-      if (qty > 0) {
-        const total = qty * template.price;
-        generated.push({
-          name: template.name,
-          form: template.form,
-          qty: qty,
-          price: template.price,
-          total: total
-        });
-        remaining -= total;
-      }
-      idx++;
+  const storedItems = localStorage.getItem(`bill_items_${bill.id}`);
+  if (storedItems) {
+    try {
+      bill.items = JSON.parse(storedItems);
+    } catch (e) {
+      bill.items = [];
     }
-    if (remaining > 0) {
-      generated.push({
-        name: 'Hoạt chất bổ sung / Khác',
-        form: 'Viên',
-        qty: 1,
-        price: remaining,
-        total: remaining
-      });
+  }
+
+  if (!bill.items || bill.items.length === 0) {
+    const generated: any[] = [];
+    if (bill.billType === 'prescription') {
+      const matchingRx = prescriptionList.value.find(p => p.patient?.toLowerCase().includes(bill.patientName.toLowerCase()));
+      if (matchingRx && matchingRx.medications) {
+        matchingRx.medications.forEach((m: any) => {
+          generated.push({
+            name: m.name,
+            form: getMedicineUnit(m.name),
+            qty: m.qty,
+            price: getMedicinePrice(m.name),
+            total: m.qty * getMedicinePrice(m.name)
+          });
+        });
+      }
+    }
+    
+    if (generated.length === 0) {
+      const medFee = bill.total;
+      if (medFee > 0) {
+        generated.push({
+          name: 'Thuốc điều trị / Vật tư y tế',
+          form: 'Gói',
+          qty: 1,
+          price: medFee,
+          total: medFee
+        });
+      }
     }
     bill.items = generated;
-    bill.subtotal = bill.total;
-    bill.vatPct = 0;
-    bill.discountPct = 0;
-    bill.discountAmt = 0;
-    bill.note = bill.billType === 'prescription' ? 'Hóa đơn xuất theo đơn thuốc điện tử.' : 'Hóa đơn bán lẻ OTC tại quầy.';
   }
+  
+  bill.subtotal = bill.total;
+  bill.vatPct = 0;
+  bill.discountPct = 0;
+  bill.discountAmt = 0;
+  bill.note = bill.billType === 'prescription' ? 'Hóa đơn xuất theo đơn thuốc điện tử.' : 'Hóa đơn bán lẻ OTC tại quầy.';
+  
   selectedBillDetails.value = bill;
   billModalVisible.value = true;
 }
@@ -1127,67 +1134,88 @@ function addRxToCombo() {
   comboSelectedRx.value = undefined;
 }
 
-function submitComboBill() {
+async function submitComboBill() {
   if (comboRxList.value.length === 0 && comboOtcDrugs.value.length === 0) {
     message.error('Vui lòng chọn ít nhất một đơn thuốc hoặc thêm thuốc ngoài đơn!');
     return;
   }
-  // Combine all items
-  const combinedItems: any[] = [];
+  
+  const combinedMeds: any[] = [];
   comboRxList.value.forEach(rx => {
     rx.medications.forEach((m: any) => {
-      combinedItems.push({
-        name: m.name,
-        form: getMedicineUnit(m.name),
-        qty: m.qty,
+      combinedMeds.push({
         price: getMedicinePrice(m.name),
-        total: m.qty * getMedicinePrice(m.name)
+        qty: m.qty
       });
     });
   });
   comboOtcDrugs.value.forEach(d => {
-    combinedItems.push({
-      name: d.name,
-      form: d.form,
-      qty: d.qty,
+    combinedMeds.push({
       price: d.price,
-      total: d.qty * d.price
+      qty: d.qty
     });
   });
 
-  const newBill: BillItem = {
-    id: bills.value.length + 100,
-    code: 'INV' + new Date().getFullYear().toString().slice(2) + '05' + String(bills.value.length + 1).padStart(4, '0'),
-    billType: 'combined',
-    patientName: comboCustomer.value.name || 'Nhiều bệnh nhân',
-    patientPhone: comboCustomer.value.phone || '',
-    createdDate: new Date().toLocaleDateString('vi-VN'),
-    createdTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    total: comboGrandTotal.value,
-    payStatus: 'paid',
-    billStatus: 'completed',
-    paidBy: authStore.user.value?.fullName || 'Nhân viên bán hàng',
-    items: combinedItems,
-    subtotal: comboSubtotal.value,
-    discountPct: comboDiscountPct.value,
-    discountAmt: comboDiscountAmt.value,
-    vatPct: comboVat.value,
-    note: comboNote.value || 'Hóa đơn tổng hợp nhiều lần bán.'
-  };
-  bills.value.unshift(newBill);
-  message.success('Đã tạo hóa đơn tổng hợp thành công!');
-  comboCustomer.value = { name: '', phone: '', address: '' };
-  comboRxList.value = [];
-  comboOtcDrugs.value = [];
-  comboNote.value = '';
-  comboDiscountPct.value = 0;
-  comboDiscountAmt.value = 0;
-  comboVat.value = 0;
-  viewMode.value = 'list';
+  try {
+    const newBill = await createBill({
+      patientCode: '5',
+      consultFee: 150000,
+      medicines: combinedMeds
+    });
+    if (newBill && newBill.id) {
+      const itemsToSave: any[] = [];
+      comboRxList.value.forEach(rx => {
+        rx.medications.forEach((m: any) => {
+          itemsToSave.push({
+            name: m.name,
+            form: getMedicineUnit(m.name),
+            qty: m.qty,
+            price: getMedicinePrice(m.name),
+            total: m.qty * getMedicinePrice(m.name)
+          });
+        });
+      });
+      comboOtcDrugs.value.forEach(d => {
+        itemsToSave.push({
+          name: d.name,
+          form: d.form,
+          qty: d.qty,
+          price: d.price,
+          total: d.qty * d.price
+        });
+      });
+      localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
+    }
+    message.success('Đã tạo hóa đơn tổng hợp thành công!');
+    await loadData();
+    comboCustomer.value = { name: '', phone: '', address: '' };
+    comboRxList.value = [];
+    comboOtcDrugs.value = [];
+    comboNote.value = '';
+    comboDiscountPct.value = 0;
+    comboDiscountAmt.value = 0;
+    comboVat.value = 0;
+    viewMode.value = 'list';
+  } catch (err: any) {
+    message.error('Lỗi khi tạo hóa đơn tổng hợp: ' + err.message);
+  }
 }
 
-// ===================== ON MOUNT =====================
-onMounted(async () => {
+async function loadData() {
+  loading.value = true;
+  let patientsData: any[] = [];
+  try {
+    patientsData = await medicalRecordService.getAllPatients();
+  } catch (e) {
+    patientsData = [];
+  }
+  const patientMap = new Map<string, any>();
+  patientsData.forEach((p: any) => {
+    if (p.id) {
+      patientMap.set(p.id.toLowerCase(), p);
+    }
+  });
+
   // Load medicines
   try {
     const mData = await getMedicines();
@@ -1196,102 +1224,82 @@ onMounted(async () => {
         id: item.id,
         name: item.name,
         price: item.price || 1500,
-        stock: item.stockQuantity || item.stock || Math.floor(Math.random() * 200) + 15,
+        stock: item.stockQuantity || item.stock || 0,
         unit: item.unit || 'Viên'
       }));
     } else {
-      allMedicines.value = MEDICINE_FALLBACK.map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        price: m.price,
-        stock: m.stockQuantity,
-        unit: m.unit
-      }));
+      allMedicines.value = [];
     }
   } catch (e) {
-    allMedicines.value = MEDICINE_FALLBACK.map((m: any) => ({
-      id: m.id,
-      name: m.name,
-      price: m.price,
-      stock: m.stockQuantity,
-      unit: m.unit
-    }));
+    allMedicines.value = [];
   }
 
   // Load prescriptions
   try {
     const pData = await getPrescriptions();
-    if (pData && pData.length > 0) {
-      const mapped = pData.map((p: any, idx: number) => ({
-        code: p.code || `PRC${String(p.id || idx + 210).padStart(5, '0')}`,
-        patient: p.patient || `Bệnh nhân #${idx}`,
+    prescriptionList.value = (pData || []).map((p: any, idx: number) => {
+      let patientName = p.patient;
+      const match = p.patient?.match(/Bệnh nhân #([0-9a-fA-F0-9-]+)/);
+      if (match && match[1]) {
+        const pGuid = mapUserIdToGuid(match[1]);
+        const prof = patientMap.get(pGuid);
+        if (prof) {
+          patientName = prof.fullName;
+        }
+      }
+      return {
+        code: p.code || `PRC${String(p.id).padStart(5, '0')}`,
+        patient: patientName,
         doctor: p.doctorName || 'Bác sĩ điều trị',
         date: p.date || '20/05/2025',
-        medications: p.medications || [
-          { name: p.medicine || 'Paracetamol 500mg', qty: 20, dosage: p.dosage || 'Ngày uống 2 lần, mỗi lần 1 viên sau ăn' }
-        ],
-        total: p.total || 150000
-      }));
-      const merged = [...mapped];
-      tenMockPrescriptions.forEach(mock => {
-        if (!merged.some(m => m.code === mock.code)) {
-          merged.push({
-            code: mock.code,
-            patient: mock.patient,
-            doctor: mock.doctorName,
-            date: mock.date,
-            medications: mock.medications,
-            total: mock.medications.reduce((sum, item) => sum + item.qty * getMedicinePrice(item.name), 0)
-          });
-        }
-      });
-      prescriptionList.value = merged;
-    } else {
-      prescriptionList.value = tenMockPrescriptions.map(mock => ({
-        code: mock.code,
-        patient: mock.patient,
-        doctor: mock.doctorName,
-        date: mock.date,
-        medications: mock.medications,
-        total: mock.medications.reduce((sum, item) => sum + item.qty * getMedicinePrice(item.name), 0)
-      }));
-    }
+        medications: p.medications || [],
+        total: (p.medications || []).reduce((sum: number, item: any) => sum + item.qty * getMedicinePrice(item.name), 0)
+      };
+    });
   } catch (e) {
-    prescriptionList.value = tenMockPrescriptions.map(mock => ({
-      code: mock.code,
-      patient: mock.patient,
-      doctor: mock.doctorName,
-      date: mock.date,
-      medications: mock.medications,
-      total: mock.medications.reduce((sum, item) => sum + item.qty * getMedicinePrice(item.name), 0)
-    }));
+    prescriptionList.value = [];
   }
 
   // Load bills
   try {
     const data = await getBills();
-    if (data && data.length > 0) {
-      const mapped: BillItem[] = data.map((b: any, idx: number) => {
-        const types: ('prescription' | 'otc' | 'combined')[] = ['prescription', 'otc', 'combined'];
-        const payStatuses: ('paid' | 'pending' | 'cancelled')[] = ['paid', 'pending', 'paid', 'paid', 'cancelled'];
+    if (data) {
+      bills.value = data.map((b: any, idx: number) => {
+        const createdDateTime = b.createdAt ? new Date(b.createdAt) : new Date();
+        const dateStr = createdDateTime.toLocaleDateString('vi-VN');
+        const timeStr = createdDateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        
+        const pGuid = mapUserIdToGuid(b.patientId);
+        const prof = patientMap.get(pGuid);
+        const pName = prof ? prof.fullName : `Bệnh nhân #${b.patientId}`;
+        const pPhone = prof ? prof.phone || '0901234567' : '0901234567';
+
         return {
           id: b.id || idx + 1,
-          code: `INV${new Date().getFullYear().toString().slice(2)}05${String(idx + 1).padStart(6, '0')}`,
-          billType: types[idx % 3],
-          patientName: b.patient || `Bệnh nhân #${idx + 1}`,
-          patientPhone: `09${String(Math.floor(10000000 + Math.random() * 90000000))}`,
-          createdDate: b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : '12/05/2025',
-          createdTime: b.createdAt ? new Date(b.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : `${String(8 + idx).padStart(2, '0')}:${String(idx * 15 % 60).padStart(2, '0')}`,
-          total: b.totalAmount || 150000 + idx * 85000,
-          payStatus: payStatuses[idx % 5],
-          billStatus: payStatuses[idx % 5] === 'paid' ? 'completed' as const : payStatuses[idx % 5] === 'cancelled' ? 'cancelled' as const : 'pending' as const,
-          paidBy: payStatuses[idx % 5] === 'paid' ? (idx % 2 === 0 ? 'Lê Thị Mai' : 'Nguyễn Văn D') : ''
+          code: `INV${String(b.id || idx + 1).padStart(8, '0')}`,
+          billType: b.examinationFee > 0 ? 'combined' as const : 'prescription' as const,
+          patientName: pName,
+          patientPhone: pPhone,
+          createdDate: dateStr,
+          createdTime: timeStr,
+          total: b.total || b.totalAmount || 0,
+          payStatus: b.status?.toLowerCase() === 'paid' ? 'paid' as const : b.status?.toLowerCase() === 'cancelled' ? 'cancelled' as const : 'pending' as const,
+          billStatus: b.status?.toLowerCase() === 'paid' ? 'completed' as const : b.status?.toLowerCase() === 'cancelled' ? 'cancelled' as const : 'pending' as const,
+          paidBy: b.paidBy || (b.status?.toLowerCase() === 'paid' ? 'Nhân viên thu ngân' : '')
         };
       });
-      const existingCodes = bills.value.map(b => b.code);
-      mapped.forEach(m => { if (!existingCodes.includes(m.code)) bills.value.push(m); });
+    } else {
+      bills.value = [];
     }
-  } catch (e) { /* Keep mock data */ }
+  } catch (e) {
+    bills.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

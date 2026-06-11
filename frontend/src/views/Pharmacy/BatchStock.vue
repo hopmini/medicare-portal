@@ -1,17 +1,17 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
     <!-- Sidebar -->
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
 
     <!-- Main Content Layout -->
-    <a-layout style="background: #f8fafc;">
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
       <!-- App Header -->
-      <AppHeader title="Tôn kho theo lô" />
+      <AppHeader v-if="!inline" title="Tôn kho theo lô" />
 
       <!-- Content Container -->
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
         <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 20px; font-weight: 500;">
           Theo dõi số lượng tồn, hạn sử dụng và trạng thái từng lô thuốc trong kho
         </div>
@@ -26,7 +26,7 @@
               <div class="metric-details">
                 <span class="metric-title">Tổng số lô</span>
                 <div class="metric-number-wrapper">
-                  <span class="metric-value" style="color: #0047AB;">128</span>
+                  <span class="metric-value" style="color: #0047AB;">{{ totalLots }}</span>
                   <span class="metric-unit">lô</span>
                 </div>
               </div>
@@ -41,7 +41,7 @@
               <div class="metric-details">
                 <span class="metric-title">Sắp hết hạn</span>
                 <div class="metric-number-wrapper">
-                  <span class="metric-value" style="color: #ea580c;">18</span>
+                  <span class="metric-value" style="color: #ea580c;">{{ nearExpiryLots }}</span>
                   <span class="metric-unit">lô</span>
                 </div>
               </div>
@@ -56,7 +56,7 @@
               <div class="metric-details">
                 <span class="metric-title">Đã hết hạn</span>
                 <div class="metric-number-wrapper">
-                  <span class="metric-value" style="color: #ef4444;">6</span>
+                  <span class="metric-value" style="color: #ef4444;">{{ expiredLots }}</span>
                   <span class="metric-unit">lô</span>
                 </div>
               </div>
@@ -71,7 +71,7 @@
               <div class="metric-details">
                 <span class="metric-title">Tôn thấp</span>
                 <div class="metric-number-wrapper">
-                  <span class="metric-value" style="color: #d97706;">22</span>
+                  <span class="metric-value" style="color: #d97706;">{{ lowStockLots }}</span>
                   <span class="metric-unit">lô</span>
                 </div>
               </div>
@@ -190,6 +190,15 @@ import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getMedicines } from '@/services/pharmacyService'
 
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
+
 interface BatchStock {
   id: number;
   medCode: string;
@@ -230,6 +239,11 @@ const tableColumns = [
 ]
 
 const batchList = ref<BatchStock[]>([])
+
+const totalLots = computed(() => batchList.value.length)
+const nearExpiryLots = computed(() => batchList.value.filter(b => b.status === 'near').length)
+const expiredLots = computed(() => batchList.value.filter(b => b.status === 'expired').length)
+const lowStockLots = computed(() => batchList.value.filter(b => b.status === 'low').length)
 
 const uniqueMeds = computed(() => {
   return Array.from(new Set(batchList.value.map(b => b.name)))
@@ -292,14 +306,20 @@ async function loadRealBatches() {
   try {
     const data = await getMedicines()
     batchList.value = data.map((m: any, idx: number) => {
-      // Determine status from stock or dates
+      // Determine status dynamically from stock and dates
       let status: 'normal' | 'near' | 'expired' | 'low' = 'normal'
       if (m.stock <= 10) {
         status = 'low'
-      } else if (idx === 1 || idx === 5) {
-        status = 'near'
-      } else if (idx === 4) {
-        status = 'expired'
+      } else if (m.expiryDate) {
+        const expiry = new Date(m.expiryDate)
+        const now = new Date()
+        const diffTime = expiry.getTime() - now.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        if (diffDays < 0) {
+          status = 'expired'
+        } else if (diffDays <= 30) {
+          status = 'near'
+        }
       }
 
       const expiryFormatted = m.expiryDate 

@@ -3681,31 +3681,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\LE BINH\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\hop13\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\HK9\\HocFullStack\\BTL\\medicare-portal\\backend\\Gateway.csproj",
+      "projectUniqueName": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\Gateway.csproj",
       "projectName": "Gateway",
-      "projectPath": "D:\\HK9\\HocFullStack\\BTL\\medicare-portal\\backend\\Gateway.csproj",
-      "packagesPath": "C:\\Users\\LE BINH\\.nuget\\packages\\",
-      "outputPath": "D:\\HK9\\HocFullStack\\BTL\\medicare-portal\\backend\\obj\\",
+      "projectPath": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\Gateway.csproj",
+      "packagesPath": "C:\\Users\\hop13\\.nuget\\packages\\",
+      "outputPath": "D:\\VisualStudio\\Fullstack\\medicare-portal\\backend\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\LE BINH\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\hop13\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3723,8 +3716,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "9.0.300"
+      }
     },
     "frameworks": {
       "net8.0": {
@@ -3772,7 +3764,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

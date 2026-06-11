@@ -1,19 +1,20 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
     <!-- Sidebar -->
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
     
     <!-- Main Content -->
-    <a-layout style="background: #f8fafc;">
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
       <!-- Header -->
       <AppHeader 
+        v-if="!inline"
         :title="userRole === 'patient' ? 'Đơn thuốc của tôi' : 'Quản lý đơn thuốc & Bán thuốc'" 
         :welcome="userRole === 'patient' ? 'Xem danh sách các đơn thuốc đã được bác sĩ kê đơn của bạn.' : undefined"
       />
  
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
         <!-- Top Title -->
         <div v-if="userRole !== 'patient'" style="margin-bottom: 16px;">
           <h2 style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
@@ -405,9 +406,33 @@ import { ref, computed, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { getPrescriptions, getMedicines } from '@/services/pharmacyService';
-import { MOCK_PRESCRIPTIONS, MEDICINE_FALLBACK, type Prescription } from '@/data/sharedPharmacyData';
+import { getPrescriptions, getMedicines, processPrescription } from '@/services/pharmacyService';
 import { useAuthStore } from '@/stores/authStore';
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
+
+interface PrescriptionItem {
+  name: string;
+  qty: number;
+  dosage: string;
+}
+
+interface Prescription {
+  id: number;
+  code: string;
+  patient: string;
+  doctorName: string;
+  date: string;
+  medications: PrescriptionItem[];
+  status: 'pending' | 'processing' | 'completed';
+}
 
 // Active flow control tab
 const activeTabKey = ref('prescription-flow');
@@ -421,8 +446,6 @@ const statusFilter = ref('all');
 
 const authStore = useAuthStore();
 const userRole = computed(() => (authStore.user.value?.role || '').toLowerCase());
-
-// Uses Prescription type imported from '@/data/sharedPharmacyData'
 
 const selectedPrescription = ref<Prescription | null>(null);
 const dispenseForm = ref({
@@ -476,14 +499,15 @@ function selectPrescription(prescription: Prescription) {
   dispenseForm.value.note = '';
 }
 
-function submitDispensation() {
+async function submitDispensation() {
   if (!selectedPrescription.value) return;
 
-  const index = prescriptions.value.findIndex(p => p.id === selectedPrescription.value!.id);
-  if (index !== -1) {
-    prescriptions.value[index].status = 'completed';
+  try {
+    await processPrescription(Number(selectedPrescription.value.id));
     message.success(`Đã cấp phát thành công đơn thuốc ${selectedPrescription.value.code} cho bệnh nhân ${selectedPrescription.value.patient}!`);
-    selectPrescription(prescriptions.value[index]);
+    await loadData();
+  } catch (err: any) {
+    message.error('Không thể thực hiện cấp phát thuốc: ' + (err.response?.data?.message || err.message || err));
   }
 }
 
@@ -649,12 +673,8 @@ function submitFreeSale() {
   resetFreeFlow();
 }
 
-onMounted(async () => {
+async function loadData() {
   loading.value = true;
-  
-  // Define 10 high quality mock prescriptions
-  const tenMockPrescriptions = MOCK_PRESCRIPTIONS;
-
   try {
     // 1. Fetch real medications for the search / sales modal
     const mData = await getMedicines();
@@ -663,59 +683,35 @@ onMounted(async () => {
         id: item.id,
         name: item.name,
         price: item.price || 1500,
-        stockQuantity: item.stockQuantity || Math.floor(Math.random() * 200) + 15
+        stockQuantity: item.stockQuantity || 0
       }));
     } else {
-      allMedicines.value = MEDICINE_FALLBACK;
+      allMedicines.value = [];
     }
 
-    // 2. Fetch prescriptions from backend if available, otherwise fallback to our 10 mock items
+    // 2. Fetch prescriptions from backend
     const pData = await getPrescriptions();
-    if (pData && pData.length > 0) {
-      const mapped: Prescription[] = pData.map((p: any, idx: number) => {
-        const isEven = idx % 2 === 0;
-        return {
-          id: p.id || idx + 1,
-          code: `PRC${String(p.id || idx + 210).padStart(5, '0')}`,
-          patient: p.patient || `Bệnh nhân #${idx}`,
-          doctorName: p.doctorName || (isEven ? 'Bác sĩ Nguyễn Văn A' : 'Bác sĩ Phạm Văn C'),
-          date: p.date || '20/05/2025',
-          status: idx === 0 ? 'pending' : idx === 1 ? 'processing' : 'completed',
-          medications: p.medications || [
-            { name: p.medicine || 'Paracetamol 500mg', qty: 20, dosage: p.dosage || 'Ngày uống 2 lần, mỗi lần 1 viên sau ăn' },
-            { name: 'Vitamin C 500mg', qty: 10, dosage: 'Ngày uống 1 lần, mỗi lần 1 viên sáng' }
-          ]
-        };
-      });
-      
-      // Merge backend prescriptions with our high quality mocks to ensure we always have plenty of items
-      const merged = [...mapped];
-      tenMockPrescriptions.forEach(mock => {
-        if (!merged.some(m => m.code === mock.code)) {
-          merged.push(mock);
-        }
-      });
-      prescriptions.value = merged;
-    } else {
-      prescriptions.value = tenMockPrescriptions;
-    }
+    prescriptions.value = pData || [];
 
     if (prescriptions.value.length > 0) {
-      selectPrescription(prescriptions.value[0]);
+      const found = prescriptions.value.find(p => p.id === selectedPrescription.value?.id);
+      if (found) {
+        selectPrescription(found);
+      } else {
+        selectPrescription(prescriptions.value[0]);
+      }
+    } else {
+      selectedPrescription.value = null;
     }
-  } catch (e) {
-    // Fail-safe fallback to high-quality mock data
-    prescriptions.value = tenMockPrescriptions;
-    allMedicines.value = MEDICINE_FALLBACK.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      stockQuantity: item.stockQuantity
-    }));
-    selectPrescription(prescriptions.value[0]);
+  } catch (e: any) {
+    message.error('Lỗi khi tải dữ liệu từ server: ' + (e.message || e));
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

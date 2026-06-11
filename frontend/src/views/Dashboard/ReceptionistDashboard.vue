@@ -43,12 +43,22 @@
           <span>Danh sách lịch hẹn</span>
         </div>
 
-        <div class="nav-item" @click="$router.push('/pharmacy/billing')">
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'payments' }" @click="activeTab = 'payments'">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          </span>
+          <span>Trạng thái thanh toán</span>
+        </div>
+
+        <div class="nav-item" @click="$router.push('/dashboard?tab=pharmacy-billing')">
           <span>🧾</span>
           <span>Hóa đơn bán thuốc</span>
         </div>
 
-        <div class="nav-item" @click="$router.push('/pharmacy/payments/list')">
+        <div class="nav-item" @click="$router.push('/dashboard?tab=pharmacy-payments')">
           <span>💳</span>
           <span>Xác nhận thanh toán</span>
         </div>
@@ -198,7 +208,7 @@
         </div>
 
         <!-- RECENT APPOINTMENTS -->
-        <div class="table-card">
+        <div v-if="activeTab === 'dashboard' || activeTab === 'appointments'" class="table-card">
           <div class="table-card__header">
             <h3 class="table-card__title">
               <svg viewBox="0 0 24 24" fill="none" stroke="#0047AB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
@@ -296,6 +306,121 @@
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                       </svg>
                       Hủy
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TAB: PATIENT PAYMENT STATUS -->
+        <div v-else-if="activeTab === 'payments'" class="table-card animate-fade-in">
+          <div class="table-card__header" style="flex-wrap: wrap; gap: 1rem;">
+            <h3 class="table-card__title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0047AB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              Trạng thái thanh toán & Hóa đơn viện phí
+            </h3>
+            
+            <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+              <!-- Status Filter -->
+              <select v-model="filterBillStatus" class="form-input" style="width: 170px; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; height: 38px; border: 1.5px solid #cbd5e1;">
+                <option value="All">Tất cả trạng thái</option>
+                <option value="Pending">Chờ thanh toán</option>
+                <option value="Paid">Đã thanh toán</option>
+              </select>
+
+              <!-- Search input -->
+              <div style="position: relative; width: 250px;">
+                <input 
+                  v-model="searchBillQuery" 
+                  type="text" 
+                  class="form-input" 
+                  placeholder="Tìm theo ID bệnh nhân..." 
+                  style="width: 100%; padding-left: 1rem; font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; height: 38px; border: 1.5px solid #cbd5e1;"
+                />
+              </div>
+
+              <button class="btn-refresh" @click="fetchBills" :disabled="loadingBills" style="padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; height: 38px; display: inline-flex; align-items: center; gap: 6px; background: #0047AB; color: white; border: none; font-weight: 700; cursor: pointer;">
+                <svg :class="{ 'fa-spin': loadingBills }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Tải lại
+              </button>
+            </div>
+          </div>
+
+          <div v-if="loadingBills" class="empty-state" style="padding: 3rem 0;">
+            <p>Đang tải danh sách hóa đơn viện phí...</p>
+          </div>
+          <div v-else-if="filteredBills.length === 0" class="empty-state" style="padding: 3rem 0;">
+            <p>Không tìm thấy hóa đơn nào phù hợp.</p>
+          </div>
+
+          <table v-else class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 120px;">Mã hóa đơn</th>
+                <th>Bệnh nhân</th>
+                <th style="text-align: right;">Phí khám</th>
+                <th style="text-align: right;">Tiền thuốc</th>
+                <th style="text-align: right;">Tổng thanh toán</th>
+                <th style="text-align: center;">Ngày tạo</th>
+                <th style="text-align: center; width: 150px;">Trạng thái</th>
+                <th style="text-align: right; width: 200px;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="bill in filteredBills" :key="bill.id">
+                <td>
+                  <code style="font-family: monospace; font-weight: 800; color: #0047AB; font-size: 0.9rem;">
+                    #INV-${String(bill.id).padStart(5, '0')}
+                  </code>
+                </td>
+                <td style="text-align: left; font-weight: 700;">
+                  <span style="color: #0f172a;">{{ bill.patient }}</span>
+                  <span style="font-size: 0.72rem; color: #64748b; display: block;">Mã bệnh nhân: {{ bill.patientId }}</span>
+                </td>
+                <td style="text-align: right; font-weight: 600; color: #475569;">
+                  {{ formatCurrency(bill.examinationFee) }}
+                </td>
+                <td style="text-align: right; font-weight: 600; color: #475569;">
+                  {{ formatCurrency(bill.medicineFee) }}
+                </td>
+                <td style="text-align: right; font-weight: 800; color: #0047AB; font-size: 1rem;">
+                  {{ formatCurrency(bill.totalAmount) }}
+                </td>
+                <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
+                  {{ formatDateWithTime(bill.createdAt) }}
+                </td>
+                <td style="text-align: center;">
+                  <span 
+                    class="badge" 
+                    :class="bill.status === 'Paid' ? 'badge--confirmed' : 'badge--pending'"
+                    style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase;"
+                  >
+                    {{ bill.status === 'Paid' ? 'Đã thanh toán' : 'Chờ thanh toán' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="action-cell-row">
+                    <button 
+                      v-if="bill.status !== 'Paid'" 
+                      class="btn-table-action btn-approve" 
+                      @click="confirmPayment(bill)"
+                    >
+                      💳 Xác nhận
+                    </button>
+                    <button 
+                      class="btn-table-action btn-detail" 
+                      @click="printBillInvoice(bill)"
+                    >
+                      🖨️ In
                     </button>
                   </div>
                 </td>
@@ -431,6 +556,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
+  import { getBills, payBill } from '@/services/pharmacyService'
 
   const authStore = useAuthStore()
   const activeTab = ref('dashboard')
@@ -439,6 +565,12 @@
   const selectedApp = ref<any>(null)
 
   const appointments = ref<any[]>([])
+
+  // States for patient billing/payments
+  const billsList = ref<any[]>([])
+  const loadingBills = ref(false)
+  const searchBillQuery = ref('')
+  const filterBillStatus = ref('All')
 
   const stats = computed(() => {
     return {
@@ -473,6 +605,7 @@
     loading.value = true
     try {
       appointments.value = await appointmentService.getAllAppointments()
+      await fetchBills()
     } catch (error) {
       console.error('Failed to fetch appointments:', error)
     } finally {
@@ -582,6 +715,131 @@
 
   function closeDetail () {
     selectedApp.value = null
+  }
+
+  // Bills methods and computed properties
+  const filteredBills = computed(() => {
+    let list = [...billsList.value]
+    
+    // Filter by status
+    if (filterBillStatus.value !== 'All') {
+      list = list.filter(b => b.status === filterBillStatus.value)
+    }
+
+    // Filter by search query
+    if (searchBillQuery.value.trim()) {
+      const q = searchBillQuery.value.toLowerCase().trim()
+      list = list.filter(b => 
+        (b.patient && b.patient.toLowerCase().includes(q)) || 
+        String(b.patientId).includes(q) ||
+        String(b.id).includes(q)
+      )
+    }
+
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  })
+
+  async function fetchBills() {
+    loadingBills.value = true
+    try {
+      const bills = await getBills()
+      billsList.value = bills || []
+    } catch (error) {
+      console.error('Failed to fetch bills:', error)
+    } finally {
+      loadingBills.value = false
+    }
+  }
+
+  async function confirmPayment(bill: any) {
+    if (!confirm(`Xác nhận thanh toán cho hóa đơn #INV-${String(bill.id).padStart(5, '0')} với tổng số tiền là ${formatCurrency(bill.totalAmount)}?`)) return
+    try {
+      await payBill(bill.id)
+      alert('Thanh toán hóa đơn thành công!')
+      await fetchBills()
+    } catch (error) {
+      alert('Không thể thanh toán hóa đơn: ' + error)
+    }
+  }
+
+  function formatCurrency(value: number) {
+    if (value === undefined || value === null) return '0 đ'
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
+  }
+
+  function formatDateWithTime(dateStr: string) {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return dateStr
+    return `${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+  }
+
+  function printBillInvoice(bill: any) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Hóa đơn thanh toán - Medicare</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; }
+            .receipt-header { text-align: center; border-bottom: 2px solid #0047AB; padding-bottom: 15px; margin-bottom: 20px; }
+            .receipt-title { font-size: 24px; font-weight: bold; color: #0047AB; }
+            .details-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .details-table th, .details-table td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+            .details-table th { background: #f8f9fa; }
+            .total-row { font-weight: bold; font-size: 18px; color: #0047AB; }
+            .receipt-footer { text-align: center; margin-top: 40px; font-size: 12px; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <div class="receipt-title">MEDICARE CLINIC RECEIPT</div>
+            <p>Hóa đơn viện phí & Thuốc biệt dược</p>
+            <p>Mã hóa đơn: #INV-${String(bill.id).padStart(5, '0')}</p>
+            <p>Ngày tạo: ${new Date(bill.createdAt).toLocaleString('vi-VN')}</p>
+          </div>
+          <div>
+            <p><strong>Bệnh nhân:</strong> ${bill.patient}</p>
+            <p><strong>Trạng thái:</strong> ${bill.status === 'Paid' ? 'ĐÃ THANH TOÁN (PAID)' : 'CHỜ THANH TOÁN (PENDING)'}</p>
+          </div>
+          <table class="details-table">
+            <thead>
+              <tr>
+                <th>Hạng mục dịch vụ</th>
+                <th style="text-align: right;">Chi phí</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Phí khám lâm sàng / Khám chuyên khoa</td>
+                <td style="text-align: right;">${formatCurrency(bill.examinationFee)}</td>
+              </tr>
+              <tr>
+                <td>Tiền thuốc biệt dược chỉ định</td>
+                <td style="text-align: right;">${formatCurrency(bill.medicineFee)}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Tổng số tiền thanh toán:</td>
+                <td style="text-align: right;">${formatCurrency(bill.totalAmount)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="receipt-footer">
+            <p>Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ tại hệ thống phòng khám Medicare.</p>
+            <p>Hỗ trợ kỹ thuật: support@medicare.vn | Hotline: 1900-6000</p>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            }
+          <\/script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   onMounted(() => {

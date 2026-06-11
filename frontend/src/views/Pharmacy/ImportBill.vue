@@ -1,17 +1,17 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
     <!-- Sidebar -->
-    <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
+    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
     </a-layout-sider>
 
     <!-- Main Content -->
-    <a-layout style="background: #f8fafc;">
+    <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
       <!-- Header -->
-      <AppHeader :title="viewMode === 'list' ? 'Danh sách phiếu nhập thuốc' : 'Tạo phiếu nhập thuốc'" />
+      <AppHeader v-if="!inline" :title="viewMode === 'list' ? 'Danh sách phiếu nhập thuốc' : 'Tạo phiếu nhập thuốc'" />
 
       <!-- Content Area -->
-      <a-layout-content style="padding: 24px 28px;">
+      <a-layout-content :style="inline ? 'padding: 0;' : 'padding: 24px 28px;'">
         
         <!-- -------------------- 1. VIEW MODE: LIST (DANH SÁCH PHIẾU NHẬP) -------------------- -->
         <div v-if="viewMode === 'list'">
@@ -102,7 +102,9 @@
 
           <!-- Main List Table -->
           <a-card :bordered="false" style="border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.01); border: 1px solid #e2e8f0; overflow: hidden;">
-            <a-table 
+            <a-spin :spinning="loading">
+            <a-empty v-if="!loading && filteredImportBills.length === 0" description="Không có phiếu nhập nào" />
+            <a-table v-if="filteredImportBills.length > 0"
               :columns="listColumns" 
               :data-source="filteredImportBills" 
               :pagination="{ pageSize: 10, showSizeChanger: true, locale: { items_per_page: '/ trang' } }" 
@@ -151,6 +153,7 @@
                 </template>
               </template>
             </a-table>
+            </a-spin>
           </a-card>
         </div>
 
@@ -447,8 +450,16 @@ import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
-import { getMedicines } from '@/services/pharmacyService'
-import { SUPPLIER_LIST, MOCK_IMPORT_BILLS, MEDICINE_FALLBACK } from '@/data/sharedPharmacyData'
+import { getMedicines, getSuppliers, getImportBills, createImportBill } from '@/services/pharmacyService'
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
 
 const router = useRouter()
 
@@ -468,11 +479,37 @@ const selectedBillDetail = ref<any>(null)
 // List of available drugs fetched from backend
 const availableMeds = ref<any[]>([])
 
-// Supplier list (from shared data)
-const suppliersList = SUPPLIER_LIST
+// Supplier list loaded dynamically from backend API
+const suppliersList = ref<any[]>([])
 
-// Mock data list for import bills (from shared data)
-const importBills = ref<any[]>([...MOCK_IMPORT_BILLS])
+async function loadSuppliers() {
+  try {
+    const data = await getSuppliers()
+    suppliersList.value = data || []
+  } catch (e) {
+    console.error('Failed to load suppliers from backend:', e)
+    suppliersList.value = []
+  }
+}
+
+const loading = ref(false)
+const importBills = ref<any[]>([])
+
+async function loadImportBills() {
+  loading.value = true
+  try {
+    const data = await getImportBills()
+    importBills.value = (data || []).map((b: any) => ({
+      ...b,
+      status: b.status || 'Đã nhập'
+    }))
+  } catch (e) {
+    console.error('Failed to load import bills from backend:', e)
+    importBills.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 // Columns for list view
 const listColumns = [
@@ -580,7 +617,7 @@ function editImportBill(bill: any) {
     total: m.price * m.qty * 1.05
   }))
 
-  const sup = suppliersList.find(s => s.code === bill.supplierCode)
+  const sup = suppliersList.value.find(s => s.code === bill.supplierCode)
   if (sup) {
     supplier.value.selected = sup.code
     supplier.value.name = sup.name
@@ -647,7 +684,7 @@ const detailColumns = [
 ]
 
 function onSupplierChange(val: string) {
-  const selected = suppliersList.find(s => s.code === val)
+  const selected = suppliersList.value.find(s => s.code === val)
   if (selected) {
     supplier.value.name = selected.name
     supplier.value.taxCode = selected.taxCode
@@ -725,7 +762,7 @@ function saveDraft() {
   const newBill = {
     code: invoice.value.code,
     supplierCode: supplier.value.selected,
-    supplierName: suppliersList.find(s => s.code === supplier.value.selected)?.name || '',
+    supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
     date: invoice.value.date.format('DD/MM/YYYY'),
     creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
     goodsTotal: totalSummary.value.goodsTotal,
@@ -760,7 +797,7 @@ function submitImport() {
   const newBill = {
     code: invoice.value.code,
     supplierCode: supplier.value.selected,
-    supplierName: suppliersList.find(s => s.code === supplier.value.selected)?.name || '',
+    supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
     date: invoice.value.date.format('DD/MM/YYYY'),
     creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
     goodsTotal: totalSummary.value.goodsTotal,
@@ -795,25 +832,27 @@ function cancelImport() {
 }
 
 onMounted(async () => {
-  try {
-    const data = await getMedicines()
-    if (data && data.length > 0) {
-      availableMeds.value = data.map((item: any) => ({
-        code: item.code || `MED00${item.id}`,
-        name: item.name,
-        price: item.purchasePrice || item.price || 1000
-      }))
-    } else {
-      throw new Error('No medicines returned from backend')
-    }
-  } catch (e) {
-    console.error('Failed to load medicines from backend, using fallback:', e)
-    availableMeds.value = MEDICINE_FALLBACK.map((item: any) => ({
-      code: item.code,
-      name: item.name,
-      price: item.purchasePrice
-    }))
-  }
+  await Promise.all([
+    loadSuppliers(),
+    loadImportBills(),
+    (async () => {
+      try {
+        const data = await getMedicines()
+        if (data && data.length > 0) {
+          availableMeds.value = data.map((item: any) => ({
+            code: item.code || `MED00${item.id}`,
+            name: item.name,
+            price: item.purchasePrice || item.price || 1000
+          }))
+        } else {
+          throw new Error('No medicines returned from backend')
+        }
+      } catch (e) {
+        console.error('Failed to load medicines from backend:', e)
+        availableMeds.value = []
+      }
+    })()
+  ])
 })
 </script>
 

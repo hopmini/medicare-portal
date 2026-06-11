@@ -31,6 +31,8 @@
   justify-content: center;
   align-items: flex-start;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 
 .booking-layout {
@@ -39,6 +41,14 @@
   gap: 1.75rem;
   width: 100%;
   max-width: 1200px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+.booking-main {
+  min-width: 0;
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -131,6 +141,7 @@
   background: var(--primary);
   border-color: var(--primary);
   color: white;
+  box-shadow: 0 0 12px rgba(0, 71, 171, 0.45);
 }
 
 .step-v--completed .step-v__num {
@@ -153,7 +164,8 @@
 }
 
 .step-v--active .step-v__label {
-  color: var(--dark-slate);
+  color: var(--primary);
+  font-weight: 850;
 }
 
 .step-v__desc {
@@ -323,15 +335,9 @@
   display: flex;
   gap: 0.75rem;
   overflow-x: auto;
-  padding: 0.25rem 0 1rem;
-  justify-content: center; /* Center-aligned for elegant spacing */
+  padding: 0.25rem 0.5rem 1rem;
+  justify-content: flex-start;
   scrollbar-width: thin;
-}
-
-@media (max-width: 768px) {
-  .date-scroll-v {
-    justify-content: flex-start;
-  }
 }
 
 .date-card-v {
@@ -375,13 +381,14 @@
 }
 
 .slot-grid-v {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.85rem;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .slot-v {
+  width: 130px;
   padding: 0.75rem 0.6rem;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -395,6 +402,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  box-sizing: border-box;
 }
 
 .slot-v:hover:not(.slot-v--disabled) {
@@ -936,3 +944,434 @@
     width: 100%;
   }
 }
+
+/* ============================================================
+   PREMIUM HEALTHCARE SERVICES & DOCTOR CARDS (HIGH AESTHETICS)
+   ============================================================ */
+
+.services-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.service-card-premium {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.service-card-premium:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 10px 20px rgba(0, 71, 171, 0.06);
+}
+
+.service-card-premium--active {
+  border-color: var(--primary) !important;
+  border-width: 2px !important;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(37, 99, 235, 0.01) 100%) !important;
+  box-shadow: 0 12px 24px rgba(0, 71, 171, 0.08) !important;
+}
+
+.service-category-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: var(--slate-600);
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.service-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.service-premium-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
+.service-card-premium--active .service-premium-icon {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.service-premium-price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.price-label {
+  font-size: 0.68rem;
+  color: var(--slate-400);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.price-amount {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--success);
+}
+
+.service-premium-body {
+  flex: 1;
+  margin-bottom: 1.25rem;
+}
+
+.service-title-text {
+  font-size: 1.05rem;
+  font-weight: 850;
+  color: var(--dark-slate);
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+}
+
+.service-desc-text {
+  font-size: 0.82rem;
+  color: var(--slate-600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sub-options-premium {
+  margin-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 1rem;
+  width: 100%;
+}
+
+.sub-options-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--slate-600);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.sub-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sub-option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--dark-slate);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.sub-option-item:hover {
+  background: #f1f5f9;
+}
+
+.sub-option-item--selected {
+  background: var(--primary-light) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  font-weight: 600;
+}
+
+.sub-option-text {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.price-diff-text {
+  color: var(--primary);
+}
+
+.service-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1rem;
+}
+
+.service-duration {
+  font-size: 0.75rem;
+  color: var(--slate-600);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-select-service {
+  background: #f1f5f9;
+  color: var(--slate-600);
+  border: 1px solid var(--border-color);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 750;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-select-service--active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.service-card-premium--active:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 71, 171, 0.12);
+}
+
+/* PREMIUM DOCTOR CARDS */
+.doctors-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.doctor-card-premium {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.doctor-card-premium:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 12px 24px rgba(0, 71, 171, 0.06);
+}
+
+.doctor-card-premium--active {
+  border-color: var(--primary) !important;
+  border-width: 2px !important;
+  box-shadow: 0 14px 28px rgba(0, 71, 171, 0.1) !important;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(37, 99, 235, 0.01) 100%) !important;
+}
+
+.selection-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-premium-avatar-wrapper {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.doc-premium-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.25rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.doc-online-status {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10b981;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 850;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.doc-premium-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.doc-premium-name {
+  font-size: 1.15rem;
+  font-weight: 850;
+  color: var(--dark-slate);
+  margin: 0;
+}
+
+.doc-premium-spec {
+  font-size: 0.85rem;
+  color: var(--primary);
+  font-weight: 750;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-premium-stats {
+  display: flex;
+  gap: 12px;
+  margin: 6px 0;
+}
+
+.doc-stat-item {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--slate-600);
+  background: #f8fafc;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-premium-bio {
+  font-size: 0.8rem;
+  color: var(--slate-600);
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.doc-premium-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.doc-tag {
+  font-size: 0.72rem;
+  font-weight: 750;
+  background: #eff6ff;
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.btn-select-doc-premium {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1.5px solid var(--border-color);
+  background: white;
+  color: var(--slate-600);
+  transition: all 0.2s;
+}
+
+.doctor-card-premium--active .btn-select-doc-premium {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.doctor-card-premium:hover .btn-select-doc-premium:not(.doctor-card-premium--active .btn-select-doc-premium) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* BACKGROUND ACCENTS & EFFECTS */
+.booking-bg-glows {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.05;
+}
+
+.bg-glow-1 {
+  top: -10%;
+  left: -10%;
+  background: radial-gradient(circle, var(--primary) 0%, rgba(37, 99, 235, 0) 70%);
+}
+
+.bg-glow-2 {
+  bottom: -10%;
+  right: -10%;
+  background: radial-gradient(circle, var(--success) 0%, rgba(16, 185, 129, 0) 70%);
+}
+

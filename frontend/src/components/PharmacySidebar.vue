@@ -169,7 +169,7 @@
           </a-menu-item>
 
           <a-menu-item key="patient-prescriptions">
-            <router-link to="/pharmacy/prescriptions">
+            <router-link to="/my-medical-records">
               <span class="menu-icon"><i class="fas fa-prescription-bottle" /></span>
               <span v-if="!isCollapsed">Đơn thuốc của tôi</span>
             </router-link>
@@ -226,7 +226,16 @@ const toggleCollapse = () => {
 }
 
 const goHome = () => {
-  router.push('/dashboard')
+  const role = (authStore.user.value?.role || '').toLowerCase()
+  if (role === 'patient') {
+    router.push('/')
+  } else if (role === 'receptionist') {
+    router.push('/receptionist')
+  } else if (role === 'doctor') {
+    router.push('/doctor')
+  } else {
+    router.push('/dashboard')
+  }
 }
 
 const updateActiveKeys = () => {

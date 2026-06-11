@@ -382,6 +382,8 @@ watch(userRole, () => {
   buildNotifications()
 }, { immediate: true })
 
+let pollInterval: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   // Shake bell on load to draw attention if there are unread
@@ -391,10 +393,19 @@ onMounted(() => {
       setTimeout(() => { bellShake.value = false }, 800)
     }
   }, 1000)
+
+  // Poll for new notifications every 60 seconds
+  pollInterval = setInterval(() => {
+    buildNotifications()
+  }, 60000)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (pollInterval) {
+    clearInterval(pollInterval)
+    pollInterval = null
+  }
 })
 // ─────────────────────────────────────────────────────────────────────────────
 

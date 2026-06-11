@@ -439,7 +439,7 @@ import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import StatCard from '@/components/StatCard.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { MEDICINE_FALLBACK, PATIENT_LIST, SUPPLIER_LIST, MOCK_BILLS, MOCK_PRESCRIPTIONS } from '@/data/sharedPharmacyData'
+import { getBills, getPrescriptions, getMedicines } from '@/services/pharmacyService'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -468,19 +468,8 @@ const headerWelcome = computed(() => {
 // ----------------------------------------
 // CASHIER SPECIFIC DATA
 // ----------------------------------------
-const widgetPresList = [
-  { patient: 'Trần Văn A', code: 'PU0001258', time: '09:15' },
-  { patient: 'Nguyễn Thị Mai', code: 'PU0001257', time: '09:02' },
-  { patient: 'Lê Minh C', code: 'PU0001256', time: '08:45' },
-  { patient: 'Phạm Quốc D', code: 'PU0001255', time: '08:30' }
-]
-
-const widgetLowStock = [
-  { name: 'Paracetamol 500mg', desc: 'Hộp 100 viên', qty: '15' },
-  { name: 'Amoxicillin 500mg', desc: 'Hộp 100 viên', qty: '18' },
-  { name: 'Vitamin C 500mg', desc: 'Hộp 100 viên', qty: '22' },
-  { name: 'Loratadine 10mg', desc: 'Hộp 100 viên', qty: '28' }
-]
+const widgetPresList = ref<any[]>([])
+const widgetLowStock = ref<any[]>([])
 
 // Unpaid Bills Columns (matches Image 1)
 const unpaidBillsColumns = [
@@ -504,17 +493,6 @@ const paginationConfig = computed(() => ({
 
 function payUnpaidBill(record: any) {
   router.push(`/pharmacy/create-bill?source=pres&code=${record.prescriptionCode || record.code}`)
-}
-
-function initCashierData() {
-  const types = ['Hóa đơn từ đơn thuốc', 'Hóa đơn tổng hợp', 'Khám lâm sàng']
-  unpaidBills.value = [
-    { id: 1, code: 'HD250524-0156', patient: 'Trần Văn A', type: 'Hóa đơn từ đơn thuốc', date: '24/05/2025 09:15', total: 580000, remaining: 580000, prescriptionCode: 'PU0001258' },
-    { id: 2, code: 'HD250524-0155', patient: 'Nguyễn Thị Mai', type: 'Hóa đơn từ đơn thuốc', date: '24/05/2025 09:02', total: 1250000, remaining: 1250000, prescriptionCode: 'PU0001257' },
-    { id: 3, code: 'HD250524-0154', patient: 'Lê Minh C', type: 'Hóa đơn từ đơn thuốc', date: '24/05/2025 08:45', total: 760000, remaining: 760000, prescriptionCode: 'PU0001256' },
-    { id: 4, code: 'HD250524-0153', patient: 'Phạm Quốc D', type: 'Hóa đơn từ đơn thuốc', date: '24/05/2025 08:30', total: 420000, remaining: 420000, prescriptionCode: 'PU0001255' },
-    { id: 5, code: 'HD250524-0152', patient: 'Hoàng Thị H', type: 'Hóa đơn tổng hợp', date: '24/05/2025 08:20', total: 2350000, remaining: 2350000 }
-  ]
 }
 
 // ----------------------------------------
@@ -543,11 +521,7 @@ const expiringMedicinesColumns = [
   { title: 'Số lượng', key: 'status', align: 'right' }
 ]
 
-const expiringMedicines = [
-  { key: '1', name: 'Aspirin 81mg', batch: 'ASP240602', hsd: '10/06/2025', stock: 12 },
-  { key: '2', name: MEDICINE_FALLBACK[0].name, batch: 'PAR240823', hsd: '30/06/2025', stock: 85 },
-  { key: '3', name: MEDICINE_FALLBACK[1].name, batch: 'AMX240501', hsd: '15/07/2025', stock: 5 },
-]
+const expiringMedicines = ref<any[]>([])
 
 const expiringMedColumns = [
   { title: 'Thuốc', dataIndex: 'name', key: 'name' },
@@ -556,12 +530,7 @@ const expiringMedColumns = [
   { title: 'Còn lại', dataIndex: 'remaining', key: 'remaining' }
 ]
 
-const expiringMedList = [
-  { key: '1', name: 'Amoxicillin 500mg', batch: 'AMX240501', hsd: '15/07/2025', remaining: '120 hộp' },
-  { key: '2', name: 'Paracetamol 500mg', batch: 'PAR240823', hsd: '30/06/2025', remaining: '85 hộp' },
-  { key: '3', name: 'Losartan 50mg', batch: 'LOS240401', hsd: '20/07/2025', remaining: '60 hộp' },
-  { key: '4', name: 'Omeprazole 20mg', batch: 'OME240317', hsd: '10/07/2025', remaining: '45 hộp' },
-]
+const expiringMedList = ref<any[]>([])
 
 const pendingPresColumns = [
   { title: 'Mã đơn', dataIndex: 'code', key: 'code' },
@@ -570,11 +539,7 @@ const pendingPresColumns = [
   { title: 'Trạng thái', key: 'status' }
 ]
 
-const pendingPresList = [
-  { key: '1', code: 'PRES-250525-001', patient: 'Nguyễn Văn An', time: '25/05/2025 10:35', status: 'Chờ cấp phát' },
-  { key: '2', code: 'PRES-250525-002', patient: 'Trần Thị Bình', time: '25/05/2025 09:58', status: 'Chờ cấp phát' },
-  { key: '3', code: 'PRES-250525-003', patient: 'Lê Minh Tuấn', time: '25/05/2025 09:32', status: 'Chờ cấp phát' },
-]
+const pendingPresList = ref<any[]>([])
 
 const importInvoiceColumns = [
   { title: 'Mã hóa đơn', dataIndex: 'code', key: 'code' },
@@ -583,11 +548,7 @@ const importInvoiceColumns = [
   { title: 'Trạng thái', key: 'status' }
 ]
 
-const importInvoiceList = [
-  { key: '1', code: 'IMP-250525-003', supplier: SUPPLIER_LIST[0].name, total: '18.750.000 đ', status: 'Đã hoàn tất' },
-  { key: '2', code: 'IMP-250525-002', supplier: SUPPLIER_LIST[1].name, total: '12.980.000 đ', status: 'Đã hoàn tất' },
-  { key: '3', code: 'IMP-250524-004', supplier: SUPPLIER_LIST[2].name, total: '9.320.000 đ', status: 'Đã hoàn tất' },
-]
+const importInvoiceList = ref<any[]>([])
 
 const batchStockColumns = [
   { title: 'Thuốc', dataIndex: 'name', key: 'name' },
@@ -597,12 +558,7 @@ const batchStockColumns = [
   { title: 'Trạng thái', key: 'status' }
 ]
 
-const batchStockList = [
-  { key: '1', name: 'Amoxicillin 500mg', batch: 'AMX240501', hsd: '15/07/2025', stock: 120, status: 'Thấp' },
-  { key: '2', name: 'Paracetamol 500mg', batch: 'PAR240823', hsd: '30/06/2025', stock: 85, status: 'Thấp' },
-  { key: '3', name: 'Losartan 50mg', batch: 'LOS240401', hsd: '20/07/2025', stock: 60, status: 'Thấp' },
-  { key: '4', name: 'Vitamin C 500mg', batch: 'VIT240301', hsd: '18/06/2025', stock: 40, status: 'Sắp hết hạn' },
-]
+const batchStockList = ref<any[]>([])
 
 const recentBillColumns = [
   { title: 'Mã hóa đơn', dataIndex: 'code', key: 'code' },
@@ -611,14 +567,153 @@ const recentBillColumns = [
   { title: 'Trạng thái', key: 'status' },
 ]
 
-const recentBills = [
-  { key: '1', code: MOCK_BILLS[0].code, patient: MOCK_BILLS[0].patientName, total: MOCK_BILLS[0].total.toLocaleString() + 'đ', status: 'Chờ thanh toán' },
-  { key: '2', code: MOCK_BILLS[1].code, patient: MOCK_BILLS[1].patientName, total: MOCK_BILLS[1].total.toLocaleString() + 'đ', status: 'Đã thanh toán' },
-  { key: '3', code: MOCK_BILLS[2].code, patient: MOCK_BILLS[2].patientName, total: MOCK_BILLS[2].total.toLocaleString() + 'đ', status: 'Đã thanh toán' },
-]
+const recentBills = ref<any[]>([])
 
-onMounted(() => {
-  initCashierData()
+const loadDashboardData = async () => {
+  loading.value = true
+  try {
+    const [billsData, presData, medsData] = await Promise.all([
+      getBills().catch(() => []),
+      getPrescriptions().catch(() => []),
+      getMedicines().catch(() => [])
+    ])
+
+    // 1. Unpaid Bills for Cashier
+    unpaidBills.value = (billsData || [])
+      .filter((b: any) => b.status?.toLowerCase() !== 'paid')
+      .map((b: any, idx: number) => ({
+        id: b.id || idx + 1,
+        code: `INV${String(b.id || idx + 1).padStart(8, '0')}`,
+        patient: b.patient || `Bệnh nhân #${b.patientId}`,
+        type: b.examinationFee > 0 ? 'Hóa đơn tổng hợp' : 'Hóa đơn từ đơn thuốc',
+        date: b.createdAt ? new Date(b.createdAt).toLocaleString('vi-VN') : 'Vừa xong',
+        total: b.totalAmount || 0,
+        remaining: b.totalAmount || 0,
+        prescriptionCode: b.prescriptionId ? `PRC${String(b.prescriptionId).padStart(5, '0')}` : undefined
+      }))
+
+    // 2. Pending prescriptions widget for Cashier & Pharmacist
+    widgetPresList.value = (presData || [])
+      .filter((p: any) => p.status?.toLowerCase() === 'pending' || p.status?.toLowerCase() === 'waiting' || !p.status)
+      .slice(0, 5)
+      .map((p: any) => {
+        const dateObj = p.createdAt ? new Date(p.createdAt) : new Date()
+        return {
+          patient: p.patient || 'Khách hàng',
+          code: p.code || `PRC${String(p.id).padStart(5, '0')}`,
+          time: dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }
+      })
+
+    // 3. Pending prescriptions list for Pharmacist
+    pendingPresList.value = (presData || [])
+      .filter((p: any) => p.status?.toLowerCase() === 'pending' || p.status?.toLowerCase() === 'waiting' || !p.status)
+      .slice(0, 5)
+      .map((p: any, idx: number) => ({
+        key: String(p.id || idx),
+        code: p.code || `PRC${String(p.id).padStart(5, '0')}`,
+        patient: p.patient || 'Khách hàng',
+        time: p.createdAt ? new Date(p.createdAt).toLocaleString('vi-VN') : 'Hôm nay',
+        status: p.status || 'Chờ cấp phát'
+      }))
+
+    // 4. Low stock widget
+    widgetLowStock.value = (medsData || [])
+      .filter((m: any) => (m.stockQuantity || m.stock || 0) < 30)
+      .slice(0, 4)
+      .map((m: any) => ({
+        name: m.name,
+        desc: m.unit || 'Viên',
+        qty: String(m.stockQuantity || m.stock || 0)
+      }))
+
+    // 5. Batch stock list for Pharmacist
+    batchStockList.value = (medsData || [])
+      .filter((m: any) => (m.stockQuantity || m.stock || 0) < 50)
+      .slice(0, 5)
+      .map((m: any, idx: number) => ({
+        key: String(m.id || idx),
+        name: m.name,
+        batch: `L${new Date().getFullYear().toString().slice(2)}${String(idx + 1).padStart(4, '0')}`,
+        hsd: '31/12/2026',
+        stock: m.stockQuantity || m.stock || 0,
+        status: (m.stockQuantity || m.stock || 0) < 20 ? 'Thấp' : 'Cảnh báo'
+      }))
+
+    // 6. Recent bills
+    recentBills.value = (billsData || [])
+      .slice(0, 3)
+      .map((b: any, idx: number) => ({
+        key: String(b.id || idx),
+        code: `INV${String(b.id || idx + 1).padStart(8, '0')}`,
+        patient: b.patient || `Bệnh nhân #${b.patientId}`,
+        total: (b.totalAmount || 0).toLocaleString('vi-VN') + 'đ',
+        status: b.status || 'Đã thanh toán'
+      }))
+
+    // 7. Expiring Medicines dynamically derived from medsData
+    expiringMedicines.value = (medsData || [])
+      .filter((m: any) => {
+        if (!m.expiryDate) return false
+        const expiry = new Date(m.expiryDate)
+        const now = new Date()
+        const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays >= 0 && diffDays <= 30
+      })
+      .slice(0, 5)
+      .map((m: any, idx: number) => ({
+        key: String(m.id || idx),
+        name: m.name,
+        batch: `LO${String(m.id).padStart(3, '0')}`,
+        hsd: new Date(m.expiryDate).toLocaleDateString('vi-VN'),
+        stock: m.stockQuantity || m.stock || 0
+      }))
+
+    // 8. Expiring Med list for Pharmacist
+    expiringMedList.value = (medsData || [])
+      .filter((m: any) => {
+        if (!m.expiryDate) return false
+        const expiry = new Date(m.expiryDate)
+        const now = new Date()
+        const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays >= 0 && diffDays <= 30
+      })
+      .slice(0, 5)
+      .map((m: any, idx: number) => ({
+        key: String(m.id || idx),
+        name: m.name,
+        batch: `LO${String(m.id).padStart(3, '0')}`,
+        hsd: new Date(m.expiryDate).toLocaleDateString('vi-VN'),
+        remaining: `${m.stockQuantity || m.stock || 0} ${m.unit || 'Viên'}`
+      }))
+
+    // 9. Import Invoice list loaded from local storage
+    const storedImports = localStorage.getItem('import_bills_data')
+    if (storedImports) {
+      try {
+        const list = JSON.parse(storedImports)
+        importInvoiceList.value = list.slice(0, 5).map((item: any, idx: number) => ({
+          key: String(idx),
+          code: item.code,
+          supplier: item.supplierName || 'Nhà cung cấp',
+          total: item.finalTotal.toLocaleString('vi-VN') + ' đ',
+          status: item.status === 'completed' ? 'Đã hoàn tất' : 'Lưu nháp'
+        }))
+      } catch (e) {
+        importInvoiceList.value = []
+      }
+    } else {
+      importInvoiceList.value = []
+    }
+  } catch (err: any) {
+    message.error('Lỗi tải dữ liệu Dashboard: ' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadDashboardData()
 })
 </script>
 

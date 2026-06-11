@@ -185,7 +185,7 @@
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        { "Host": "pharmacy-api", "Port": 80 }
+        { "Host": "pharmacy-billing-service", "Port": 8002 }
       ],
       "UpstreamPathTemplate": "/api/pharmacy/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],

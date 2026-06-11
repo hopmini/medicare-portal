@@ -1054,10 +1054,15 @@
     try {
       const res = await api.get('/Doctors')
       const doctors = res.data || []
-      const fullName = authStore.user?.fullName || ''
+      const userData = (authStore.user && typeof authStore.user === 'object' && 'value' in authStore.user)
+        ? (authStore.user as any).value
+        : authStore.user
+      const userId = userData?.id ? Number(userData.id) : 0
+      const fullName = userData?.fullName || ''
       const cleanName = fullName.replace(/^(BS\.|Bác sĩ)\s+/i, '').trim().toLowerCase()
       
       const found = doctors.find((d: any) => {
+        if (userId && d.userId === userId) return true
         const dName = d.fullName.replace(/^(BS\.|Bác sĩ)\s+/i, '').trim().toLowerCase()
         return dName === cleanName || d.fullName.toLowerCase() === fullName.toLowerCase()
       })
@@ -1380,14 +1385,17 @@
     try {
       loading.value = true
       const patientGuid = mapUserIdToGuid(completingApp.value.patientId)
-      const doctorGuid = mapUserIdToGuid(authStore.user?.id || 1)
+      const doctorGuid = await getCurrentDoctorGuid()
 
       const recordResult = await medicalRecordService.createRecord({
         patientId: patientGuid,
         doctorId: doctorGuid,
         symptoms: formSymptoms.value,
         diagnosis: formDiagnosis.value,
-        notes: formNotes.value
+        notes: formNotes.value,
+        appointmentId: completingApp.value.id,
+        patientName: completingApp.value.patientName || 'Bệnh nhân Medicare',
+        gatewayPatientId: completingApp.value.patientId
       })
 
       if (!recordResult.success || !recordResult.recordId) {
@@ -1415,8 +1423,7 @@
         }
       }
 
-      await api.put(`/Appointments/${completingApp.value.id}/cancel`)
-
+      // Appointment đã được cập nhật qua callback từ MedicalRecordService.CreateRecord
       // Gửi thông báo cho bệnh nhân qua NotificationsController
       try {
         await api.post('/Notifications', {

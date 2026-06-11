@@ -10,12 +10,8 @@ export async function getMedicines() {
       stock: m.stockQuantity ?? m.stock ?? 0
     }))
   } catch (err) {
-    console.error('Failed to fetch medicines from backend, using mock:', err)
-    return [
-      { id: 1, name: 'Paracetamol', activeIngredient: 'Paracetamol', category: 'Analgesic', price: 1500, stock: 120, unit: 'Viên', code: 'MED001' },
-      { id: 2, name: 'Amoxicillin', activeIngredient: 'Amoxicillin', category: 'Antibiotic', price: 2500, stock: 80, unit: 'Viên', code: 'MED002' },
-      { id: 3, name: 'Lisinopril', activeIngredient: 'Lisinopril', category: 'Cardiovascular', price: 1200, stock: 9, unit: 'Viên', code: 'MED003' }
-    ]
+    console.error('Failed to fetch medicines from backend:', err)
+    return []
   }
 }
 
@@ -56,37 +52,41 @@ export async function adjustStock(id: number, quantity: number) {
 
 export async function getInventoryTransactions() {
   try {
-    const response = await pharmacyApi.get('/EventLogs')
-    const logs = response.data || []
+    const [logsRes, medsRes] = await Promise.all([
+      pharmacyApi.get('/EventLogs'),
+      pharmacyApi.get('/Medicines')
+    ])
+    const logs = logsRes.data || []
+    const medicines = medsRes.data || []
+    const medMap: Record<number, string> = {}
+    medicines.forEach((m: any) => { medMap[m.id] = m.name })
+
     const transactions = logs
       .filter((l: any) => l.eventType === 'prescription.created')
       .map((l: any) => {
         try {
           const payload = JSON.parse(l.payload)
-          return (payload.medicines || []).map((m: any, mIdx: number) => ({
-            id: Number(`${l.id}${mIdx}`),
-            type: 'out',
-            medicine: `Medicine #${m.medicineId}`,
-            qty: m.quantity,
-            date: new Date(l.timestamp).toISOString().split('T')[0]
-          }))
+          return (payload.medicines || payload.Medicines || []).map((m: any, mIdx: number) => {
+            const medId = m.medicineId || m.MedicineId
+            return {
+              id: Number(`${l.id}${mIdx}`),
+              type: 'out',
+              medicine: medMap[medId] || `Thuốc #${medId}`,
+              qty: m.quantity || m.Quantity || 0,
+              date: new Date(l.timestamp).toISOString().split('T')[0]
+            }
+          })
         } catch (e) {
           return []
         }
       })
       .flat()
 
-    if (transactions.length > 0) {
-      return transactions
-    }
+    return transactions
   } catch (err) {
-    console.error('Failed to fetch inventory transactions from backend, using mock:', err)
+    console.error('Failed to fetch inventory transactions from backend:', err)
+    return []
   }
-
-  return [
-    { id: 1, type: 'in', medicine: 'Paracetamol', qty: 50, date: '2024-09-01' },
-    { id: 2, type: 'out', medicine: 'Amoxicillin', qty: 20, date: '2024-09-03' }
-  ]
 }
 
 export async function getBills() {
@@ -100,32 +100,22 @@ export async function getBills() {
       date: new Date(b.createdAt).toLocaleString('vi-VN')
     }))
   } catch (err) {
-    console.error('Failed to fetch bills from backend, using mock:', err)
-    return [
-      { id: 101, patient: 'Nguyen Van A', date: '2024-09-12', total: 120.5, status: 'Paid' },
-      { id: 102, patient: 'Tran Thi B', date: '2024-09-14', total: 80.0, status: 'Pending' },
-      { id: 103, patient: 'Le Van C', date: '2024-09-15', total: 45.75, status: 'Cancelled' }
-    ]
+    console.error('Failed to fetch bills from backend:', err)
+    return []
   }
 }
 
 export async function getPrescriptions() {
   try {
+    const medicinesRes = await pharmacyApi.get('/Medicines')
+    const medicines = medicinesRes.data || []
+    const medicineMap: Record<number, string> = {}
+    medicines.forEach((m: any) => {
+      medicineMap[m.id] = m.name
+    })
+
     const response = await pharmacyApi.get('/Prescription')
     const logs = response.data || []
-
-    const medicineMap: Record<number, string> = {
-      1: "Paracetamol 500mg",
-      2: "Amoxicillin 500mg",
-      3: "Vitamin C 500mg",
-      4: "Omeprazole 20mg",
-      5: "Cefixime 200mg",
-      6: "Clorpheniramin 4mg",
-      7: "Dung dịch NaCl 0.9%",
-      8: "Metformin 500mg",
-      9: "Ibuprofen 400mg",
-      10: "Acetylcistein 200mg"
-    }
 
     const prescriptions = logs
       .filter((l: any) => l.eventType === 'prescription.created')
@@ -146,7 +136,8 @@ export async function getPrescriptions() {
           const medicineNames = medications.map((m: any) => `${m.name} (x${m.qty})`).join(', ')
 
           return {
-            id: payload.prescriptionId || payload.PrescriptionId || l.id,
+            id: l.id,
+            code: `PRC${String(payload.prescriptionId || payload.PrescriptionId || l.id).padStart(5, '0')}`,
             patient: `Bệnh nhân #${payload.patientId || payload.PatientId}`,
             medicine: medicineNames || 'Không rõ',
             medications: medications,
@@ -160,37 +151,148 @@ export async function getPrescriptions() {
       })
       .filter(Boolean)
 
-    if (prescriptions.length > 0) {
-      return prescriptions
-    }
+    return prescriptions
   } catch (err) {
     console.error('Failed to fetch prescriptions from backend:', err)
+    return []
   }
-
-  return [
-    { id: 1, patient: 'Nguyen Van A', medicine: 'Paracetamol', dosage: '2x/day', date: '2024-09-10' },
-    { id: 2, patient: 'Tran Thi B', medicine: 'Amoxicillin', dosage: '3x/day', date: '2024-09-11' }
-  ]
 }
 
 export async function createBill(bill: any) {
+  const patientId = parseInt(bill.patientCode?.replace(/\D/g, '')) || 1
+  const medicineFee = (bill.medicines || []).reduce((sum: number, m: any) => sum + (m.price || 0) * (m.qty || 0), 0)
+
+  const payload = {
+    patientId: patientId,
+    examinationFee: bill.consultFee || 0,
+    medicineFee: medicineFee,
+    totalAmount: (bill.consultFee || 0) + medicineFee,
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  }
+
+  const response = await pharmacyApi.post('/Bills', payload)
+  return response.data
+}
+
+export async function payBill(id: number) {
   try {
-    const patientId = parseInt(bill.patientCode?.replace(/\D/g, '')) || 1
-    const medicineFee = (bill.medicines || []).reduce((sum: number, m: any) => sum + m.price * m.qty, 0)
-
-    const payload = {
-      patientId: patientId,
-      examinationFee: bill.consultFee || 0,
-      medicineFee: medicineFee,
-      totalAmount: (bill.consultFee || 0) + medicineFee,
-      status: 'Pending',
-      createdAt: new Date().toISOString()
-    }
-
-    const response = await pharmacyApi.post('/Bills', payload)
-    return { success: true, billId: response.data?.id || Math.floor(Math.random() * 1000) + 200 }
+    const response = await pharmacyApi.post(`/Bills/${id}/pay`)
+    return response.data
   } catch (err) {
-    console.error('Failed to create bill in backend, using mock fallback:', err)
-    return { success: true, billId: Math.floor(Math.random() * 1000) + 200 }
+    console.error(`Failed to pay bill ${id}:`, err)
+    throw err
   }
 }
+
+
+export async function processPrescription(id: number) {
+  try {
+    const response = await pharmacyApi.post(`/Prescription/process/${id}`)
+    return response.data
+  } catch (err) {
+    console.error(`Failed to process prescription ${id}:`, err)
+    throw err
+  }
+}
+
+// Supplier Management Services
+export async function getSuppliers() {
+  try {
+    const response = await pharmacyApi.get('/Suppliers')
+    return response.data || []
+  } catch (err) {
+    console.error('Failed to fetch suppliers from backend:', err)
+    return []
+  }
+}
+
+export async function createSupplier(supplier: any) {
+  try {
+    const response = await pharmacyApi.post('/Suppliers', {
+      code: supplier.code,
+      name: supplier.name,
+      phone: supplier.phone || '',
+      email: supplier.email || '',
+      address: supplier.address || '',
+      group: supplier.group || 'Dược phẩm',
+      status: supplier.status || 'active',
+      createdDate: supplier.createdDate || new Date().toISOString()
+    })
+    return response.data
+  } catch (err) {
+    console.error('Failed to create supplier in backend:', err)
+    throw err
+  }
+}
+
+export async function updateSupplier(id: number, supplier: any) {
+  try {
+    const response = await pharmacyApi.put(`/Suppliers/${id}`, {
+      id: id,
+      code: supplier.code,
+      name: supplier.name,
+      phone: supplier.phone || '',
+      email: supplier.email || '',
+      address: supplier.address || '',
+      group: supplier.group || 'Dược phẩm',
+      status: supplier.status || 'active',
+      createdDate: supplier.createdDate || new Date().toISOString()
+    })
+    return response.data
+  } catch (err) {
+    console.error(`Failed to update supplier ${id} in backend:`, err)
+    throw err
+  }
+}
+
+export async function deleteSupplier(id: number) {
+  try {
+    const response = await pharmacyApi.delete(`/Suppliers/${id}`)
+    return response.data
+  } catch (err) {
+    console.error(`Failed to delete supplier ${id} from backend:`, err)
+    throw err
+  }
+}
+
+export async function getImportBills() {
+  try {
+    const response = await pharmacyApi.get('/ImportBills')
+    return response.data || []
+  } catch (err) {
+    console.error('Failed to fetch import bills from backend:', err)
+    return []
+  }
+}
+
+export async function createImportBill(bill: any) {
+  try {
+    const response = await pharmacyApi.post('/ImportBills', {
+      supplierCode: bill.supplierCode,
+      supplierName: bill.supplierName,
+      date: bill.date || new Date().toISOString(),
+      creator: bill.creator || 'admin',
+      note: bill.note || '',
+      goodsTotal: bill.goodsTotal || 0,
+      discountTotal: bill.discountTotal || 0,
+      vatTotal: bill.vatTotal || 0,
+      finalTotal: bill.finalTotal || 0,
+      medications: (bill.medications || []).map((m: any) => ({
+        code: m.code,
+        name: m.name,
+        batch: m.batch,
+        expiryDate: m.expiryDate,
+        qty: m.qty,
+        unit: m.unit || 'Viên',
+        price: m.price,
+        total: m.price * m.qty
+      }))
+    })
+    return response.data
+  } catch (err) {
+    console.error('Failed to create import bill:', err)
+    throw err
+  }
+}
+

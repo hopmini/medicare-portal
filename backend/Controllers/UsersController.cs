@@ -70,5 +70,43 @@ namespace Gateway.Controllers
 
             return Ok(doctors);
         }
+
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileModel model)
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính người dùng!" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "Người dùng không tồn tại!" });
+            }
+
+            user.FullName = model.FullName;
+            user.Email = model.Email;
+
+            await _context.SaveChangesAsync();
+            
+            return Ok(new { 
+                message = "Cập nhật hồ sơ cá nhân thành công!", 
+                user = new { 
+                    user.Id, 
+                    user.Username, 
+                    user.FullName, 
+                    user.Email, 
+                    user.Role 
+                } 
+            });
+        }
+    }
+
+    public class UpdateProfileModel
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 }

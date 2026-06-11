@@ -126,6 +126,9 @@ export const medicalRecordService = {
     symptoms: string
     diagnosis: string
     notes?: string
+    appointmentId?: string
+    patientName?: string
+    gatewayPatientId?: number
   }): Promise<{ success: boolean; recordId?: string; message?: string }> {
     try {
       const response = await medicalApi.post('/MedicalRecords', data)

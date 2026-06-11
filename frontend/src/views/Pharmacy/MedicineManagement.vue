@@ -1,5 +1,245 @@
 <template>
-  <a-layout style="min-height: 100vh; background: #f8fafc;">
+  <!-- Inline wrapper for Dashboard integration -->
+  <div v-if="inline" style="background: transparent; padding: 0;">
+    <div style="font-size: 0.85rem; color: #64748b; font-weight: 500; margin-bottom: 24px;">
+      Quản lý danh mục thuốc, giá bán và tình trạng tồn kho trong hệ thống.
+    </div>
+
+    <!-- Metrics widgets row matching mockup exactly -->
+    <a-row :gutter="[20, 20]" style="margin-bottom: 24px;">
+      <a-col :xs="24" :sm="12" :md="6">
+        <div class="metric-widget shadow-light">
+          <div class="metric-icon-box" style="background: #e8f0fe; color: #0047AB;">
+            <i class="fas fa-capsules" />
+          </div>
+          <div class="metric-details">
+            <span class="metric-title">Tổng thuốc</span>
+            <div class="metric-number-wrapper">
+              <span class="metric-value" style="color: #0047AB;">{{ metrics.total }}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #10b981; font-weight: bold; margin-top: 2px;">
+              <i class="fas fa-arrow-up" /> 8 so với tháng trước
+            </div>
+          </div>
+        </div>
+      </a-col>
+
+      <a-col :xs="24" :sm="12" :md="6">
+        <div class="metric-widget shadow-light">
+          <div class="metric-icon-box" style="background: #ecfdf5; color: #10b981;">
+            <i class="fas fa-clipboard-check" />
+          </div>
+          <div class="metric-details">
+            <span class="metric-title">Đang hoạt động</span>
+            <div class="metric-number-wrapper">
+              <span class="metric-value" style="color: #10b981;">{{ metrics.active }}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #10b981; font-weight: bold; margin-top: 2px;">
+              <i class="fas fa-arrow-up" /> 6 so với tháng trước
+            </div>
+          </div>
+        </div>
+      </a-col>
+
+      <a-col :xs="24" :sm="12" :md="6">
+        <div class="metric-widget shadow-light">
+          <div class="metric-icon-box" style="background: #fffbeb; color: #ea580c;">
+            <i class="fas fa-exclamation-triangle" />
+          </div>
+          <div class="metric-details">
+            <span class="metric-title">Tồn kho thấp</span>
+            <div class="metric-number-wrapper">
+              <span class="metric-value" style="color: #ea580c;">{{ metrics.lowStock }}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #ea580c; font-weight: bold; margin-top: 2px;">
+              <i class="fas fa-arrow-up" /> 2 so với tháng trước
+            </div>
+          </div>
+        </div>
+      </a-col>
+
+      <a-col :xs="24" :sm="12" :md="6">
+        <div class="metric-widget shadow-light">
+          <div class="metric-icon-box" style="background: #fef2f2; color: #ef4444;">
+            <i class="fas fa-calendar-times" />
+          </div>
+          <div class="metric-details">
+            <span class="metric-title">Sắp hết hạn</span>
+            <div class="metric-number-wrapper">
+              <span class="metric-value" style="color: #ef4444;">{{ metrics.expired }}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #ef4444; font-weight: bold; margin-top: 2px;">
+              <i class="fas fa-arrow-down" /> 1 so với tháng trước
+            </div>
+          </div>
+        </div>
+      </a-col>
+    </a-row>
+
+    <!-- Filters card section -->
+    <a-card :bordered="false" style="border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.01); border: 1px solid #e2e8f0; margin-bottom: 24px;">
+      <a-row :gutter="[16, 16]" align="middle">
+        <a-col :xs="24" :sm="6">
+          <a-input-search 
+            v-model:value="search" 
+            placeholder="Tìm kiếm theo mã, tên thuốc, hoạt chất..." 
+            allow-clear 
+            @search="onSearch"
+          />
+        </a-col>
+        <a-col :xs="12" :sm="4">
+          <a-select v-model:value="statusFilter" style="width: 100%;">
+            <a-select-option value="all">Tất cả trạng thái</a-select-option>
+            <a-select-option value="active">Hoạt động</a-select-option>
+            <a-select-option value="lowStock">Tồn kho thấp</a-select-option>
+            <a-select-option value="inactive">Ngừng hoạt động</a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :xs="12" :sm="4">
+          <a-select v-model:value="unitFilter" style="width: 100%;">
+            <a-select-option value="all">Tất cả đơn vị</a-select-option>
+            <a-select-option value="Viên">Viên</a-select-option>
+            <a-select-option value="Chai">Chai</a-select-option>
+            <a-select-option value="Hộp">Hộp</a-select-option>
+            <a-select-option value="Vỉ">Vỉ</a-select-option>
+            <a-select-option value="Tuýp">Tuýp</a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :xs="24" :sm="6">
+          <a-range-picker 
+            :placeholder="['Từ ngày', 'Đến ngày']" 
+            style="width: 100%;" 
+          />
+        </a-col>
+        <a-col :xs="24" :sm="4" style="display: flex; gap: 8px; justify-content: flex-end;">
+          <a-button style="border-radius: 6px; font-weight: 600; color: #596780;">
+            <i class="fas fa-filter" /> Bộ lọc
+          </a-button>
+          <a-button 
+            type="primary" 
+            style="background-color: #0047AB; border-color: #0047AB; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 6px;" 
+            @click="openModal('add')"
+          >
+            <i class="fas fa-plus" /> Thêm thuốc
+          </a-button>
+        </a-col>
+      </a-row>
+
+      <!-- Medicines Table -->
+      <a-spin :spinning="loading">
+        <a-table 
+          :columns="columns" 
+          :data-source="filteredMedicines" 
+          row-key="id" 
+          :pagination="paginationConfig" 
+          style="margin-top: 20px"
+          class="custom-table"
+          size="middle"
+        >
+          <!-- Info left pagination slot -->
+          <template #footer>
+            <div style="font-size: 0.85rem; color: #596780;">
+              Hiển thị <b>1</b> đến <b>{{ filteredMedicines.length }}</b> của <b>{{ filteredMedicines.length }}</b> thuốc
+            </div>
+          </template>
+
+          <template #bodyCell="{ text, record, column }">
+            <!-- Custom status tags matching image styling -->
+            <template v-if="column.key === 'status'">
+              <a-tag :color="getStatusTagColor(record.status)" style="font-weight: 700; border-radius: 4px;">
+                {{ getStatusText(record.status) }}
+              </a-tag>
+            </template>
+
+            <!-- Stock color codes -->
+            <template v-else-if="column.key === 'stock'">
+              <span :style="{ color: getStockColor(record.stock), fontWeight: '750' }">
+                {{ record.stock }}
+              </span>
+            </template>
+
+            <!-- Price localized formatting -->
+            <template v-else-if="column.key === 'price'">
+              <span>{{ record.price.toLocaleString() }} đ</span>
+            </template>
+
+            <!-- Action buttons -->
+            <template v-else-if="column.key === 'action'">
+              <a-space>
+                <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết">
+                  <i class="far fa-eye" />
+                </a-button>
+                <a-button type="link" style="color: #0047AB; padding: 0;" title="Sửa" @click="openModal('edit', record)">
+                  <i class="far fa-edit" />
+                </a-button>
+                <a-popconfirm title="Bạn chắc chắn muốn xóa thuốc này?" ok-text="Xóa" cancel-text="Hủy" @confirm="handleDelete(record.id)">
+                  <a-button type="link" danger style="padding: 0;" title="Xóa">
+                    <i class="far fa-trash-alt" />
+                  </a-button>
+                </a-popconfirm>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
+      </a-spin>
+    </a-card>
+
+    <!-- Modal Form (Add / Edit Medicine) -->
+    <a-modal 
+      v-model:visible="visible" 
+      :title="modalTitle" 
+      @ok="handleOk" 
+      @cancel="resetForm" 
+      ok-text="Lưu lại" 
+      cancel-text="Hủy"
+      style="border-radius: 8px;"
+    >
+      <a-form :model="form" layout="vertical">
+        <a-form-item label="Tên thuốc" required>
+          <a-input v-model:value="form.name" placeholder="VD: Paracetamol 500mg" />
+        </a-form-item>
+        
+        <a-form-item label="Hoạt chất chính" required>
+          <a-input v-model:value="form.activeIngredient" placeholder="VD: Paracetamol" />
+        </a-form-item>
+
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Đơn vị tính" required>
+              <a-select v-model:value="form.unit" style="width: 100%;">
+                <a-select-option value="Viên">Viên</a-select-option>
+                <a-select-option value="Chai">Chai</a-select-option>
+                <a-select-option value="Hộp">Hộp</a-select-option>
+                <a-select-option value="Vỉ">Vỉ</a-select-option>
+                <a-select-option value="Tuýp">Tuýp</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Giá bán (VNĐ)" required>
+              <a-input-number v-model:value="form.price" :min="0" style="width: 100%" placeholder="1500" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item :label="isEdit ? 'Số lượng tồn (Chỉ đọc)' : 'Số lượng tồn ban đầu'">
+              <a-input-number v-model:value="form.stock" :min="0" style="width: 100%" :disabled="isEdit" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Hạn sử dụng">
+              <a-date-picker v-model:value="form.expiryDate" style="width: 100%" placeholder="Chọn ngày" format="DD/MM/YYYY" value-format="YYYY-MM-DD" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-modal>
+  </div>
+
+  <!-- Standard layout for Pharmacist/Standalone routing -->
+  <a-layout v-else style="min-height: 100vh; background: #f8fafc;">
     <!-- Sider / Sidebar -->
     <a-layout-sider width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
       <PharmacySidebar />
@@ -117,7 +357,7 @@
             </a-col>
             <a-col :xs="24" :sm="6">
               <a-range-picker 
-                placeholder="['Từ ngày', 'Đến ngày']" 
+                :placeholder="['Từ ngày', 'Đến ngày']" 
                 style="width: 100%;" 
               />
             </a-col>
@@ -236,8 +476,8 @@
 
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="Số lượng tồn ban đầu">
-              <a-input-number v-model:value="form.stock" :min="0" style="width: 100%" />
+            <a-form-item :label="isEdit ? 'Số lượng tồn (Chỉ đọc)' : 'Số lượng tồn ban đầu'">
+              <a-input-number v-model:value="form.stock" :min="0" style="width: 100%" :disabled="isEdit" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -263,7 +503,16 @@ import {
   updateMedicine, 
   deleteMedicine 
 } from '@/services/pharmacyService'
-import { MEDICINE_FALLBACK } from '@/data/sharedPharmacyData'
+
+const props = withDefaults(
+  defineProps<{
+    inline?: boolean
+  }>(),
+  {
+    inline: false
+  }
+)
+
 
 interface Medicine {
   id: number;
@@ -409,31 +658,11 @@ async function loadMedicines() {
         }
       })
     } else {
-      throw new Error('No medicines returned from backend')
     }
   } catch (err) {
     console.error(err)
-    message.error('Không kết nối được với cơ sở dữ liệu, sử dụng dữ liệu mặc định!')
-    medicines.value = MEDICINE_FALLBACK.map((m: any, idx: number) => {
-      let status: 'active' | 'lowStock' | 'inactive' = 'active'
-      if (m.stockQuantity <= 10) {
-        status = 'lowStock'
-      } else if (idx === 7) {
-        status = 'inactive'
-      }
-      return {
-        id: m.id,
-        code: m.code,
-        name: m.name,
-        activeIngredient: 'N/A',
-        unit: m.unit,
-        price: m.price,
-        stock: m.stockQuantity,
-        batches: m.stockQuantity > 0 ? Math.floor(Math.random() * 3) + 1 : 0,
-        status: status,
-        createdDate: '12/03/2025'
-      }
-    })
+    message.error('Không kết nối được với cơ sở dữ liệu!')
+    medicines.value = []
   } finally {
     loading.value = false
   }

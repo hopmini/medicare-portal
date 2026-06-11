@@ -179,6 +179,7 @@
   import { computed, onMounted, ref } from 'vue'
   import Navbar from '@/components/Navbar.vue'
   import { useAuthStore } from '@/stores/authStore'
+  import api, { publicApi } from '@/services/api'
 
   const authStore = useAuthStore()
   const activeSubTab = ref('info')
@@ -264,18 +265,25 @@
 
   async function submitUpdateInfo () {
     submittingInfo.value = true
-    setTimeout(() => {
-      submittingInfo.value = false
-      const u = authStore.user.value
-      if (u) {
-        u.fullName = profileForm.value.fullName
-        u.email = profileForm.value.email
-        u.phoneNumber = profileForm.value.phoneNumber
-        u.address = profileForm.value.address
-        localStorage.setItem('user', JSON.stringify(u))
+    try {
+      const response = await api.put('/Users/profile', {
+        fullName: profileForm.value.fullName,
+        email: profileForm.value.email
+      })
+      if (authStore.user.value) {
+        authStore.user.value = {
+          ...authStore.user.value,
+          fullName: profileForm.value.fullName,
+          email: profileForm.value.email
+        }
+        localStorage.setItem('user', JSON.stringify(authStore.user.value))
       }
-      alert('Cập nhật hồ sơ cá nhân thành công! (Dữ liệu đã được đồng bộ liên thông)')
-    }, 800)
+      alert(response.data?.message || 'Cập nhật hồ sơ cá nhân thành công! (Dữ liệu đã được đồng bộ liên thông)')
+    } catch (e) {
+      alert('Lỗi cập nhật hồ sơ cá nhân: ' + (e.response?.data?.message || e.message))
+    } finally {
+      submittingInfo.value = false
+    }
   }
 
   async function submitChangePassword () {
@@ -284,11 +292,18 @@
       return
     }
     submittingPassword.value = true
-    setTimeout(() => {
-      submittingPassword.value = false
-      alert('Đổi mật khẩu bảo mật thành công! Vui lòng ghi nhớ mật khẩu mới.')
+    try {
+      const response = await publicApi.post('/auth/change-password', {
+        currentPassword: securityForm.value.currentPassword,
+        newPassword: securityForm.value.newPassword
+      })
+      alert(response.data?.message || 'Đổi mật khẩu bảo mật thành công! Vui lòng ghi nhớ mật khẩu mới.')
       securityForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-    }, 800)
+    } catch (e) {
+      alert('Lỗi đổi mật khẩu: ' + (e.response?.data?.message || e.message))
+    } finally {
+      submittingPassword.value = false
+    }
   }
 
   onMounted(() => {
