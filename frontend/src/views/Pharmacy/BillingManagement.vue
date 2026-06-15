@@ -1,8 +1,8 @@
 <template>
   <a-layout :style="inline ? 'background: transparent; min-height: auto;' : 'min-height: 100vh; background: #f8fafc;'">
-    <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9;">
-      <PharmacySidebar />
-    </a-layout-sider>
+      <a-layout-sider v-if="!inline" width="260" theme="light" style="background: #ffffff; border-right: 1px solid #f0f4f9; flex-shrink: 0;">
+        <PharmacySidebar />
+      </a-layout-sider>
     
     <a-layout :style="inline ? 'background: transparent;' : 'background: #f8fafc;'">
       <AppHeader v-if="!inline" :title="viewMode === 'list' ? 'Hóa đơn bán thuốc' : createTitle" />
@@ -118,7 +118,7 @@
           </div>
 
           <!-- Main Table -->
-          <a-card :bordered="false" class="main-card" style="overflow: hidden;">
+          <a-card :bordered="false" class="main-card" style="overflow-x: auto;">
             <a-spin :spinning="loading">
             <a-empty v-if="!loading && filteredBills.length === 0" description="Không có hóa đơn nào" />
             <a-table v-if="filteredBills.length > 0"
@@ -742,15 +742,15 @@ const cancelledBillsTotal = computed(() => cancelledBills.value.reduce((s, b) =>
 const bills = ref<BillItem[]>([]);
 
 const columns = [
-  { title: 'Mã hóa đơn', dataIndex: 'code', key: 'code', width: 160, sorter: (a: any, b: any) => a.code.localeCompare(b.code) },
-  { title: 'Loại hóa đơn', dataIndex: 'billType', key: 'billType', width: 150, filters: [{ text: 'Theo đơn bác sĩ', value: 'prescription' }, { text: 'Ngoài đơn', value: 'otc' }, { text: 'Tổng hợp', value: 'combined' }], onFilter: (value: string, record: any) => record.billType === value },
-  { title: 'Bệnh nhân', dataIndex: 'patientName', key: 'patient', sorter: (a: any, b: any) => a.patientName.localeCompare(b.patientName) },
+  { title: 'Mã hóa đơn', dataIndex: 'code', key: 'code', width: 150, sorter: (a: any, b: any) => a.code.localeCompare(b.code) },
+  { title: 'Loại hóa đơn', dataIndex: 'billType', key: 'billType', width: 140, filters: [{ text: 'Theo đơn bác sĩ', value: 'prescription' }, { text: 'Ngoài đơn', value: 'otc' }, { text: 'Tổng hợp', value: 'combined' }], onFilter: (value: string, record: any) => record.billType === value },
+  { title: 'Bệnh nhân', dataIndex: 'patientName', key: 'patient', width: 220, sorter: (a: any, b: any) => a.patientName.localeCompare(b.patientName) },
   { title: 'Ngày lập', key: 'createdDate', width: 130, sorter: (a: any, b: any) => { const dA = a.createdDate.split('/').reverse().join('') + a.createdTime.replace(':', ''); const dB = b.createdDate.split('/').reverse().join('') + b.createdTime.replace(':', ''); return dA.localeCompare(dB); } },
   { title: 'Tổng Tiền', dataIndex: 'total', key: 'total', width: 130, align: 'right' as const, sorter: (a: any, b: any) => a.total - b.total },
-  { title: 'Trạng thái thanh toán', dataIndex: 'payStatus', key: 'payStatus', width: 170, align: 'center' as const, filters: [{ text: 'Đã thanh toán', value: 'paid' }, { text: 'Chờ thanh toán', value: 'pending' }, { text: 'Đã hủy', value: 'cancelled' }], onFilter: (value: string, record: any) => record.payStatus === value },
-  { title: 'Trạng thái HĐ', dataIndex: 'billStatus', key: 'billStatus', width: 150, align: 'center' as const, filters: [{ text: 'Hoàn tất', value: 'completed' }, { text: 'Chờ thanh toán', value: 'pending' }, { text: 'Đã hủy', value: 'cancelled' }], onFilter: (value: string, record: any) => record.billStatus === value },
-  { title: 'Thanh toán bởi', dataIndex: 'paidBy', key: 'paidBy', width: 140, filters: [{ text: 'Lê Thị Mai', value: 'Lê Thị Mai' }, { text: 'Nguyễn Văn D', value: 'Nguyễn Văn D' }, { text: 'Chưa thanh toán', value: '' }], onFilter: (value: string, record: any) => record.paidBy === value },
-  { title: 'Thao tác', key: 'actions', width: 140, align: 'center' as const, fixed: 'right' as const }
+  { title: 'Trạng thái thanh toán', dataIndex: 'payStatus', key: 'payStatus', width: 160, align: 'center' as const, filters: [{ text: 'Đã thanh toán', value: 'paid' }, { text: 'Chờ thanh toán', value: 'pending' }, { text: 'Đã hủy', value: 'cancelled' }], onFilter: (value: string, record: any) => record.payStatus === value },
+  { title: 'Trạng thái HĐ', dataIndex: 'billStatus', key: 'billStatus', width: 140, align: 'center' as const, filters: [{ text: 'Hoàn tất', value: 'completed' }, { text: 'Chờ thanh toán', value: 'pending' }, { text: 'Đã hủy', value: 'cancelled' }], onFilter: (value: string, record: any) => record.billStatus === value },
+  { title: 'Thanh toán bởi', dataIndex: 'paidBy', key: 'paidBy', width: 130, filters: [{ text: 'Lê Thị Mai', value: 'Lê Thị Mai' }, { text: 'Nguyễn Văn D', value: 'Nguyễn Văn D' }, { text: 'Chưa thanh toán', value: '' }], onFilter: (value: string, record: any) => record.paidBy === value },
+  { title: 'Thao tác', key: 'actions', width: 130, align: 'center' as const, fixed: 'right' as const }
 ];
 
 const filteredBills = computed(() => {
@@ -924,15 +924,17 @@ function addOtcDrug() {
   const med = allMedicines.value.find(m => m.id === selectedOtcMedicineId.value);
   if (!med) return;
   
-  const existing = otcDrugs.value.find(d => d.id === med.id);
-  if (existing) {
-    if (existing.qty < med.stock) {
-      existing.qty++;
+  const idx = otcDrugs.value.findIndex(d => d.id === med.id);
+  if (idx >= 0) {
+    if (otcDrugs.value[idx].qty < med.stock) {
+      const updated = [...otcDrugs.value];
+      updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1 };
+      otcDrugs.value = updated;
     } else {
       notif.show({ type: 'warning', message: 'Số lượng vượt quá tồn kho!' });
     }
   } else {
-    otcDrugs.value.push({
+    otcDrugs.value = [...otcDrugs.value, {
       id: med.id,
       name: med.name,
       form: med.unit || 'Viên',
@@ -941,7 +943,7 @@ function addOtcDrug() {
       qty: 1,
       price: med.price,
       stock: med.stock || 100
-    });
+    }];
   }
   selectedOtcMedicineId.value = undefined;
 }
@@ -1124,11 +1126,13 @@ function addComboDrug() {
   const med = allMedicines.value.find(m => m.id === selectedComboMedicineId.value);
   if (!med) return;
   
-  const existing = comboOtcDrugs.value.find(d => d.id === med.id);
-  if (existing) {
-    existing.qty++;
+  const idx = comboOtcDrugs.value.findIndex(d => d.id === med.id);
+  if (idx >= 0) {
+    const updated = [...comboOtcDrugs.value];
+    updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1 };
+    comboOtcDrugs.value = updated;
   } else {
-    comboOtcDrugs.value.push({
+    comboOtcDrugs.value = [...comboOtcDrugs.value, {
       id: med.id,
       name: med.name,
       form: med.unit || 'Viên',
@@ -1136,7 +1140,7 @@ function addComboDrug() {
       qty: 1,
       price: med.price,
       stock: med.stock || 100
-    });
+    }];
   }
   selectedComboMedicineId.value = undefined;
 }
@@ -1326,7 +1330,6 @@ onMounted(async () => {
 <style scoped>
 :deep(.ant-card) {
   border-radius: 12px;
-  overflow: hidden;
 }
 
 :deep(.ant-table-thead > tr > th) {

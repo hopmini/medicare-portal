@@ -137,7 +137,7 @@ export async function getPrescriptions() {
 
           return {
             id: l.id,
-            code: `PRC${String(payload.prescriptionId || payload.PrescriptionId || l.id).padStart(5, '0')}`,
+            code: `PRC${String(l.id).padStart(5, '0')}`,
             patient: `Bệnh nhân #${payload.patientId || payload.PatientId}`,
             medicine: medicineNames || 'Không rõ',
             medications: medications,

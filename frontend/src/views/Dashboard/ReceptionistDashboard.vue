@@ -387,7 +387,7 @@
               <tr v-for="bill in filteredBills" :key="bill.id">
                 <td>
                   <code style="font-family: monospace; font-weight: 800; color: #0047AB; font-size: 0.9rem;">
-                    #INV-${String(bill.id).padStart(5, '0')}
+                    #INV-{{ String(bill.id).toString().padStart(5, '0') }}
                   </code>
                 </td>
                 <td style="text-align: left; font-weight: 700;">

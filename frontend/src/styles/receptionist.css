@@ -53,7 +53,7 @@ body {
    SIDEBAR
 ───────────────────────────────────────────── */
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: white;
   border-right: 1px solid var(--gray-200);
   display: flex;
@@ -123,7 +123,7 @@ body {
 ───────────────────────────────────────────── */
 .main-content {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 280px;
 }
 
 .top-bar {
@@ -243,7 +243,6 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid var(--gray-200);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 
 .section-header {
@@ -279,12 +278,7 @@ body {
   white-space: nowrap;
 }
 
-/* Column widths */
-.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 90px; } /* Mã đơn */
-.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 140px; } /* Thời gian */
-.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 60px; text-align: center; } /* STT */
-.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 110px; } /* Trạng thái */
-.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 60px; text-align: center; } /* Thao tác */
+/* Column widths (appointments table uses inline widths) */
 
 .data-table td {
   padding: 0.75rem 1rem;
@@ -552,7 +546,6 @@ body {
   border-radius: 16px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.02);
   border: 1px solid #e2e8f0;
-  overflow: hidden;
 }
 
 .table-card__header {

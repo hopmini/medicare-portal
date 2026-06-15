@@ -569,8 +569,8 @@ const filteredImportBills = computed(() => {
   return importBills.value.filter(bill => {
     // Search query matches code or supplier name
     const matchesSearch = 
-      bill.code.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      bill.supplierName.toLowerCase().includes(searchQuery.value.toLowerCase())
+      (bill.code || '').toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (bill.supplierName || '').toLowerCase().includes(searchQuery.value.toLowerCase())
     
     // Status matches
     const matchesStatus = filterStatus.value === 'all' || bill.status === filterStatus.value

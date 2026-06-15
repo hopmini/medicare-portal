@@ -327,6 +327,7 @@ onMounted(updateActiveKeys)
 .menu-container {
   flex-grow: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 8px;
 }
 
@@ -343,6 +344,17 @@ onMounted(updateActiveKeys)
   color: #596780;
   font-weight: 500;
   font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-nav-menu :deep(.ant-menu-item a) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 
 .custom-nav-menu :deep(.ant-menu-item-selected) {
