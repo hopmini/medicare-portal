@@ -139,6 +139,7 @@ export async function getPrescriptions() {
             id: l.id,
             code: `PRC${String(l.id).padStart(5, '0')}`,
             patient: `Bệnh nhân #${payload.patientId || payload.PatientId}`,
+            doctorName: payload.doctorName || payload.DoctorName || '',
             medicine: medicineNames || 'Không rõ',
             medications: medications,
             dosage: 'Theo chỉ định bác sĩ',
@@ -164,6 +165,7 @@ export async function createBill(bill: any) {
 
   const payload = {
     patientId: patientId,
+    doctorName: bill.doctorName || '',
     examinationFee: bill.consultFee || 0,
     medicineFee: medicineFee,
     totalAmount: (bill.consultFee || 0) + medicineFee,

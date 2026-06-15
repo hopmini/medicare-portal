@@ -317,11 +317,14 @@
 
                 <h4 class="section-label">Thông tin khách hàng (nếu có)</h4>
                 <a-row :gutter="12" style="margin-bottom: 10px;">
-                  <a-col :span="12">
+                  <a-col :span="8">
                     <a-input v-model:value="otcCustomer.name" placeholder="Nhập họ tên" size="small" />
                   </a-col>
-                  <a-col :span="12">
+                  <a-col :span="8">
                     <a-input v-model:value="otcCustomer.phone" placeholder="Nhập số điện thoại" size="small" />
+                  </a-col>
+                  <a-col :span="8">
+                    <a-input v-model:value="otcCustomer.doctor" placeholder="Bác sĩ kê (nếu có)" size="small" />
                   </a-col>
                 </a-row>
                 <a-input v-model:value="otcCustomer.address" placeholder="Nhập địa chỉ" size="small" style="margin-bottom: 8px;" />
@@ -420,11 +423,14 @@
 
                 <h4 class="section-label">Thông tin khách hàng</h4>
                 <a-row :gutter="12" style="margin-bottom: 10px;">
-                  <a-col :span="12">
+                  <a-col :span="8">
                     <a-input v-model:value="comboCustomer.name" placeholder="Nhập họ tên" size="small" />
                   </a-col>
-                  <a-col :span="12">
+                  <a-col :span="8">
                     <a-input v-model:value="comboCustomer.phone" placeholder="Nhập số điện thoại" size="small" />
+                  </a-col>
+                  <a-col :span="8">
+                    <a-input v-model:value="comboCustomer.doctor" placeholder="Bác sĩ kê" size="small" />
                   </a-col>
                 </a-row>
                 <a-input v-model:value="comboCustomer.address" placeholder="Nhập địa chỉ" size="small" style="margin-bottom: 14px;" />
@@ -860,6 +866,7 @@ async function submitRxBill() {
   try {
     const newBill = await createBill({
       patientCode: patientIdStr,
+      doctorName: rx.doctor || 'Bác sĩ điều trị',
       consultFee: 0,
       medicines: rxDrugs.value.map(d => ({
         price: d.price,
@@ -890,7 +897,7 @@ async function submitRxBill() {
 }
 
 // ===================== COLUMN 2: Tạo hóa đơn ngoài đơn =====================
-const otcCustomer = ref({ name: '', phone: '', address: '' });
+const otcCustomer = ref({ name: '', phone: '', address: '', doctor: '' });
 const otcIsWalkIn = ref(false);
 const selectedOtcMedicineId = ref<number | undefined>(undefined);
 const otcNote = ref('');
@@ -955,7 +962,8 @@ async function submitOtcBill() {
   }
   try {
     const newBill = await createBill({
-      patientCode: '5', // Walk-in default patient id
+      patientCode: '5',
+      doctorName: otcCustomer.value.doctor,
       consultFee: 0,
       medicines: otcDrugs.value.map(d => ({
         price: d.price,
@@ -974,7 +982,7 @@ async function submitOtcBill() {
     }
     notif.show({ type: 'success', message: 'Đã tạo hóa đơn ngoài đơn thành công!' });
     await loadData();
-    otcCustomer.value = { name: '', phone: '', address: '' };
+    otcCustomer.value = { name: '', phone: '', address: '', doctor: '' };
     otcIsWalkIn.value = false;
     otcDrugs.value = [];
     otcNote.value = '';
@@ -988,7 +996,7 @@ async function submitOtcBill() {
 }
 
 // ===================== COLUMN 3: Tạo hóa đơn tổng hợp =====================
-const comboCustomer = ref({ name: '', phone: '', address: '' });
+const comboCustomer = ref({ name: '', phone: '', address: '', doctor: '' });
 const comboTab = ref('rx');
 const comboSelectedRx = ref<string | undefined>(undefined);
 const selectedComboMedicineId = ref<number | undefined>(undefined);
@@ -1183,6 +1191,7 @@ async function submitComboBill() {
   try {
     const newBill = await createBill({
       patientCode: '5',
+      doctorName: comboCustomer.value.doctor,
       consultFee: 150000,
       medicines: combinedMeds
     });
@@ -1212,7 +1221,7 @@ async function submitComboBill() {
     }
     notif.show({ type: 'success', message: 'Đã tạo hóa đơn tổng hợp thành công!' });
     await loadData();
-    comboCustomer.value = { name: '', phone: '', address: '' };
+    comboCustomer.value = { name: '', phone: '', address: '', doctor: '' };
     comboRxList.value = [];
     comboOtcDrugs.value = [];
     comboNote.value = '';
@@ -1235,8 +1244,11 @@ async function loadData() {
   }
   const patientMap = new Map<string, any>();
   patientsData.forEach((p: any) => {
-    if (p.id || p.Id) {
-      patientMap.set(String(p.id || p.Id).toLowerCase(), p);
+    const id = String(p.id || p.Id).toLowerCase();
+    patientMap.set(id, p);
+    const gid = p.gatewayPatientId ?? p.GatewayPatientId;
+    if (gid != null) {
+      patientMap.set(mapUserIdToGuid(String(gid)), p);
     }
   });
 
