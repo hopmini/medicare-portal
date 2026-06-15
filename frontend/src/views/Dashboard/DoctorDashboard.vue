@@ -934,7 +934,13 @@
     const m = new Map()
     patientsList.value.forEach(p => {
       const pId = p.id || p.Id;
-      if (pId) m.set(String(pId).toLowerCase(), p)
+      if (pId) {
+        m.set(String(pId).toLowerCase(), p)
+        const gid = p.gatewayPatientId ?? p.GatewayPatientId;
+        if (gid != null) {
+          m.set(mapUserIdToGuid(String(gid)), p)
+        }
+      }
     })
     return m
   })
