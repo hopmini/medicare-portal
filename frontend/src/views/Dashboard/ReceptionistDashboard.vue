@@ -134,11 +134,6 @@
 
       <!-- PAGE CONTAINER -->
       <div class="page-container">
-        <div class="page-header" style="text-align: left;">
-          <h1 class="page-title">Cổng Tiếp Tân</h1>
-          <p class="page-subtitle">Chào buổi sáng! Hệ thống đã sẵn sàng xử lý dữ liệu thực.</p>
-        </div>
-
         <!-- STATS GRID -->
         <div class="stats-grid">
           <div class="stat-card stat-card--blue">
@@ -874,9 +869,10 @@
   })
 </script>
 
-<style scoped>
+<style>
 @import '@/styles/receptionist.css';
-
+</style>
+<style scoped>
 /* Snug Table actions */
 .action-cell-row {
   display: flex;

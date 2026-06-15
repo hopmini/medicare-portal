@@ -778,16 +778,17 @@ const prescriptionList = ref<any[]>([]);
 const allMedicines = ref<any[]>([]);
 
 function getMedicinePrice(name: string): number {
-  const med = allMedicines.value.find(m => m.name.toLowerCase() === name.toLowerCase());
+  const q = name.toLowerCase();
+  const med = allMedicines.value.find(m => m.name.toLowerCase() === q || m.name.toLowerCase().includes(q) || q.includes(m.name.toLowerCase()));
   return med ? med.price : 1500;
 }
 
 function getMedicineUnit(name: string): string {
-  const med = allMedicines.value.find(m => m.name.toLowerCase() === name.toLowerCase());
+  const q = name.toLowerCase();
+  const med = allMedicines.value.find(m => m.name.toLowerCase() === q || m.name.toLowerCase().includes(q) || q.includes(m.name.toLowerCase()));
   if (med) return med.unit;
-  const lowercaseName = name.toLowerCase();
-  if (lowercaseName.includes('oresol') || lowercaseName.includes('gaviscon')) return 'Gói';
-  if (lowercaseName.includes('syrup')) return 'Chai';
+  if (q.includes('oresol') || q.includes('gaviscon')) return 'Gói';
+  if (q.includes('syrup') || q.includes('nacl') || q.includes('dịch')) return 'Chai';
   return 'Viên';
 }
 

@@ -5,10 +5,32 @@
     </a-layout-sider>
 
     <a-layout style="background: #f8fafc;">
-      <AppHeader title="Hóa đơn của tôi" welcome="Xem và quản lý các hóa đơn khám chữa bệnh của bạn." />
+      <AppHeader title="Tra cứu Hóa đơn &amp; Thuốc" welcome="Xem hóa đơn khám chữa bệnh và đơn thuốc của bạn." />
 
       <a-layout-content style="padding: 24px 28px;">
 
+        <!-- Tab: Invoices / Prescriptions -->
+        <div class="mi-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+          <button
+            class="mi-tab"
+            :class="{ 'mi-tab--active': activeTab === 'invoices' }"
+            @click="activeTab = 'invoices'"
+          >
+            <i class="fas fa-file-invoice" style="margin-right: 6px;" />
+            Hóa đơn của tôi
+          </button>
+          <button
+            class="mi-tab"
+            :class="{ 'mi-tab--active': activeTab === 'prescriptions' }"
+            @click="activeTab = 'prescriptions'; loadPrescriptions()"
+          >
+            <i class="fas fa-prescription-bottle" style="margin-right: 6px;" />
+            Đơn thuốc của tôi
+          </button>
+        </div>
+
+        <!-- Invoices Tab -->
+        <template v-if="activeTab === 'invoices'">
         <!-- 4 Stat Cards -->
         <div class="mi-stats-row">
           <!-- Tổng hóa đơn -->
@@ -180,6 +202,61 @@
             </template>
           </a-table>
         </div>
+        </template>
+
+        <!-- Prescriptions Tab -->
+        <template v-if="activeTab === 'prescriptions'">
+          <div v-if="presLoading" class="mi-empty-state">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 12px;" />
+            <span>Đang tải đơn thuốc...</span>
+          </div>
+
+          <template v-else-if="prescriptions.length === 0">
+            <div class="mi-empty-state">
+              <i class="fas fa-prescription-bottle" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 12px;" />
+              <span style="font-weight: 700; font-size: 1.1rem; color: #64748b;">Không có đơn thuốc nào</span>
+              <span style="font-size: 0.85rem; color: #94a3b8;">Bạn chưa được kê đơn thuốc nào từ trước đến nay.</span>
+            </div>
+          </template>
+
+          <div v-else class="mi-pres-list">
+            <div v-for="(pres, idx) in prescriptions" :key="pres.id || idx" class="mi-pres-card">
+              <div class="mi-pres-header">
+                <div class="mi-pres-header-left">
+                  <i class="fas fa-prescription-bottle" style="color: #b91c1c;" />
+                  <span style="font-weight: 800; font-size: 1rem; color: #0f172a;">Đơn thuốc #{{ idx + 1 }}</span>
+                </div>
+                <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">
+                  {{ pres.prescribedAt ? formatDateTime(pres.prescribedAt) : '' }}
+                </span>
+              </div>
+
+              <div v-if="pres.instructions" class="mi-pres-instructions">
+                <i class="fas fa-info-circle" style="margin-right: 6px;" />
+                <strong>Lời dặn:</strong> {{ pres.instructions }}
+              </div>
+
+              <div class="mi-pres-meds">
+                <div v-for="(med, mIdx) in pres.details" :key="mIdx" class="mi-pres-med">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="mi-pres-med-name">{{ mIdx + 1 }}. {{ med.medicationName }}</span>
+                    <span class="mi-pres-med-qty">SL: {{ med.quantity }}</span>
+                  </div>
+                  <div class="mi-pres-med-dosage">
+                    <i class="far fa-clock" /> {{ med.dosage }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="mi-pres-footer">
+                <span style="font-size: 0.72rem; color: #94a3b8;">Bệnh viện quốc tế Medicare</span>
+                <span style="font-size: 0.75rem; font-weight: 700; color: #15803d;">
+                  <i class="fas fa-signature" /> Đã ký điện tử
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
 
       </a-layout-content>
     </a-layout>
@@ -287,6 +364,9 @@ import dayjs from 'dayjs';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { pharmacyApi } from '@/services/api';
+import { medicalRecordService } from '@/services/medicalRecordService';
+import { useAuthStore } from '@/stores/authStore';
+const authStore = useAuthStore();
 
 interface InvoiceDetailItem {
   id: number;
@@ -324,6 +404,36 @@ const pageSize = ref(8);
 const loading = ref(false);
 
 const allInvoices = ref<PatientInvoice[]>([]);
+
+// Prescriptions tab
+const activeTab = ref<'invoices' | 'prescriptions'>('invoices');
+const presLoading = ref(false);
+const prescriptions = ref<any[]>([]);
+
+async function loadPrescriptions() {
+  if (!authStore.user.value?.id) return;
+  presLoading.value = true;
+  try {
+    const records = await medicalRecordService.getRecordsByPatient(authStore.user.value.id);
+    const result: any[] = [];
+    (records || []).forEach(rec => {
+      if (rec.prescription && rec.prescription.details && rec.prescription.details.length > 0) {
+        result.push({
+          id: rec.prescription.id || rec.id,
+          instructions: rec.prescription.instructions,
+          prescribedAt: rec.prescription.prescribedAt || rec.createdAt,
+          details: rec.prescription.details
+        });
+      }
+    });
+    prescriptions.value = result;
+  } catch (err) {
+    console.error('Failed to load prescriptions:', err);
+    notif.show({ type: 'error', message: 'Không thể tải đơn thuốc.' });
+  } finally {
+    presLoading.value = false;
+  }
+}
 
 async function loadRealInvoices() {
   loading.value = true;
@@ -455,6 +565,12 @@ function handleTableChange(pagination: any) {
 }
 
 // Helpers
+function formatDateTime(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 function formatCurrency(val: number) {
   return val.toLocaleString('vi-VN') + ' đ';
 }
@@ -862,5 +978,135 @@ function downloadInvoice() {
   border-top: 1px solid #e2e8f0;
   padding-top: 8px;
   margin-top: 4px;
+}
+
+/* Prescriptions Tab */
+.mi-tab {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.mi-tab:hover {
+  border-color: #0047AB;
+  color: #0047AB;
+  background: #f8fafc;
+}
+.mi-tab--active {
+  background: #0047AB;
+  color: white;
+  border-color: #0047AB;
+}
+.mi-tab--active:hover {
+  background: #003685;
+  color: white;
+}
+
+.mi-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 6px;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.mi-pres-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mi-pres-card {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mi-pres-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #fff8f8;
+  border-bottom: 1px dashed #fca5a5;
+}
+
+.mi-pres-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mi-pres-instructions {
+  margin: 0 18px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #7f1d1d;
+}
+
+.mi-pres-meds {
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mi-pres-med {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mi-pres-med-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.mi-pres-med-qty {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #b91c1c;
+}
+
+.mi-pres-med-dosage {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mi-pres-footer {
+  padding: 10px 18px;
+  border-top: 1px dashed #fca5a5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
 }
 </style>
