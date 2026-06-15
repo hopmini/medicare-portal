@@ -37,7 +37,7 @@
           <tbody>
             <tr v-for="app in appointments" :key="app.id">
               <td>
-                <span class="ref-code">#{{ app.id.substring(0, 8).toUpperCase() }}</span>
+                <span class="ref-code">#{{ String(app.id || '').substring(0, 8).toUpperCase() }}</span>
               </td>
               <td class="font-bold text-dark">{{ app.serviceName }}</td>
               <td>
@@ -221,7 +221,7 @@
         const prevStatus = previousStatuses.value[app.id]
         if (!isInitial && prevStatus === 0 && app.status === 1) {
           hasApproved = true
-          approvedCode = app.id.substring(0, 8).toUpperCase()
+          approvedCode = String(app.id || '').substring(0, 8).toUpperCase()
         }
         previousStatuses.value[app.id] = app.status
       })
@@ -266,13 +266,13 @@
   }
   
   function getStatusText (s) {
-    const map = { 0: 'Chờ duyệt', 1: 'Đã duyệt', 2: 'Đã khám' }
-    return map[s] || 'Đã hủy'
+    const map = { 0: 'Chờ duyệt', 1: 'Đã duyệt', 2: 'Đã khám', 3: 'Đã hủy' }
+    return map[s] || 'Không xác định'
   }
   
   function getStatusClass (s) {
-    const map = { 0: 'status--pending', 1: 'status--confirmed', 2: 'status--completed' }
-    return map[s] || 'status--cancelled'
+    const map = { 0: 'status--pending', 1: 'status--confirmed', 2: 'status--completed', 3: 'status--cancelled' }
+    return map[s] || ''
   }
 
   // Dynamic parser for complex reason string

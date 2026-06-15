@@ -8,6 +8,7 @@ namespace Gateway.Models
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = "Patient"; // Patient, Receptionist, Doctor, Admin
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
     public class LoginModel

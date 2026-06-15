@@ -214,7 +214,7 @@
     </a-layout>
 
     <!-- Modal Form (Add/Edit User) -->
-    <a-modal v-model:visible="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
+    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
       <a-form :model="form" layout="vertical">
         <a-form-item label="Tên đăng nhập (Username)" required>
           <a-input v-model:value="form.username" placeholder="VD: namhq" :disabled="modalMode === 'edit'" />

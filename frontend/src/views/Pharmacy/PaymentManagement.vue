@@ -918,9 +918,12 @@ async function initBills() {
 
     const patientMap = new Map<string, any>();
     (patientsData || []).forEach((p: any) => {
-      if (p.id) {
-        patientMap.set(p.id.toLowerCase(), p);
-      }
+
+        const pId = p.id || p.Id;
+        if (pId) {
+          patientMap.set(String(pId).toLowerCase(), p);
+        }
+
     });
 
     payBills.value = (billsData || []).map((b: any, idx: number) => {
@@ -1115,7 +1118,9 @@ onMounted(() => {
   initBills();
   initTransactions();
 
-  // Sync initial tab from current route
+
+
+  if (props.inline) return;
   const initialTab = getTabFromRoute(route.path);
   if (initialTab === 'report' && !isAdmin.value) {
     activeTab.value = 'list';
@@ -1127,7 +1132,7 @@ onMounted(() => {
 
 // When tab changes, update the route
 watch(activeTab, (newTab) => {
-  const targetPath = getRouteFromTab(newTab);
+  if (props.inline) return; const targetPath = getRouteFromTab(newTab);
   if (route.path !== targetPath) {
     router.replace(targetPath);
   }
@@ -1135,7 +1140,7 @@ watch(activeTab, (newTab) => {
 
 // When route changes externally (e.g. sidebar navigation), sync tab
 watch(() => route.path, (newPath) => {
-  if (newPath.startsWith('/pharmacy/payments')) {
+  if (props.inline) return; if (newPath.startsWith('/pharmacy/payments')) {
     const mappedTab = getTabFromRoute(newPath);
     if (mappedTab === 'report' && !isAdmin.value) {
       router.replace('/pharmacy/payments/list');
@@ -1380,6 +1385,15 @@ function printInvoice(bill: any) {
 function printReceipt(tx: any) {
   message.success(`Đang gửi lệnh in biên nhận giao dịch ${tx.txCode}...`);
 }
+
+const customTableRow = (record: any) => {
+  return {
+    onClick: () => {
+      selectBill(record);
+    },
+    style: { cursor: 'pointer' }
+  };
+};
 </script>
 
 <style scoped>

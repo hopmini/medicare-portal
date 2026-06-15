@@ -1211,8 +1211,8 @@ async function loadData() {
   }
   const patientMap = new Map<string, any>();
   patientsData.forEach((p: any) => {
-    if (p.id) {
-      patientMap.set(p.id.toLowerCase(), p);
+    if (p.id || p.Id) {
+      patientMap.set(String(p.id || p.Id).toLowerCase(), p);
     }
   });
 

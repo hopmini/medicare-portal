@@ -72,6 +72,58 @@ using (var scope = app.Services.CreateScope())
         db.Database.EnsureCreated();
         Console.WriteLine("[Gateway-Auth] Centralized Identity Database ensured & seeded successfully!");
 
+        // Dynamically add CreatedAt column to Users/users table if it doesn't exist
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'Users') THEN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Users' AND column_name = 'CreatedAt') THEN
+                            ALTER TABLE ""Users"" ADD COLUMN ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                        END IF;
+                    END IF;
+
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users') THEN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'CreatedAt') THEN
+                            ALTER TABLE ""users"" ADD COLUMN ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                        END IF;
+                    END IF;
+                END $$;
+            ");
+            Console.WriteLine("[Gateway-Auth] Checked/Added CreatedAt column to Users/users table successfully!");
+        }
+        catch (Exception colEx)
+        {
+            Console.WriteLine($"[Gateway-Auth] Warning verifying/adding CreatedAt column: {colEx}");
+        }
+
+        // Schema Inspection helper to diagnose issues
+        try
+        {
+            var conn = db.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT table_name, column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' AND table_name IN ('Users', 'users')
+                ORDER BY table_name, column_name;";
+            
+            using var reader = await cmd.ExecuteReaderAsync();
+            Console.WriteLine("[Gateway-Auth] Database Schema Info (Users/users columns):");
+            while (await reader.ReadAsync())
+            {
+                Console.WriteLine($" - Table: {reader.GetString(0)}, Column: {reader.GetString(1)}, Type: {reader.GetString(2)}");
+            }
+        }
+        catch (Exception schemaEx)
+        {
+            Console.WriteLine($"[Gateway-Auth] Warning running schema inspection: {schemaEx.Message}");
+        }
+
         // Ensure all default users exist (seed data only works on fresh DB)
         await EnsureDefaultUsers(db);
     }

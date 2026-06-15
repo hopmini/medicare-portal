@@ -756,74 +756,85 @@ const totalSummary = computed(() => {
   }
 })
 
-function saveDraft() {
-  // Push draft into importBills list
-  const existingIdx = importBills.value.findIndex(b => b.code === invoice.value.code)
-  const newBill = {
-    code: invoice.value.code,
-    supplierCode: supplier.value.selected,
-    supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
-    date: invoice.value.date.format('DD/MM/YYYY'),
-    creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
-    goodsTotal: totalSummary.value.goodsTotal,
-    discountTotal: totalSummary.value.discountTotal,
-    vatTotal: totalSummary.value.vatTotal,
-    finalTotal: totalSummary.value.finalTotal,
-    status: 'draft',
-    medications: medicationRows.value.map(m => ({
-      code: m.code,
-      name: m.name,
-      batch: m.batch,
-      expiryDate: m.expiryDate ? m.expiryDate.format('DD/MM/YYYY') : '',
-      qty: m.qty,
-      unit: m.unit,
-      price: m.price
-    }))
+async function saveDraft() {
+  loading.value = true
+  try {
+    const payload = {
+      supplierCode: supplier.value.selected,
+      supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
+      date: invoice.value.date ? invoice.value.date.toISOString() : new Date().toISOString(),
+      creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
+      note: invoice.value.note || '',
+      goodsTotal: totalSummary.value.goodsTotal,
+      discountTotal: totalSummary.value.discountTotal,
+      vatTotal: totalSummary.value.vatTotal,
+      finalTotal: totalSummary.value.finalTotal,
+      status: 'draft',
+      medications: medicationRows.value.map(m => ({
+        code: m.code,
+        name: m.name,
+        batch: m.batch || 'LO01',
+        expiryDate: m.expiryDate ? m.expiryDate.toISOString() : new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
+        qty: m.qty,
+        unit: m.unit,
+        price: m.price
+      }))
+    }
+    await createImportBill(payload)
+    message.success('Đã lưu nháp phiếu nhập thuốc thành công!')
+    await loadImportBills()
+    viewMode.value = 'list'
+  } catch (err: any) {
+    message.error('Lỗi khi lưu phiếu nhập thuốc: ' + err.message)
+  } finally {
+    loading.value = false
   }
-
-  if (existingIdx !== -1) {
-    importBills.value[existingIdx] = newBill
-  } else {
-    importBills.value.unshift(newBill)
-  }
-
-  message.success('Đã lưu nháp phiếu nhập thuốc thành công!')
-  viewMode.value = 'list'
 }
 
-function submitImport() {
-  // Push completed bill to importBills list
-  const existingIdx = importBills.value.findIndex(b => b.code === invoice.value.code)
-  const newBill = {
-    code: invoice.value.code,
-    supplierCode: supplier.value.selected,
-    supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
-    date: invoice.value.date.format('DD/MM/YYYY'),
-    creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
-    goodsTotal: totalSummary.value.goodsTotal,
-    discountTotal: totalSummary.value.discountTotal,
-    vatTotal: totalSummary.value.vatTotal,
-    finalTotal: totalSummary.value.finalTotal,
-    status: 'completed',
-    medications: medicationRows.value.map(m => ({
-      code: m.code,
-      name: m.name,
-      batch: m.batch,
-      expiryDate: m.expiryDate ? m.expiryDate.format('DD/MM/YYYY') : '',
-      qty: m.qty,
-      unit: m.unit,
-      price: m.price
-    }))
+async function submitImport() {
+  if (medicationRows.value.length === 0) {
+    message.error('Vui lòng thêm ít nhất một sản phẩm thuốc!')
+    return
   }
-
-  if (existingIdx !== -1) {
-    importBills.value[existingIdx] = newBill
-  } else {
-    importBills.value.unshift(newBill)
+  for (const row of medicationRows.value) {
+    if (!row.code || !row.name) {
+      message.error('Vui lòng chọn thuốc đầy đủ cho tất cả các dòng!')
+      return
+    }
   }
-
-  message.success('Hoàn tất nhập kho và cập nhật số lượng tồn kho thành công!')
-  viewMode.value = 'list'
+  
+  loading.value = true
+  try {
+    const payload = {
+      supplierCode: supplier.value.selected,
+      supplierName: suppliersList.value.find(s => s.code === supplier.value.selected)?.name || '',
+      date: invoice.value.date ? invoice.value.date.toISOString() : new Date().toISOString(),
+      creator: invoice.value.creator === 'admin' ? 'Phạm Minh Đức' : 'Nguyễn Thị Hằng',
+      note: invoice.value.note || '',
+      goodsTotal: totalSummary.value.goodsTotal,
+      discountTotal: totalSummary.value.discountTotal,
+      vatTotal: totalSummary.value.vatTotal,
+      finalTotal: totalSummary.value.finalTotal,
+      status: 'completed',
+      medications: medicationRows.value.map(m => ({
+        code: m.code,
+        name: m.name,
+        batch: m.batch || 'LO01',
+        expiryDate: m.expiryDate ? m.expiryDate.toISOString() : new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
+        qty: m.qty,
+        unit: m.unit,
+        price: m.price
+      }))
+    }
+    await createImportBill(payload)
+    message.success('Hoàn tất nhập kho và cập nhật số lượng tồn kho thành công!')
+    await loadImportBills()
+    viewMode.value = 'list'
+  } catch (err: any) {
+    message.error('Lỗi khi hoàn tất nhập kho: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 function cancelImport() {

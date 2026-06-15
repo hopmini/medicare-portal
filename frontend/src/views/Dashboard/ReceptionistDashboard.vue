@@ -649,7 +649,8 @@
     switch (status) {
       case 0: return 'Chờ duyệt'
       case 1: return 'Đã duyệt'
-      case 2: return 'Đã hủy'
+      case 2: return 'Đã khám'
+      case 3: return 'Đã hủy'
       default: return 'Không xác định'
     }
   }
@@ -658,7 +659,8 @@
     switch (status) {
       case 0: return 'badge--pending'
       case 1: return 'badge--confirmed'
-      case 2: return 'badge--cancelled'
+      case 2: return 'badge--completed'
+      case 3: return 'badge--cancelled'
       default: return ''
     }
   }

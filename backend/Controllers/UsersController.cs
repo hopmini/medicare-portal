@@ -18,10 +18,39 @@ namespace Gateway.Controllers
             _context = context;
         }
 
+        private async Task EnsureCreatedAtColumnExists()
+        {
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    DO $$
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'Users') THEN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Users' AND column_name = 'CreatedAt') THEN
+                                ALTER TABLE ""Users"" ADD COLUMN ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                            END IF;
+                        END IF;
+
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users') THEN
+                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'CreatedAt') THEN
+                                ALTER TABLE ""users"" ADD COLUMN ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+                            END IF;
+                        END IF;
+                    END $$;
+                ");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Gateway-Auth Self-Heal] Failed to dynamically inject CreatedAt column: {ex.Message}");
+            }
+        }
+
         [HttpGet("patients")]
         [Authorize(Roles = "Admin,Receptionist")]
         public async Task<IActionResult> GetPatients()
         {
+            await EnsureCreatedAtColumnExists();
+            
             var patients = await _context.Users
                 .Where(u => u.Role == "Patient")
                 .Select(u => new {
@@ -29,7 +58,8 @@ namespace Gateway.Controllers
                     u.Username,
                     u.FullName,
                     u.Email,
-                    u.Role
+                    u.Role,
+                    u.CreatedAt
                 })
                 .ToListAsync();
 
@@ -40,13 +70,16 @@ namespace Gateway.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUsers()
         {
+            await EnsureCreatedAtColumnExists();
+
             var users = await _context.Users
                 .Select(u => new {
                     u.Id,
                     u.Username,
                     u.FullName,
                     u.Email,
-                    u.Role
+                    u.Role,
+                    u.CreatedAt
                 })
                 .ToListAsync();
 

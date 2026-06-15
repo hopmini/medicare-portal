@@ -37,7 +37,7 @@
           </a-select>
         </a-col>
         <a-col :xs="24" :sm="6" style="display: flex; gap: 8px;">
-          <a-range-picker style="flex: 1;" placeholder="Ngày tạo: Từ ngày" />
+          <a-range-picker style="flex: 1;" :placeholder="['Từ ngày', 'Đến ngày']" />
           <a-button style="border-radius: 6px; font-weight: 600; color: #596780; display: flex; align-items: center; gap: 8px;">
             <i class="fas fa-filter" /> Bộ lọc
           </a-button>
@@ -89,7 +89,7 @@
     </a-card>
 
     <!-- Modal Form (Add/Edit Supplier) -->
-    <a-modal v-model:visible="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
+    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
       <a-form :model="form" layout="vertical">
         <a-form-item label="Mã nhà cung cấp" required>
           <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit'" />
@@ -184,7 +184,7 @@
               </a-select>
             </a-col>
             <a-col :xs="24" :sm="6" style="display: flex; gap: 8px;">
-              <a-range-picker style="flex: 1;" placeholder="Ngày tạo: Từ ngày" />
+              <a-range-picker style="flex: 1;" :placeholder="['Từ ngày', 'Đến ngày']" />
               <a-button style="border-radius: 6px; font-weight: 600; color: #596780; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-filter" /> Bộ lọc
               </a-button>
@@ -241,7 +241,7 @@
     </a-layout>
 
     <!-- Modal Form (Add/Edit Supplier) -->
-    <a-modal v-model:visible="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
+    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
       <a-form :model="form" layout="vertical">
         <a-form-item label="Mã nhà cung cấp" required>
           <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit'" />

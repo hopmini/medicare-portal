@@ -191,17 +191,17 @@
                   <!-- Green Card -->
                   <div class="sales-card green-card">
                     <div class="sales-card-icon"><i class="fas fa-file-prescription" /></div>
-                    <div class="sales-card-value">124</div>
+                    <div class="sales-card-value">{{ stats.prescriptionsCount }}</div>
                     <div class="sales-card-label">Đơn Thuốc Đã Kê</div>
-                    <div class="sales-card-trend">+1.2% so với hôm qua</div>
+                    <div class="sales-card-trend">Đơn thuốc của ngày</div>
                   </div>
                   
                   <!-- Purple Card -->
                   <div class="sales-card purple-card">
                     <div class="sales-card-icon"><i class="fas fa-user-plus" /></div>
-                    <div class="sales-card-value">48</div>
+                    <div class="sales-card-value">{{ stats.newPatientsToday }}</div>
                     <div class="sales-card-label">Bệnh Nhân Mới</div>
-                    <div class="sales-card-trend">+0.5% so với hôm qua</div>
+                    <div class="sales-card-trend">Đăng ký hôm nay</div>
                   </div>
                 </div>
               </div>
@@ -404,7 +404,7 @@
                 <strong style="color: #64748b;">{{ index + 1 }}</strong>
               </template>
               <template v-else-if="column.key === 'id'">
-                <code>#{{ record.id.substring(0, 8).toUpperCase() }}</code>
+                <code>#{{ String(record.id || '').substring(0, 8).toUpperCase() }}</code>
               </template>
               <template v-else-if="column.key === 'patientName'">
                 <div class="user-cell" style="display: flex; align-items: center; gap: 8px;">
@@ -655,7 +655,7 @@
               <a-input v-model:value="searchRoomQuery" placeholder="Mã phòng, tên phòng, bác sĩ phụ trách..." allow-clear />
             </div>
             <div>
-              <button class="btn-main" style="background: linear-gradient(135deg, #0047AB 0%, #1e40af 100%); border: none;" @click="openAddRoomModal">
+              <button class="btn-main" style="background: linear-gradient(135deg, #0047AB 0%, #1e40af 100%); color: #ffffff !important; border: none;" @click="openAddRoomModal">
                 <i class="fas fa-plus" /> Thêm phòng khám mới
               </button>
             </div>
@@ -761,11 +761,11 @@
                   <strong style="color: #64748b;">{{ index + 1 }}</strong>
                 </template>
                 <template v-else-if="column.key === 'id'">
-                  <code>#{{ record.id?.substring(0, 8).toUpperCase() }}</code>
+                  <code>#{{ String(record.id || '').substring(0, 8).toUpperCase() }}</code>
                 </template>
                 <template v-else-if="column.key === 'patientId'">
                   <span style="font-family: monospace; font-size: 0.8rem; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
-                    {{ record.patientId?.substring(24) }}
+                    {{ String(record.patientId || '').substring(24) }}
                   </span>
                 </template>
                 <template v-else-if="column.key === 'symptoms'">
@@ -847,7 +847,7 @@
                   <strong style="color: #64748b;">{{ index + 1 }}</strong>
                 </template>
                 <template v-else-if="column.key === 'id'">
-                  <code>#{{ record.id?.substring(24) }}</code>
+                  <code>#{{ String(record.id || '').substring(24) }}</code>
                 </template>
                 <template v-else-if="column.key === 'fullName'">
                   <strong style="color: #1e293b;">{{ record.fullName }}</strong>
@@ -1218,7 +1218,7 @@
     <div v-if="selectedRecord" class="modal-backdrop">
       <div class="modal-card shadow-lg animate-fade-in" style="width: 600px;">
         <div class="modal-header">
-          <h3><i class="fas fa-file-medical text-red" /> Chi tiết bệnh án #{{ selectedRecord.id?.substring(0, 8).toUpperCase() }}</h3>
+          <h3><i class="fas fa-file-medical text-red" /> Chi tiết bệnh án #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}</h3>
           <button class="btn-close-modal" @click="selectedRecord = null">&times;</button>
         </div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left; max-height: 70vh; overflow-y: auto;">
@@ -1799,9 +1799,17 @@
 
   // Strategic Stats (Appointment Service - ACTIVE)
   const stats = computed(() => {
+    const todayStr = new Date().toDateString()
+    const newPats = allPatientsList.value.filter(p => {
+      if (!p.createdAt) return false
+      return new Date(p.createdAt).toDateString() === todayStr
+    }).length
+
     return {
       totalAppointments: appointments.value.length || 0,
-      pendingAppointments: appointments.value.filter(a => a.status === 0).length || 0
+      pendingAppointments: appointments.value.filter(a => a.status === 0).length || 0,
+      newPatientsToday: newPats,
+      prescriptionsCount: allMedicalRecords.value.filter(r => r.prescription).length || 0
     }
   })
 
@@ -1903,10 +1911,16 @@
       }
 
       try {
-        const patientsData = await medicalRecordService.getAllPatients()
-        allPatientsList.value = patientsData || []
+        const res = await api.get('/Users/patients')
+        allPatientsList.value = res.data || []
       } catch (errPatient) {
-        console.error('Lỗi khi tải danh sách bệnh nhân:', errPatient)
+        console.error('Lỗi khi tải danh sách bệnh nhân từ gateway:', errPatient)
+        try {
+          const patientsData = await medicalRecordService.getAllPatients()
+          allPatientsList.value = patientsData || []
+        } catch (errRecordPatient) {
+          console.error('Lỗi khi tải danh sách bệnh nhân từ medical service:', errRecordPatient)
+        }
       }
 
       // Refresh slots if doctor selected
@@ -1927,14 +1941,14 @@
   // Unified page title
   function getPageTitle () {
     switch (activeTab.value) {
-      case 'overview': return 'Tổng Quan Liên Thông Trung Tâm'
+      case 'overview': return 'Tổng Quan Trung Tâm'
       case 'appointments': return 'Quản Lý Lịch Hẹn Khám'
       case 'schedule': return 'Quản Lý Lịch Trực Bác Sĩ'
-      case 'doctors': return 'Danh Mục Bác Sĩ Lâm Sàng'
-      case 'services': return 'Dịch Vụ Y Khoa Toàn Viện'
+      case 'doctors': return 'Danh Mục Bác Sĩ'
+      case 'services': return 'Dịch Vụ Y Khoa'
       case 'rooms': return 'Danh Mục Phòng Khám & Vận Hành Lâm Sàng'
-      case 'medical-records': return 'Quản Lý Bệnh Án Điện Tử (N2)'
-      case 'patient-registry': return 'Danh Sách Bệnh Nhân Hệ Thống (N2)'
+      case 'medical-records': return 'Quản Lý Bệnh Án'
+      case 'patient-registry': return 'Danh Sách Bệnh Nhân'
       case 'pharmacy-medicines': return 'Quản Lý Danh Mục Thuốc'
       case 'pharmacy-suppliers': return 'Quản Lý Nhà Cung Cấp'
       case 'pharmacy-import-bills': return 'Quản Lý Phiếu Nhập Thuốc'
@@ -2144,7 +2158,8 @@
       case 0: return 'Chờ duyệt'
       case 1: return 'Đã duyệt'
       case 2: return 'Đã khám'
-      default: return 'Đã hủy'
+      case 3: return 'Đã hủy'
+      default: return 'Không xác định'
     }
   }
 

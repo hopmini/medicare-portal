@@ -213,7 +213,7 @@
                         </div>
                         <div>
                           <p class="patient-name">{{ app.patientName }}</p>
-                          <p class="patient-meta-id">ID: {{ app.id.substring(0, 8).toUpperCase() }}</p>
+                          <p class="patient-meta-id">ID: {{ String(app.id || '').substring(0, 8).toUpperCase() }}</p>
                         </div>
                       </div>
                     </td>
@@ -305,7 +305,7 @@
                       </div>
                       <div>
                         <p class="patient-name">{{ pat.fullName }}</p>
-                        <p class="patient-meta-id">ID: {{ pat.id?.substring(0, 8).toUpperCase() }}</p>
+                        <p class="patient-meta-id">ID: {{ String(pat.id || '').substring(0, 8).toUpperCase() }}</p>
                       </div>
                     </div>
                   </td>
@@ -381,7 +381,7 @@
                 <tr v-for="rec in filteredRecords" :key="rec.id">
                   <td>
                     <code style="font-family: monospace; font-weight: 700; color: #0047AB;">
-                      #{{ rec.id?.substring(0, 8).toUpperCase() }}
+                      #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                     </code>
                   </td>
                   <td>
@@ -622,7 +622,7 @@
             <div class="brief-item"><strong>Bệnh nhân:</strong> {{ completingApp.patientName }}</div>
             <div class="brief-item"><strong>Dịch vụ chỉ định:</strong> {{ completingApp.serviceName }}</div>
             <div class="brief-item"><strong>Giờ khám:</strong> {{ formatTime(completingApp.startTime) }}</div>
-            <div class="brief-item"><strong>Mã BN:</strong> <code>{{ mapUserIdToGuid(completingApp.patientId).substring(0, 8).toUpperCase() }}</code></div>
+            <div class="brief-item"><strong>Mã BN:</strong> <code>{{ String(mapUserIdToGuid(completingApp.patientId) || '').substring(0, 8).toUpperCase() }}</code></div>
           </div>
 
           <div class="clinical-section-form">
@@ -803,7 +803,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px dashed #cbd5e1; padding-bottom: 6px; margin-bottom: 8px;">
                 <span style="font-weight: 850; color: #0047AB; font-size: 0.85rem;">Ngày khám: {{ formatDateWithTime(rec.createdAt) }}</span>
                 <span style="font-family: monospace; font-size: 0.72rem; background: #cbd5e1; color: #475569; padding: 2px 6px; border-radius: 4px; font-weight: 800;">
-                  #{{ rec.id.substring(0, 8).toUpperCase() }}
+                  #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                 </span>
               </div>
               <div style="font-size: 0.85rem; margin-bottom: 6px; text-align: left;">
@@ -933,7 +933,8 @@
   const patientMap = computed(() => {
     const m = new Map()
     patientsList.value.forEach(p => {
-      if (p.id) m.set(p.id.toLowerCase(), p)
+      const pId = p.id || p.Id;
+      if (pId) m.set(String(pId).toLowerCase(), p)
     })
     return m
   })
@@ -1290,7 +1291,7 @@
   }
 
   async function confirmDeleteRecord(rec: any) {
-    if (!confirm(`Xác nhận xóa bệnh án #${rec.id?.substring(0, 8).toUpperCase()}?`)) return
+    if (!confirm(`Xác nhận xóa bệnh án #${String(rec.id || '').substring(0, 8).toUpperCase()}?`)) return
     loadingTab.value = true
     try {
       const res = await medicalRecordService.deleteRecord(rec.id)

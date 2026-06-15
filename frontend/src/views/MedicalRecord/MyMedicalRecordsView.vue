@@ -105,7 +105,7 @@
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-family: monospace; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: 700;">
-                  Mã BA: #{{ rec.id?.substring(0, 8).toUpperCase() }}
+                  Mã BA: #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                 </span>
                 <button v-if="rec.prescription" class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="printPrescription(rec)">
                   <i class="fas fa-print" /> In toa thuốc
@@ -201,7 +201,7 @@
             <p style="margin: 0; font-size: 10pt; font-style: italic;">Điện thoại: 1900 6789</p>
           </div>
           <div style="text-align: right;">
-            <p style="margin: 0; font-size: 10pt; font-weight: bold;">Mã số BA: #{{ printTarget.id?.substring(0, 8).toUpperCase() }}</p>
+            <p style="margin: 0; font-size: 10pt; font-weight: bold;">Mã số BA: #{{ String(printTarget.id || '').substring(0, 8).toUpperCase() }}</p>
             <p style="margin: 3px 0; font-size: 10pt;">Ngày khám: {{ formatDateFull(printTarget.createdAt) }}</p>
           </div>
         </div>
@@ -343,7 +343,7 @@
   }
 
   async function confirmDelete(rec: MedicalRecord) {
-    if (!confirm(`Xác nhận xóa bệnh án #${rec.id?.substring(0, 8).toUpperCase()}?`)) return
+    if (!confirm(`Xác nhận xóa bệnh án #${String(rec.id || '').substring(0, 8).toUpperCase()}?`)) return
     loading.value = true
     try {
       const res = await medicalRecordService.deleteRecord(rec.id!)
