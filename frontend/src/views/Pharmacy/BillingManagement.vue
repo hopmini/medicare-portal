@@ -1279,10 +1279,23 @@ async function loadData() {
     const pData = await getPrescriptions();
     prescriptionList.value = (pData || []).map((p: any, idx: number) => {
       let patientName = p.patient;
-      const match = p.patient?.match(/Bệnh nhân #([0-9a-fA-F0-9-]+)/);
+      const match = p.patient?.match(/Bệnh nhân #([0-9]+)/);
       if (match && match[1]) {
-        const pGuid = mapUserIdToGuid(match[1]);
-        const prof = patientMap.get(pGuid);
+        const idNum = parseInt(match[1], 10);
+        const pGuid = mapUserIdToGuid(idNum);
+        let prof = patientMap.get(pGuid);
+        if (!prof) {
+          for (const pt of patientsData) {
+            const pg = pt.gatewayPatientId ?? pt.GatewayPatientId;
+            if (pg != null && Number(pg) === idNum) { prof = pt; break; }
+          }
+        }
+        if (!prof) {
+          for (const pt of patientsData) {
+            const lastSeg = (String(pt.id || pt.Id).split('-').pop() || '').replace(/^0+/, '');
+            if (lastSeg === match[1]) { prof = pt; break; }
+          }
+        }
         if (prof) {
           patientName = prof.fullName;
         }
@@ -1310,7 +1323,19 @@ async function loadData() {
         const timeStr = createdDateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         
         const pGuid = mapUserIdToGuid(b.patientId);
-        const prof = patientMap.get(pGuid);
+        let prof = patientMap.get(pGuid);
+        if (!prof) {
+          for (const pt of patientsData) {
+            const pg = pt.gatewayPatientId ?? pt.GatewayPatientId;
+            if (pg != null && Number(pg) === b.patientId) { prof = pt; break; }
+          }
+        }
+        if (!prof) {
+          for (const pt of patientsData) {
+            const lastSeg = (String(pt.id || pt.Id).split('-').pop() || '').replace(/^0+/, '');
+            if (lastSeg === String(b.patientId)) { prof = pt; break; }
+          }
+        }
         const pName = prof ? prof.fullName : `Bệnh nhân #${b.patientId}`;
         const pPhone = prof ? prof.phone || '0901234567' : '0901234567';
 
