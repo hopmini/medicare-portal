@@ -1250,6 +1250,10 @@ async function loadData() {
     if (gid != null) {
       patientMap.set(mapUserIdToGuid(String(gid)), p);
     }
+    const lastSeg = (id.split('-').pop() || '').replace(/^0+/, '');
+    if (lastSeg && /^\d+$/.test(lastSeg)) {
+      patientMap.set(mapUserIdToGuid(lastSeg), p);
+    }
   });
 
   // Load medicines
