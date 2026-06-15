@@ -265,8 +265,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/authStore'
@@ -406,7 +407,7 @@ async function loadRealUsers() {
       }
     })
   } catch (error) {
-    message.error('Không tải được danh sách người dùng thực tế từ hệ thống!')
+    notif.show({ type: 'error', message: 'Không tải được danh sách người dùng thực tế từ hệ thống!' })
   } finally {
     loading.value = false
   }
@@ -442,12 +443,12 @@ function openModal(mode: 'add' | 'edit', record?: UserAccount) {
 
 async function handleModalOk() {
   if (!form.value.username || !form.value.fullName || !form.value.email) {
-    message.error('Vui lòng nhập đầy đủ Username, Họ tên và Email!')
+    notif.show({ type: 'error', message: 'Vui lòng nhập đầy đủ Username, Họ tên và Email!' })
     return
   }
 
   if (modalMode.value === 'add' && !form.value.password) {
-    message.error('Vui lòng thiết lập mật khẩu ban đầu!')
+    notif.show({ type: 'error', message: 'Vui lòng thiết lập mật khẩu ban đầu!' })
     return
   }
 
@@ -462,7 +463,7 @@ async function handleModalOk() {
         email: form.value.email,
         role: form.value.role
       })
-      message.success('Đã đăng ký tài khoản người dùng mới thành công!')
+      notif.show({ type: 'success', message: 'Đã đăng ký tài khoản người dùng mới thành công!' })
     } else {
       // Edit logic
       const targetIdx = usersList.value.findIndex(u => u.id === selectedId.value)
@@ -476,12 +477,12 @@ async function handleModalOk() {
           status: form.value.status
         }
       }
-      message.success('Cập nhật người dùng thành công!')
+      notif.show({ type: 'success', message: 'Cập nhật người dùng thành công!' })
     }
     loadRealUsers()
     modalVisible.value = false
   } catch (err: any) {
-    message.error(err.response?.data?.message || 'Có lỗi xảy ra khi thực thi!')
+    notif.show({ type: 'error', message: err.response?.data?.message || 'Có lỗi xảy ra khi thực thi!' })
   } finally {
     loading.value = false
   }
@@ -489,7 +490,7 @@ async function handleModalOk() {
 
 function changeUserStatus(user: UserAccount, status: 'active' | 'locked' | 'disabled') {
   user.status = status
-  message.success(`Đã thay đổi trạng thái người dùng ${user.username} thành công!`)
+  notif.show({ type: 'success', message: `Đã thay đổi trạng thái người dùng ${user.username} thành công!` })
 }
 
 function batchStatusUpdate(status: 'active' | 'locked' | 'disabled') {
@@ -498,13 +499,13 @@ function batchStatusUpdate(status: 'active' | 'locked' | 'disabled') {
       u.status = status
     }
   })
-  message.success(`Đã cập nhật hàng loạt trạng thái thành công!`)
+  notif.show({ type: 'success', message: `Đã cập nhật hàng loạt trạng thái thành công!` })
   selectedRowKeys.value = []
 }
 
 function batchDelete() {
   usersList.value = usersList.value.filter(u => !selectedRowKeys.value.includes(u.id))
-  message.success(`Đã xóa hàng loạt người dùng được chọn khỏi hệ thống!`)
+  notif.show({ type: 'success', message: `Đã xóa hàng loạt người dùng được chọn khỏi hệ thống!` })
   selectedRowKeys.value = []
 }
 

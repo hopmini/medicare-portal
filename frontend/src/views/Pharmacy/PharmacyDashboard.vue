@@ -431,9 +431,10 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
 import { useAuthStore } from '@/stores/authStore'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -706,7 +707,7 @@ const loadDashboardData = async () => {
       importInvoiceList.value = []
     }
   } catch (err: any) {
-    message.error('Lỗi tải dữ liệu Dashboard: ' + err.message)
+    notif.show({ type: 'error', message: 'Lỗi tải dữ liệu Dashboard: ' + err.message })
   } finally {
     loading.value = false
   }

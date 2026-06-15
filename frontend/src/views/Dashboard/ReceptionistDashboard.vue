@@ -53,13 +53,26 @@
           <span>Trạng thái thanh toán</span>
         </div>
 
-        <div class="nav-item" @click="$router.push('/dashboard?tab=pharmacy-billing')">
-          <span>🧾</span>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'billing' }" @click="activeTab = 'billing'">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </span>
           <span>Hóa đơn bán thuốc</span>
         </div>
 
-        <div class="nav-item" @click="$router.push('/dashboard?tab=pharmacy-payments')">
-          <span>💳</span>
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'confirm-payments' }" @click="activeTab = 'confirm-payments'">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+              <path d="M9 16l2 2 4-4"></path>
+            </svg>
+          </span>
           <span>Xác nhận thanh toán</span>
         </div>
       </nav>
@@ -355,10 +368,10 @@
             </div>
           </div>
 
-          <div v-if="loadingBills" class="empty-state" style="padding: 3rem 0;">
+          <div v-if="loadingBills" class="empty-state" style="padding: 2rem 0;">
             <p>Đang tải danh sách hóa đơn viện phí...</p>
           </div>
-          <div v-else-if="filteredBills.length === 0" class="empty-state" style="padding: 3rem 0;">
+          <div v-else-if="filteredBills.length === 0" class="empty-state" style="padding: 2rem 0;">
             <p>Không tìm thấy hóa đơn nào phù hợp.</p>
           </div>
 
@@ -427,6 +440,16 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- TAB: HÓA ĐƠN BÁN THUỐC (BILLING) -->
+        <div v-else-if="activeTab === 'billing'" class="tab-content animate-fade-in">
+          <BillingManagement :inline="true" />
+        </div>
+
+        <!-- TAB: XÁC NHẬN THANH TOÁN (CONFIRM PAYMENTS) -->
+        <div v-else-if="activeTab === 'confirm-payments'" class="tab-content animate-fade-in">
+          <PaymentManagement :inline="true" />
         </div>
       </div>
     </main>
@@ -557,6 +580,8 @@
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { getBills, payBill } from '@/services/pharmacyService'
+  import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
+  import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
 
   const authStore = useAuthStore()
   const activeTab = ref('dashboard')

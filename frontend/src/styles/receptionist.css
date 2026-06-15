@@ -129,7 +129,7 @@ body {
 }
 
 .top-bar {
-  height: 70px;
+  height: 56px;
   background: white;
   border-bottom: 1px solid var(--gray-200);
   display: flex;
@@ -190,14 +190,14 @@ body {
    DASHBOARD PAGES
 ───────────────────────────────────────────── */
 .page-container {
-  padding: 2rem;
+  padding: 0 1.5rem 1.5rem;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 }
 
 .page-header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .page-title {
@@ -207,9 +207,9 @@ body {
 }
 
 .page-subtitle {
-  font-size: 0.9375rem;
+  font-size: 0.85rem;
   color: var(--gray-500);
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
 }
 
 /* Stats Grid */
@@ -217,7 +217,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
@@ -369,7 +369,7 @@ body {
 
 /* Empty State */
 .empty-state {
-  padding: 4rem 2rem;
+  padding: 2rem 1.5rem;
   text-align: center;
   color: var(--gray-400);
 }

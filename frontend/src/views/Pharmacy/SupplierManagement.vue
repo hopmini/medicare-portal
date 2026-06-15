@@ -289,8 +289,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier as apiDeleteSupplier } from '@/services/pharmacyService'
@@ -428,7 +429,7 @@ function openModal(mode: 'add' | 'edit', record?: Supplier) {
 
 async function handleModalOk() {
   if (!form.value.code || !form.value.name || !form.value.phone) {
-    message.error('Vui lòng điền đầy đủ các thông tin bắt buộc (Mã, Tên, SĐT)')
+    notif.show({ type: 'error', message: 'Vui lòng điền đầy đủ các thông tin bắt buộc (Mã, Tên, SĐT)' })
     return
   }
 
@@ -443,7 +444,7 @@ async function handleModalOk() {
         group: form.value.group,
         status: form.value.status
       })
-      message.success('Cập nhật thông tin nhà cung cấp thành công!')
+      notif.show({ type: 'success', message: 'Cập nhật thông tin nhà cung cấp thành công!' })
     } else {
       await createSupplier({
         code: form.value.code,
@@ -454,22 +455,22 @@ async function handleModalOk() {
         group: form.value.group,
         status: form.value.status
       })
-      message.success('Thêm nhà cung cấp mới thành công!')
+      notif.show({ type: 'success', message: 'Thêm nhà cung cấp mới thành công!' })
     }
     await loadSuppliers()
     modalVisible.value = false
   } catch (err) {
-    message.error('Thao tác thất bại!')
+    notif.show({ type: 'error', message: 'Thao tác thất bại!' })
   }
 }
 
 async function deleteSupplier(id: number) {
   try {
     await apiDeleteSupplier(id)
-    message.success('Đã xóa nhà cung cấp khỏi hệ thống!')
+    notif.show({ type: 'success', message: 'Đã xóa nhà cung cấp khỏi hệ thống!' })
     await loadSuppliers()
   } catch (err) {
-    message.error('Xóa nhà cung cấp thất bại!')
+    notif.show({ type: 'error', message: 'Xóa nhà cung cấp thất bại!' })
   }
 }
 

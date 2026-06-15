@@ -270,9 +270,10 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { message } from 'ant-design-vue';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { useAuthStore } from '@/stores/authStore';
@@ -397,7 +398,7 @@ async function loadRealInvoices() {
     }
   } catch (err) {
     console.error('Failed to load real invoices in status view:', err);
-    message.error('Không thể tải thông tin trạng thái thanh toán.');
+    notif.show({ type: 'error', message: 'Không thể tải thông tin trạng thái thanh toán.' });
   } finally {
     loading.value = false;
   }
@@ -482,7 +483,7 @@ function getStatusText(status: string) {
 function copyInvoiceCode() {
   if (selectedInvoice.value && selectedInvoice.value.code !== '–') {
     navigator.clipboard.writeText(selectedInvoice.value.code);
-    message.success('Đã sao chép mã hóa đơn: ' + selectedInvoice.value.code);
+    notif.show({ type: 'success', message: 'Đã sao chép mã hóa đơn: ' + selectedInvoice.value.code });
   }
 }
 
@@ -494,7 +495,7 @@ function viewInvoiceDetail() {
 
 function printInvoice() {
   if (selectedInvoice.value && selectedInvoice.value.code !== '–') {
-    message.success('Đang gửi lệnh in hóa đơn ' + selectedInvoice.value.code + '...');
+    notif.show({ type: 'success', message: 'Đang gửi lệnh in hóa đơn ' + selectedInvoice.value.code + '...' });
   }
 }
 

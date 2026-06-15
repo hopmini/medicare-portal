@@ -492,8 +492,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/authStore'
@@ -661,7 +662,7 @@ async function loadMedicines() {
     }
   } catch (err) {
     console.error(err)
-    message.error('Không kết nối được với cơ sở dữ liệu!')
+    notif.show({ type: 'error', message: 'Không kết nối được với cơ sở dữ liệu!' })
     medicines.value = []
   } finally {
     loading.value = false
@@ -701,7 +702,7 @@ function resetForm() {
 
 async function handleOk() {
   if (!form.value.name || !form.value.activeIngredient) {
-    message.error('Vui lòng nhập tên thuốc và hoạt chất chính!')
+    notif.show({ type: 'error', message: 'Vui lòng nhập tên thuốc và hoạt chất chính!' })
     return
   }
 
@@ -709,15 +710,15 @@ async function handleOk() {
   try {
     if (isEdit.value && editId.value !== null) {
       await updateMedicine(editId.value, form.value)
-      message.success('Đã cập nhật thông tin thuốc thành công!')
+      notif.show({ type: 'success', message: 'Đã cập nhật thông tin thuốc thành công!' })
     } else {
       await createMedicine(form.value)
-      message.success('Đã thêm thuốc mới vào danh mục liên kết thành công!')
+      notif.show({ type: 'success', message: 'Đã thêm thuốc mới vào danh mục liên kết thành công!' })
     }
     await loadMedicines()
     resetForm()
   } catch (err: any) {
-    message.error('Lỗi khi lưu dữ liệu lên hệ thống!')
+    notif.show({ type: 'error', message: 'Lỗi khi lưu dữ liệu lên hệ thống!' })
   } finally {
     loading.value = false
   }
@@ -727,10 +728,10 @@ async function handleDelete(id: number) {
   loading.value = true
   try {
     await deleteMedicine(id)
-    message.success('Đã gỡ bỏ thuốc thành công!')
+    notif.show({ type: 'success', message: 'Đã gỡ bỏ thuốc thành công!' })
     await loadMedicines()
   } catch (err) {
-    message.error('Không thể thực thi lệnh xóa!')
+    notif.show({ type: 'error', message: 'Không thể thực thi lệnh xóa!' })
   } finally {
     loading.value = false
   }

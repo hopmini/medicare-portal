@@ -279,8 +279,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
@@ -364,7 +365,7 @@ async function loadRealInvoices() {
     });
   } catch (err) {
     console.error('Failed to load real invoices:', err);
-    message.error('Không thể tải dữ liệu hóa đơn thực tế.');
+    notif.show({ type: 'error', message: 'Không thể tải dữ liệu hóa đơn thực tế.' });
   } finally {
     loading.value = false;
   }
@@ -496,13 +497,13 @@ function openDetail(record: PatientInvoice) {
 
 function printInvoice() {
   if (selectedInvoice.value) {
-    message.success(`Đang gửi lệnh in hóa đơn ${selectedInvoice.value.code}...`);
+    notif.show({ type: 'success', message: `Đang gửi lệnh in hóa đơn ${selectedInvoice.value.code}...` });
   }
 }
 
 function downloadInvoice() {
   if (selectedInvoice.value) {
-    message.success(`Đang tải xuống hóa đơn ${selectedInvoice.value.code}...`);
+    notif.show({ type: 'success', message: `Đang tải xuống hóa đơn ${selectedInvoice.value.code}...` });
   }
 }
 </script>

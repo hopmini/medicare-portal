@@ -6,6 +6,7 @@
       </transition>
     </router-view>
     <AIConsultant v-if="showAIConsultant" />
+    <GlobalNotification />
   </div>
 </template>
 
@@ -13,6 +14,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AIConsultant from '@/components/AIConsultant.vue'
+import GlobalNotification from '@/components/GlobalNotification.vue'
 
 const route = useRoute()
 const showAIConsultant = computed(() => {

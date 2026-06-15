@@ -21,8 +21,8 @@
                   </div>
                   <div>
                     <div class="metric-title">Hóa đơn hôm nay</div>
-                    <div class="metric-value" style="color: #3b82f6;">28</div>
-                    <div class="metric-sub">Tổng tiền: 18.750.000 đ</div>
+                    <div class="metric-value" style="color: #3b82f6;">{{ todayBillsCount }}</div>
+                    <div class="metric-sub">Tổng tiền: {{ todayBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -35,8 +35,8 @@
                   </div>
                   <div>
                     <div class="metric-title">Chờ thanh toán</div>
-                    <div class="metric-value" style="color: #f59e0b;">7</div>
-                    <div class="metric-sub">Tổng tiền: 4.250.000 đ</div>
+                    <div class="metric-value" style="color: #f59e0b;">{{ pendingBillsCount }}</div>
+                    <div class="metric-sub">Tổng tiền: {{ pendingBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -49,8 +49,8 @@
                   </div>
                   <div>
                     <div class="metric-title">Đã thanh toán</div>
-                    <div class="metric-value" style="color: #10b981;">21</div>
-                    <div class="metric-sub">Tổng tiền: 14.500.000 đ</div>
+                    <div class="metric-value" style="color: #10b981;">{{ paidBillsCount }}</div>
+                    <div class="metric-sub">Tổng tiền: {{ paidBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -63,8 +63,8 @@
                   </div>
                   <div>
                     <div class="metric-title">Đã hủy</div>
-                    <div class="metric-value" style="color: #ef4444;">2</div>
-                    <div class="metric-sub">Tổng tiền: 450.000 đ</div>
+                    <div class="metric-value" style="color: #ef4444;">{{ cancelledBillsCount }}</div>
+                    <div class="metric-sub">Tổng tiền: {{ cancelledBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -665,8 +665,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted, watch } from 'vue';
-import { message } from 'ant-design-vue';
 import { useAuthStore } from '@/stores/authStore';
 import { getBills, getPrescriptions, getMedicines, createBill } from '@/services/pharmacyService';
 import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService';
@@ -718,6 +719,24 @@ const activeTab = ref('all');
 const searchQuery = ref('');
 const filterType = ref('all');
 const filterPayStatus = ref('all');
+
+// Dynamic metric computations
+const todayStr = new Date().toLocaleDateString('vi-VN');
+const todayBills = computed(() => bills.value.filter(b => b.createdDate === todayStr));
+const todayBillsCount = computed(() => todayBills.value.length);
+const todayBillsTotal = computed(() => todayBills.value.reduce((s, b) => s + b.total, 0));
+
+const pendingBills = computed(() => bills.value.filter(b => b.payStatus === 'pending'));
+const pendingBillsCount = computed(() => pendingBills.value.length);
+const pendingBillsTotal = computed(() => pendingBills.value.reduce((s, b) => s + b.total, 0));
+
+const paidBills = computed(() => bills.value.filter(b => b.payStatus === 'paid'));
+const paidBillsCount = computed(() => paidBills.value.length);
+const paidBillsTotal = computed(() => paidBills.value.reduce((s, b) => s + b.total, 0));
+
+const cancelledBills = computed(() => bills.value.filter(b => b.payStatus === 'cancelled'));
+const cancelledBillsCount = computed(() => cancelledBills.value.length);
+const cancelledBillsTotal = computed(() => cancelledBills.value.reduce((s, b) => s + b.total, 0));
 
 // ===================== LIST VIEW DATA =====================
 const bills = ref<BillItem[]>([]);
@@ -831,7 +850,7 @@ const rxGrandTotal = computed(() => {
 
 async function submitRxBill() {
   if (!rxSelectedPrescription.value) {
-    message.error('Vui lòng chọn đơn thuốc!');
+    notif.show({ type: 'error', message: 'Vui lòng chọn đơn thuốc!' });
     return;
   }
   const rx = rxInfo.value;
@@ -856,7 +875,7 @@ async function submitRxBill() {
       }));
       localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
     }
-    message.success('Đã tạo hóa đơn theo đơn bác sĩ thành công!');
+    notif.show({ type: 'success', message: 'Đã tạo hóa đơn theo đơn bác sĩ thành công!' });
     await loadData();
     rxSelectedPrescription.value = undefined;
     rxNote.value = '';
@@ -865,7 +884,7 @@ async function submitRxBill() {
     rxVat.value = 0;
     viewMode.value = 'list';
   } catch (err: any) {
-    message.error('Lỗi khi tạo hóa đơn: ' + err.message);
+    notif.show({ type: 'error', message: 'Lỗi khi tạo hóa đơn: ' + err.message });
   }
 }
 
@@ -909,7 +928,7 @@ function addOtcDrug() {
     if (existing.qty < med.stock) {
       existing.qty++;
     } else {
-      message.warning('Số lượng vượt quá tồn kho!');
+      notif.show({ type: 'warning', message: 'Số lượng vượt quá tồn kho!' });
     }
   } else {
     otcDrugs.value.push({
@@ -928,7 +947,7 @@ function addOtcDrug() {
 
 async function submitOtcBill() {
   if (otcDrugs.value.length === 0) {
-    message.error('Vui lòng thêm ít nhất một thuốc vào hóa đơn!');
+    notif.show({ type: 'error', message: 'Vui lòng thêm ít nhất một thuốc vào hóa đơn!' });
     return;
   }
   try {
@@ -950,7 +969,7 @@ async function submitOtcBill() {
       }));
       localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
     }
-    message.success('Đã tạo hóa đơn ngoài đơn thành công!');
+    notif.show({ type: 'success', message: 'Đã tạo hóa đơn ngoài đơn thành công!' });
     await loadData();
     otcCustomer.value = { name: '', phone: '', address: '' };
     otcIsWalkIn.value = false;
@@ -961,7 +980,7 @@ async function submitOtcBill() {
     otcVat.value = 0;
     viewMode.value = 'list';
   } catch (err: any) {
-    message.error('Lỗi khi tạo hóa đơn ngoài đơn: ' + err.message);
+    notif.show({ type: 'error', message: 'Lỗi khi tạo hóa đơn ngoài đơn: ' + err.message });
   }
 }
 
@@ -999,7 +1018,7 @@ const modalMedicationColumns = [
 
 function showPrescriptionDetails(code: string | undefined) {
   if (!code) {
-    message.warning('Vui lòng chọn một đơn thuốc trước!');
+    notif.show({ type: 'warning', message: 'Vui lòng chọn một đơn thuốc trước!' });
     return;
   }
   const found = prescriptionList.value.find(p => p.code === code);
@@ -1007,7 +1026,7 @@ function showPrescriptionDetails(code: string | undefined) {
     selectedPrescriptionDetails.value = found;
     prescriptionModalVisible.value = true;
   } else {
-    message.error('Không tìm thấy thông tin đơn thuốc!');
+    notif.show({ type: 'error', message: 'Không tìm thấy thông tin đơn thuốc!' });
   }
 }
 
@@ -1127,7 +1146,7 @@ function addRxToCombo() {
   if (!rx) return;
   
   if (comboRxList.value.some(r => r.code === rx.code)) {
-    message.warning('Đơn thuốc này đã được chọn!');
+    notif.show({ type: 'warning', message: 'Đơn thuốc này đã được chọn!' });
     return;
   }
   comboRxList.value.push(rx);
@@ -1136,7 +1155,7 @@ function addRxToCombo() {
 
 async function submitComboBill() {
   if (comboRxList.value.length === 0 && comboOtcDrugs.value.length === 0) {
-    message.error('Vui lòng chọn ít nhất một đơn thuốc hoặc thêm thuốc ngoài đơn!');
+    notif.show({ type: 'error', message: 'Vui lòng chọn ít nhất một đơn thuốc hoặc thêm thuốc ngoài đơn!' });
     return;
   }
   
@@ -1186,7 +1205,7 @@ async function submitComboBill() {
       });
       localStorage.setItem(`bill_items_${newBill.id}`, JSON.stringify(itemsToSave));
     }
-    message.success('Đã tạo hóa đơn tổng hợp thành công!');
+    notif.show({ type: 'success', message: 'Đã tạo hóa đơn tổng hợp thành công!' });
     await loadData();
     comboCustomer.value = { name: '', phone: '', address: '' };
     comboRxList.value = [];
@@ -1197,7 +1216,7 @@ async function submitComboBill() {
     comboVat.value = 0;
     viewMode.value = 'list';
   } catch (err: any) {
-    message.error('Lỗi khi tạo hóa đơn tổng hợp: ' + err.message);
+    notif.show({ type: 'error', message: 'Lỗi khi tạo hóa đơn tổng hợp: ' + err.message });
   }
 }
 

@@ -30,7 +30,7 @@
                   </div>
                   <div>
                     <div class="metric-title">Tổng phiếu nhập</div>
-                    <div class="metric-value">126</div>
+                    <div class="metric-value">{{ totalImportBillsCount }}</div>
                     <div class="metric-sub">Tất cả thời gian</div>
                   </div>
                 </div>
@@ -44,7 +44,7 @@
                   </div>
                   <div>
                     <div class="metric-title">Chờ hoàn tất</div>
-                    <div class="metric-value">7</div>
+                    <div class="metric-value">{{ draftImportBillsCount }}</div>
                     <div class="metric-sub">Chưa hoàn tất</div>
                   </div>
                 </div>
@@ -58,8 +58,8 @@
                   </div>
                   <div>
                     <div class="metric-title">Giá trị nhập tháng này</div>
-                    <div class="metric-value">1.245.680.000 đ</div>
-                    <div class="metric-sub">Tháng 5/2025</div>
+                    <div class="metric-value">{{ currentMonthImportValue }}</div>
+                    <div class="metric-sub">{{ currentMonthLabel }}</div>
                   </div>
                 </div>
               </a-card>
@@ -114,6 +114,9 @@
               <template #bodyCell="{ text, record, column }">
                 <template v-if="column.key === 'code'">
                   <span style="font-weight: 700; color: #0047AB; cursor: pointer;" @click="viewDetail(record)">{{ record.code }}</span>
+                </template>
+                <template v-else-if="column.key === 'date'">
+                  <span>{{ dayjs(record.date).isValid() ? dayjs(record.date).format('DD/MM/YYYY') : record.date }}</span>
                 </template>
                 <template v-else-if="column.key === 'goodsTotal'">
                   <span>{{ record.goodsTotal.toLocaleString() }} đ</span>
@@ -444,8 +447,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
@@ -537,6 +541,29 @@ const detailViewColumns = [
   { title: 'Thành tiền', key: 'total', align: 'right' }
 ]
 
+const totalImportBillsCount = computed(() => importBills.value.length)
+
+const draftImportBillsCount = computed(() => importBills.value.filter(b => b.status === 'draft').length)
+
+const currentMonthLabel = computed(() => {
+  return 'Tháng ' + dayjs().format('MM/YYYY')
+})
+
+const currentMonthImportValue = computed(() => {
+  const currentMonthYear = dayjs().format('MM/YYYY')
+  const total = importBills.value
+    .filter(b => {
+      if (!b.date) return false
+      const bDate = dayjs(b.date)
+      if (bDate.isValid()) {
+        return bDate.format('MM/YYYY') === currentMonthYear
+      }
+      return b.date.includes(currentMonthYear)
+    })
+    .reduce((sum, b) => sum + (b.finalTotal || 0), 0)
+  return total.toLocaleString('vi-VN') + ' đ'
+})
+
 // Filter logic
 const filteredImportBills = computed(() => {
   return importBills.value.filter(bill => {
@@ -565,14 +592,26 @@ const filteredImportBills = computed(() => {
 })
 
 function switchToCreateMode() {
-  // Reset create form inputs
-  supplier.value = {
-    selected: 'NCC001',
-    name: 'Công ty Dược An Khang',
-    taxCode: '0101234567',
-    phone: '024 3765 4321',
-    address: '123 Đường Nguyễn Trãi, Thanh Xuân, Hà Nội',
-    email: 'contact@duochanoi.vn'
+  // Reset create form inputs dynamically from loaded lists
+  if (suppliersList.value.length > 0) {
+    const firstSup = suppliersList.value[0]
+    supplier.value = {
+      selected: firstSup.code,
+      name: firstSup.name,
+      taxCode: firstSup.taxCode || firstSup.code || '',
+      phone: firstSup.phone || '',
+      address: firstSup.address || '',
+      email: firstSup.email || ''
+    }
+  } else {
+    supplier.value = {
+      selected: '',
+      name: '',
+      taxCode: '',
+      phone: '',
+      address: '',
+      email: ''
+    }
   }
   invoice.value = {
     code: 'PN' + Math.floor(100000 + Math.random() * 900000).toString(),
@@ -580,9 +619,29 @@ function switchToCreateMode() {
     creator: 'admin',
     note: ''
   }
-  medicationRows.value = [
-    { key: '1', code: 'MED001', name: 'Paracetamol 500mg', batch: 'LO001', expiryDate: dayjs().add(2, 'year'), qty: 500, unit: 'Viên', price: 800, discount: 0, vat: 5, total: 420000 }
-  ]
+  
+  if (availableMeds.value.length > 0) {
+    const firstMed = availableMeds.value[0]
+    medicationRows.value = [
+      { 
+        key: '1', 
+        code: firstMed.code, 
+        name: firstMed.name, 
+        batch: 'LO' + Math.floor(100 + Math.random() * 900).toString(), 
+        expiryDate: dayjs().add(2, 'year'), 
+        qty: 100, 
+        unit: 'Viên', 
+        price: firstMed.price || 1000, 
+        discount: 0, 
+        vat: 5, 
+        total: Math.round((firstMed.price || 1000) * 100 * 1.05)
+      }
+    ]
+  } else {
+    medicationRows.value = [
+      { key: '1', code: '', name: '', batch: '', expiryDate: null, qty: 1, unit: 'Viên', price: 0, discount: 0, vat: 5, total: 0 }
+    ]
+  }
   viewMode.value = 'create'
 }
 
@@ -631,23 +690,23 @@ function editImportBill(bill: any) {
 }
 
 function exportToExcel() {
-  message.success('Xuất file excel danh sách phiếu nhập thành công!')
+  notif.show({ type: 'success', message: 'Xuất file excel danh sách phiếu nhập thành công!' })
 }
 
 // -------------------- CREATE FORM CODE --------------------
 
 const supplier = ref({
-  selected: 'NCC001',
-  name: 'Công ty Dược An Khang',
-  taxCode: '0101234567',
-  phone: '024 3765 4321',
-  address: '123 Đường Nguyễn Trãi, Thanh Xuân, Hà Nội',
-  email: 'contact@duochanoi.vn'
+  selected: '',
+  name: '',
+  taxCode: '',
+  phone: '',
+  address: '',
+  email: ''
 })
 
 const invoice = ref({
-  code: 'PN00023',
-  date: dayjs('18/05/2025', 'DD/MM/YYYY'),
+  code: '',
+  date: dayjs(),
   creator: 'admin',
   note: ''
 })
@@ -781,11 +840,11 @@ async function saveDraft() {
       }))
     }
     await createImportBill(payload)
-    message.success('Đã lưu nháp phiếu nhập thuốc thành công!')
+    notif.show({ type: 'success', message: 'Đã lưu nháp phiếu nhập thuốc thành công!' })
     await loadImportBills()
     viewMode.value = 'list'
   } catch (err: any) {
-    message.error('Lỗi khi lưu phiếu nhập thuốc: ' + err.message)
+    notif.show({ type: 'error', message: 'Lỗi khi lưu phiếu nhập thuốc: ' + err.message })
   } finally {
     loading.value = false
   }
@@ -793,12 +852,12 @@ async function saveDraft() {
 
 async function submitImport() {
   if (medicationRows.value.length === 0) {
-    message.error('Vui lòng thêm ít nhất một sản phẩm thuốc!')
+    notif.show({ type: 'error', message: 'Vui lòng thêm ít nhất một sản phẩm thuốc!' })
     return
   }
   for (const row of medicationRows.value) {
     if (!row.code || !row.name) {
-      message.error('Vui lòng chọn thuốc đầy đủ cho tất cả các dòng!')
+      notif.show({ type: 'error', message: 'Vui lòng chọn thuốc đầy đủ cho tất cả các dòng!' })
       return
     }
   }
@@ -827,18 +886,18 @@ async function submitImport() {
       }))
     }
     await createImportBill(payload)
-    message.success('Hoàn tất nhập kho và cập nhật số lượng tồn kho thành công!')
+    notif.show({ type: 'success', message: 'Hoàn tất nhập kho và cập nhật số lượng tồn kho thành công!' })
     await loadImportBills()
     viewMode.value = 'list'
   } catch (err: any) {
-    message.error('Lỗi khi hoàn tất nhập kho: ' + err.message)
+    notif.show({ type: 'error', message: 'Lỗi khi hoàn tất nhập kho: ' + err.message })
   } finally {
     loading.value = false
   }
 }
 
 function cancelImport() {
-  message.info('Đã hủy tạo phiếu nhập')
+  notif.show({ type: 'info', message: 'Đã hủy tạo phiếu nhập' })
   viewMode.value = 'list'
 }
 
@@ -864,6 +923,20 @@ onMounted(async () => {
       }
     })()
   ])
+  
+  // Set initial supplier if loaded
+  if (suppliersList.value.length > 0) {
+    const firstSup = suppliersList.value[0]
+    supplier.value = {
+      selected: firstSup.code,
+      name: firstSup.name,
+      taxCode: firstSup.taxCode || firstSup.code || '',
+      phone: firstSup.phone || '',
+      address: firstSup.address || '',
+      email: firstSup.email || ''
+    }
+  }
+  invoice.value.code = 'PN' + Math.floor(100000 + Math.random() * 900000).toString()
 })
 </script>
 

@@ -482,12 +482,15 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { message } from 'ant-design-vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
-import { getMedicines, createBill } from '@/services/pharmacyService'
+import { getMedicines, getPrescriptions, createBill } from '@/services/pharmacyService'
+import { appointmentService } from '@/services/appointmentService'
+import { medicalRecordService } from '@/services/medicalRecordService'
 
 const router = useRouter()
 const route = useRoute()
@@ -654,10 +657,10 @@ async function submitInvoice() {
       total: grandTotal.value
     })
 
-    message.success(`Đã tạo hóa đơn cho đơn thuốc ${selectedPresCode.value} thành công!`)
+    notif.show({ type: 'success', message: `Đã tạo hóa đơn cho đơn thuốc ${selectedPresCode.value} thành công!` })
     router.push('/pharmacy/dashboard')
   } catch (err) {
-    message.error('Tạo hóa đơn thất bại. Vui lòng thử lại!')
+    notif.show({ type: 'error', message: 'Tạo hóa đơn thất bại. Vui lòng thử lại!' })
   } finally {
     submitting.value = false
   }
@@ -697,73 +700,28 @@ const generalInvoiceColumns = [
   { title: 'Thao tác', key: 'action', width: 80, align: 'center' as const }
 ]
 
-const appointmentOptions = [
-  { id: 'APPT250524-00156', patientName: 'Nguyễn Văn An' },
-  { id: 'APPT250524-00157', patientName: 'Trần Thị Bình' }
-]
-
-const patientList = [
-  {
-    name: 'Nguyễn Văn An',
-    code: 'BN0001256',
-    dob: '12/08/1990 (34 tuổi)',
-    gender: 'Nam',
-    phone: '0901 234 567',
-    address: '123 Lê Lợi, P. Bến Thành, Q.1, TP. HCM'
-  },
-  {
-    name: 'Trần Thị Bình',
-    code: 'BN0001257',
-    dob: '15/04/1988 (36 tuổi)',
-    gender: 'Nữ',
-    phone: '0902 345 678',
-    address: '456 Nguyễn Huệ, Q.1, TP. HCM'
-  }
-]
-
-const examDetailsMap: Record<string, any> = {
-  'APPT250524-00156': {
-    doctor: 'BS. Trần Minh Tuấn',
-    service: 'Khám Nội tổng quát',
-    fee: 200000,
-    date: '24/05/2025 09:15',
-    apptCode: 'APPT250524-00156'
-  },
-  'APPT250524-00157': {
-    doctor: 'BS. Phạm Văn C',
-    service: 'Khám Sản phụ khoa',
-    fee: 250000,
-    date: '24/05/2025 10:00',
-    apptCode: 'APPT250524-00157'
-  }
-}
-
-// Catalogs for custom additions
-const medCatalog = [
-  { name: 'Paracetamol 500mg', spec: 'Hộp 10 vỉ x 10 viên', price: 18000 },
-  { name: 'Vitamin C 500mg', spec: 'Hộp 100 viên', price: 22000 },
-  { name: 'Amoxicillin 500mg', spec: 'Hộp 100 viên', price: 25000 },
-  { name: 'Decolgen Forte', spec: 'Hộp 100 viên', price: 20000 },
-  { name: 'Ibuprofen 400mg', spec: 'Hộp 100 viên', price: 22000 }
-]
-
-const serviceCatalog = [
+const appointmentOptions = ref<any[]>([])
+const patientList = ref<any[]>([])
+const examDetailsMap = ref<Record<string, any>>({})
+const medCatalog = ref<any[]>([])
+const serviceCatalog = ref<any[]>([
   { name: 'Xét nghiệm máu tổng quát', price: 150000 },
   { name: 'Siêu âm ổ bụng', price: 200000 },
   { name: 'Chụp X-quang phổi', price: 120000 }
-]
+])
 
 function handleApptSelect(apptId: string) {
-  const matchedAppt = appointmentOptions.find(a => a.id === apptId)
+  const matchedAppt = appointmentOptions.value.find(a => a.id === apptId)
   if (!matchedAppt) return
   
   selectedGeneralPatient.value = matchedAppt.patientName
   handlePatientSelect(matchedAppt.patientName)
 
-  // Map matching prescription if Nguyễn Văn An
-  if (apptId === 'APPT250524-00156') {
-    selectedGeneralPresCode.value = 'PU0001258'
-    handleGeneralPresSelect('PU0001258')
+  // Find associated prescription dynamically
+  const matchedPres = prescriptionOptions.value.find(p => p.patient.toLowerCase().includes(matchedAppt.patientName.toLowerCase()))
+  if (matchedPres) {
+    selectedGeneralPresCode.value = matchedPres.code
+    handleGeneralPresSelect(matchedPres.code)
   } else {
     selectedGeneralPresCode.value = null
     generalItems.value = [
@@ -774,15 +732,15 @@ function handleApptSelect(apptId: string) {
 }
 
 function handlePatientSelect(patientName: string) {
-  const patient = patientList.find(p => p.name === patientName)
+  const patient = patientList.value.find(p => p.name === patientName)
   if (!patient) return
   generalPatientInfo.value = patient
   
   // Find associated appointment or select first one
-  const appt = appointmentOptions.find(a => a.patientName === patientName)
+  const appt = appointmentOptions.value.find(a => a.patientName === patientName)
   if (appt) {
     selectedApptId.value = appt.id
-    generalExamInfo.value = examDetailsMap[appt.id]
+    generalExamInfo.value = examDetailsMap.value[appt.id]
   } else {
     selectedApptId.value = null
     generalExamInfo.value = {
@@ -919,12 +877,12 @@ function openAddItemsModal() {
 
 function handleAddItems() {
   if (!customAddItemName.value) {
-    message.warning('Vui lòng chọn một hạng mục!')
+    notif.show({ type: 'warning', message: 'Vui lòng chọn một hạng mục!' })
     return
   }
 
-  const catalog = customAddType.value === 'Thuốc' ? medCatalog : serviceCatalog
-  const item = catalog.find(i => i.name === customAddItemName.value)
+  const catalog = customAddType.value === 'Thuốc' ? medCatalog.value : serviceCatalog.value
+  const item = catalog.find((i: any) => i.name === customAddItemName.value)
   if (!item) return
 
   let nameDisplay = item.name
@@ -944,12 +902,12 @@ function handleAddItems() {
   generalItems.value.push(newRow)
   recalculateGeneralTotals()
   showAddItemsModal.value = false
-  message.success(`Đã thêm ${newRow.name} vào danh sách hóa đơn!`)
+  notif.show({ type: 'success', message: `Đã thêm ${newRow.name} vào danh sách hóa đơn!` })
 }
 
 // Action triggers
 function saveDraft() {
-  message.success('Đã lưu nháp hóa đơn tổng hợp thành công!')
+  notif.show({ type: 'success', message: 'Đã lưu nháp hóa đơn tổng hợp thành công!' })
   router.push('/pharmacy/dashboard')
 }
 
@@ -966,33 +924,167 @@ async function submitGeneralInvoice() {
       })),
       total: generalGrandTotal.value
     })
-    message.success('Đã tạo hóa đơn tổng hợp thành công!')
+    notif.show({ type: 'success', message: 'Đã tạo hóa đơn tổng hợp thành công!' })
     router.push('/pharmacy/dashboard')
   } catch (err) {
-    message.error('Tạo hóa đơn thất bại!')
+    notif.show({ type: 'error', message: 'Tạo hóa đơn thất bại!' })
   } finally {
     submitting.value = false
   }
 }
 
 // Initialization
-onMounted(() => {
-  initPrescriptions()
-
-  // Pre-load code from query parameter if directed from dashboard (e.g. PU0001258)
-  const queryCode = route.query.code as string
-  if (queryCode) {
-    const matched = prescriptionOptions.value.find(p => p.code === queryCode)
-    if (matched) {
-      selectedPresCode.value = matched.code
-      handlePrescriptionSelect(matched.code)
+// Initialization
+onMounted(async () => {
+  loading.value = true
+  try {
+    // 1. Fetch medicines for medCatalog
+    const meds = await getMedicines()
+    if (meds && meds.length > 0) {
+      medCatalog.value = meds.map((m: any) => ({
+        name: m.name,
+        spec: m.unit || 'Viên',
+        price: m.price || 1500
+      }))
+    } else {
+      medCatalog.value = [
+        { name: 'Paracetamol 500mg', spec: 'Hộp 10 vỉ x 10 viên', price: 18000 },
+        { name: 'Vitamin C 500mg', spec: 'Hộp 100 viên', price: 22000 },
+        { name: 'Amoxicillin 500mg', spec: 'Hộp 100 viên', price: 25000 },
+        { name: 'Decolgen Forte', spec: 'Hộp 100 viên', price: 20000 },
+        { name: 'Ibuprofen 400mg', spec: 'Hộp 100 viên', price: 22000 }
+      ]
     }
-  }
 
-  // Pre-select first options for General Flow to match Image 3 on loading
-  if (currentSource.value === 'general') {
-    selectedApptId.value = 'APPT250524-00156'
-    handleApptSelect('APPT250524-00156')
+    // 2. Fetch prescriptions
+    const pData = await getPrescriptions()
+    if (pData && pData.length > 0) {
+      prescriptionOptions.value = pData.map((p: any) => ({
+        code: p.code || `PRC${String(p.id).padStart(5, '0')}`,
+        patient: p.patient || 'Khách hàng',
+        doctorName: p.doctor || p.doctorName || 'Bác sĩ điều trị',
+        date: p.date || new Date().toLocaleString('vi-VN'),
+        medications: (p.medications || []).map((m: any) => ({
+          name: m.name,
+          qty: m.qty || 1,
+          price: m.price || 1500
+        }))
+      }))
+    } else {
+      initPrescriptions()
+    }
+
+    // 3. Load appointments & patients
+    try {
+      const [appts, patients] = await Promise.all([
+        appointmentService.getAllAppointments(),
+        medicalRecordService.getAllPatients()
+      ])
+
+      patientList.value = (patients || []).map((p: any) => {
+        let age = ''
+        if (p.dob) {
+          const birthYear = new Date(p.dob).getFullYear()
+          if (!isNaN(birthYear)) {
+            age = ` (${new Date().getFullYear() - birthYear} tuổi)`
+          }
+        }
+        return {
+          id: p.id,
+          name: p.fullName,
+          code: `BN${String(p.id).padStart(7, '0')}`,
+          dob: p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') + age : 'N/A',
+          gender: p.gender || 'Chưa xác định',
+          phone: p.phone || '0901 234 567',
+          address: p.address || 'Hà Nội'
+        }
+      })
+
+      appointmentOptions.value = (appts || []).map((a: any) => {
+        const p = patientList.value.find(patient => patient.id === a.patientId)
+        return {
+          id: a.appointmentId || a.id || `APPT-${a.id}`,
+          patientName: p ? p.name : `Bệnh nhân #${a.patientId}`
+        }
+      })
+
+      const details: Record<string, any> = {}
+      ;(appts || []).forEach((a: any) => {
+        const p = patientList.value.find(patient => patient.id === a.patientId)
+        const apptId = a.appointmentId || a.id || `APPT-${a.id}`
+        details[apptId] = {
+          doctor: a.doctorName || 'Bác sĩ điều trị',
+          service: a.serviceName || 'Khám bệnh',
+          fee: a.fee || a.examinationFee || 150000,
+          date: a.dateTime ? new Date(a.dateTime).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN'),
+          apptCode: apptId
+        }
+      })
+      examDetailsMap.value = details
+    } catch (e) {
+      console.error('Failed to load appointments/patients:', e)
+      // Fallback
+      patientList.value = [
+        {
+          name: 'Nguyễn Văn An',
+          code: 'BN0001256',
+          dob: '12/08/1990 (34 tuổi)',
+          gender: 'Nam',
+          phone: '0901 234 567',
+          address: '123 Lê Lợi, P. Bến Thành, Q.1, TP. HCM'
+        },
+        {
+          name: 'Trần Thị Bình',
+          code: 'BN0001257',
+          dob: '15/04/1988 (36 tuổi)',
+          gender: 'Nữ',
+          phone: '0902 345 678',
+          address: '456 Nguyễn Huệ, Q.1, TP. HCM'
+        }
+      ]
+      appointmentOptions.value = [
+        { id: 'APPT250524-00156', patientName: 'Nguyễn Văn An' },
+        { id: 'APPT250524-00157', patientName: 'Trần Thị Bình' }
+      ]
+      examDetailsMap.value = {
+        'APPT250524-00156': {
+          doctor: 'BS. Trần Minh Tuấn',
+          service: 'Khám Nội tổng quát',
+          fee: 200000,
+          date: '24/05/2025 09:15',
+          apptCode: 'APPT250524-00156'
+        },
+        'APPT250524-00157': {
+          doctor: 'BS. Phạm Văn C',
+          service: 'Khám Sản phụ khoa',
+          fee: 250000,
+          date: '24/05/2025 10:00',
+          apptCode: 'APPT250524-00157'
+        }
+      }
+    }
+
+    // 4. Pre-select code from query parameter if directed from dashboard
+    const queryCode = route.query.code as string
+    if (queryCode) {
+      const matched = prescriptionOptions.value.find(p => p.code === queryCode)
+      if (matched) {
+        selectedPresCode.value = matched.code
+        handlePrescriptionSelect(matched.code)
+      }
+    }
+
+    // Pre-select first options for General Flow
+    if (currentSource.value === 'general') {
+      if (appointmentOptions.value.length > 0) {
+        selectedApptId.value = appointmentOptions.value[0].id
+        handleApptSelect(appointmentOptions.value[0].id)
+      }
+    }
+  } catch (err: any) {
+    notif.show({ type: 'error', message: 'Lỗi khi tải dữ liệu khởi tạo: ' + err.message })
+  } finally {
+    loading.value = false
   }
 })
 </script>

@@ -43,7 +43,7 @@
                   </div>
                   <div>
                     <div class="metric-title">Đơn thuốc chờ xử lý</div>
-                    <div class="metric-value">18 <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Đơn</span></div>
+                    <div class="metric-value">{{ pendingPrescriptionsCount }} <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Đơn</span></div>
                   </div>
                 </div>
               </a-card>
@@ -56,7 +56,7 @@
                   </div>
                   <div>
                     <div class="metric-title">Đã cấp phát hôm nay</div>
-                    <div class="metric-value">42 <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Đơn</span></div>
+                    <div class="metric-value">{{ completedPrescriptionsCount }} <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Đơn</span></div>
                   </div>
                 </div>
               </a-card>
@@ -69,7 +69,7 @@
                   </div>
                   <div>
                     <div class="metric-title">Tổng số loại thuốc đã kê</div>
-                    <div class="metric-value">86 <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Loại</span></div>
+                    <div class="metric-value">{{ totalMedicinesCount }} <span style="font-size: 0.85rem; font-weight: 500; color: #64748b;">Loại</span></div>
                   </div>
                 </div>
               </a-card>
@@ -402,8 +402,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { getPrescriptions, getMedicines, processPrescription } from '@/services/pharmacyService';
@@ -441,11 +442,15 @@ const activeTabKey = ref('prescription-flow');
 const loading = ref(false);
 const prescriptions = ref<Prescription[]>([]);
 const viewMode = ref<'list' | 'create-rx' | 'create-otc' | 'create-combo'>('list');
-const search = ref('');
 const statusFilter = ref('all');
+
+const pendingPrescriptionsCount = computed(() => prescriptions.value.filter(p => p.status === 'pending').length)
+const completedPrescriptionsCount = computed(() => prescriptions.value.filter(p => p.status === 'completed').length)
+const totalMedicinesCount = computed(() => allMedicines.value.length)
 
 const authStore = useAuthStore();
 const userRole = computed(() => (authStore.user.value?.role || '').toLowerCase());
+const search = ref('');
 
 const selectedPrescription = ref<Prescription | null>(null);
 const dispenseForm = ref({
@@ -504,16 +509,16 @@ async function submitDispensation() {
 
   try {
     await processPrescription(Number(selectedPrescription.value.id));
-    message.success(`Đã cấp phát thành công đơn thuốc ${selectedPrescription.value.code} cho bệnh nhân ${selectedPrescription.value.patient}!`);
+    notif.show({ type: 'success', message: `Đã cấp phát thành công đơn thuốc ${selectedPrescription.value.code} cho bệnh nhân ${selectedPrescription.value.patient}!` });
     await loadData();
   } catch (err: any) {
-    message.error('Không thể thực hiện cấp phát thuốc: ' + (err.response?.data?.message || err.message || err));
+    notif.show({ type: 'error', message: 'Không thể thực hiện cấp phát thuốc: ' + (err.response?.data?.message || err.message || err) })
   }
 }
 
 function printPrescription() {
   if (!selectedPrescription.value) return;
-  message.success(`Đang gửi lệnh in đơn thuốc ${selectedPrescription.value.code}...`);
+  notif.show({ type: 'success', message: `Đang gửi lệnh in đơn thuốc ${selectedPrescription.value.code}...` });
 }
 
 
@@ -526,16 +531,12 @@ interface MedicineProduct {
 }
 
 const freeFlowCustomer = ref({
-  name: 'Lê Thị Hoa',
-  phone: '0918 234 567',
-  address: '45 Trần Phú, Quận Ba Đình, Hà Nội'
+  name: '',
+  phone: '',
+  address: ''
 });
 
-const freeCartRows = ref<any[]>([
-  { id: 1, name: 'Paracetamol 500mg', price: 1000, qty: 10 },
-  { id: 4, name: 'Decolgen Forte', price: 1800, qty: 5 },
-  { id: 3, name: 'Vitamin C 500mg', price: 1500, qty: 20 }
-]);
+const freeCartRows = ref<any[]>([]);
 const allMedicines = ref<MedicineProduct[]>([]);
 
 // OTC Sales History Data
@@ -669,7 +670,7 @@ function submitFreeSale() {
     status: 'done'
   });
 
-  message.success(`Đã in hóa đơn & bán thành công đơn thuốc tự do trị giá ${netTotalPayable.value.toLocaleString()} đ cho khách hàng ${freeFlowCustomer.value.name}!`);
+  notif.show({ type: 'success', message: `Đã in hóa đơn & bán thành công đơn thuốc tự do trị giá ${netTotalPayable.value.toLocaleString()} đ cho khách hàng ${freeFlowCustomer.value.name}!` })
   resetFreeFlow();
 }
 
@@ -704,7 +705,7 @@ async function loadData() {
       selectedPrescription.value = null;
     }
   } catch (e: any) {
-    message.error('Lỗi khi tải dữ liệu từ server: ' + (e.message || e));
+    notif.show({ type: 'error', message: 'Lỗi khi tải dữ liệu từ server: ' + (e.message || e) })
   } finally {
     loading.value = false;
   }

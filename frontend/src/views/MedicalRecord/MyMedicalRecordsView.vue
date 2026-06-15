@@ -32,15 +32,28 @@
         </button>
       </div>
 
-      <!-- In-page notification alerts from backend -->
-      <div v-if="notifications.length > 0" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
-        <div v-for="n in notifications" :key="n.id" :style="n.type === 'success' ? 'background: #f0fdf4; border: 1px solid #86efac; color: #166534;' : 'background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;'" style="border-radius: 10px; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 10px; text-align: left;">
-          <i class="fas" :class="n.type === 'success' ? 'fa-check-circle' : 'fa-bell'" style="font-size: 1.1rem;" />
-          <div style="flex: 1;">
-            <div style="font-weight: 800; font-size: 0.88rem;">{{ n.title }}</div>
-            <div style="font-size: 0.82rem; opacity: 0.85; margin-top: 1px;">{{ n.message }}</div>
+      <!-- Centered Notification Overlay -->
+      <div v-if="showNotificationOverlay && notifications.length > 0" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px;" @click.self="showNotificationOverlay = false">
+        <div style="background: white; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.2); max-width: 480px; width: 100%; padding: 2rem; animation: fadeInUp 0.3s ease;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="background: #16a34a; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                <i class="fas fa-bell" />
+              </div>
+              <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a;">Thông báo mới</h3>
+            </div>
+            <button @click="showNotificationOverlay = false" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
           </div>
-          <span style="font-size: 0.72rem; font-weight: 600; opacity: 0.6; white-space: nowrap;">{{ n.time }}</span>
+          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;">
+            <div v-for="n in notifications" :key="n.id" :style="n.type === 'success' ? 'background: #f0fdf4; border-left: 4px solid #16a34a;' : 'background: #eff6ff; border-left: 4px solid #3b82f6;'" style="border-radius: 8px; padding: 0.85rem 1rem; text-align: left;">
+              <div :style="n.type === 'success' ? 'color: #166534;' : 'color: #1e40af;'" style="font-weight: 800; font-size: 0.88rem;">{{ n.title }}</div>
+              <div :style="n.type === 'success' ? 'color: #15803d;' : 'color: #3b82f6;'" style="font-size: 0.82rem; margin-top: 2px;">{{ n.message }}</div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #94a3b8; margin-top: 4px;">{{ n.time }}</div>
+            </div>
+          </div>
+          <button @click="showNotificationOverlay = false" style="margin-top: 1.25rem; width: 100%; padding: 0.7rem; background: #0047AB; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.15s;">
+            Đã hiểu
+          </button>
         </div>
       </div>
 
@@ -72,12 +85,8 @@
         </div>
       </div>
 
-      <!-- MEDICAL RECORD HISTORY SECTION -->
+      <!-- MEDICAL RECORDS SECTION -->
       <div class="history-section">
-        <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 1.5rem 0; display: flex; align-items: center; gap: 8px;">
-          <i class="fas fa-history" style="color: #0047AB;" /> Nhật ký lịch sử điều trị
-        </h2>
-
         <div v-if="loading" class="loading-state" style="text-align: center; padding: 4rem 0;">
           <i class="fas fa-circle-notch fa-spin fa-2x" style="color: #0047AB; margin-bottom: 1rem;" />
           <p style="color: #64748b; font-weight: 600;">Đang tải hồ sơ bệnh án của quý khách...</p>
@@ -188,69 +197,8 @@
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- PRINTABLE PRESCRIPTION TEMPLATE (HIDDEN UNTIL PRINT) -->
-    <div id="print-area" style="display: none;">
-      <div v-if="printTarget" style="padding: 2.5cm; font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: black; line-height: 1.4;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">
-          <div>
-            <h3 style="margin: 0; font-size: 16pt; font-weight: bold; text-transform: uppercase;">Bệnh viện quốc tế Medicare</h3>
-            <p style="margin: 3px 0; font-size: 10pt; font-style: italic;">Địa chỉ: 78 Giải Phóng, Đống Đa, Hà Nội</p>
-            <p style="margin: 0; font-size: 10pt; font-style: italic;">Điện thoại: 1900 6789</p>
-          </div>
-          <div style="text-align: right;">
-            <p style="margin: 0; font-size: 10pt; font-weight: bold;">Mã số BA: #{{ String(printTarget.id || '').substring(0, 8).toUpperCase() }}</p>
-            <p style="margin: 3px 0; font-size: 10pt;">Ngày khám: {{ formatDateFull(printTarget.createdAt) }}</p>
-          </div>
-        </div>
-
-        <h2 style="text-align: center; text-transform: uppercase; font-size: 20pt; font-weight: bold; margin: 30px 0;">Đơn thuốc y khoa</h2>
-
-        <div style="margin-bottom: 20px;">
-          <p style="margin: 5px 0;"><strong>Họ và tên bệnh nhân:</strong> {{ patientInfo.fullName || authStore.user.value?.fullName || 'Bệnh nhân Medicare' }}</p>
-          <p style="margin: 5px 0;"><strong>Chẩn đoán:</strong> {{ printTarget.diagnosis }}</p>
-          <p style="margin: 5px 0;"><strong>Triệu chứng lâm sàng:</strong> {{ printTarget.symptoms }}</p>
-        </div>
-
-        <h3 style="font-size: 13pt; font-weight: bold; border-bottom: 1px solid black; padding-bottom: 4px; margin-top: 30px; margin-bottom: 10px;">Thuốc chỉ định</h3>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-          <thead>
-            <tr style="border-bottom: 1px solid black; text-align: left;">
-              <th style="padding: 6px 0; width: 50px;">STT</th>
-              <th style="padding: 6px 0;">Tên thuốc / Biệt dược</th>
-              <th style="padding: 6px 0; text-align: right; width: 100px;">Số lượng</th>
-              <th style="padding: 6px 0; padding-left: 20px;">Cách dùng (Liều lượng)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(med, idx) in printTarget.prescription?.details" :key="idx" style="border-bottom: 1px dashed #ccc;">
-              <td style="padding: 8px 0;">{{ idx + 1 }}</td>
-              <td style="padding: 8px 0; font-weight: bold;">{{ med.medicationName }}</td>
-              <td style="padding: 8px 0; text-align: right; font-weight: bold;">{{ med.quantity }} Viên</td>
-              <td style="padding: 8px 0; padding-left: 20px; font-style: italic;">{{ med.dosage }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div v-if="printTarget.prescription?.instructions" style="margin-bottom: 30px; border: 1px solid black; padding: 10px; font-style: italic;">
-          <strong>Lời dặn của bác sĩ:</strong> {{ printTarget.prescription.instructions }}
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 50px;">
-          <div>
-            <p style="margin: 0; font-size: 10pt; font-style: italic;">(Toa thuốc có giá trị sử dụng trong 5 ngày kể từ ngày kê đơn)</p>
-          </div>
-          <div style="text-align: center; width: 250px;">
-            <p style="margin: 0; font-style: italic;">Hà Nội, ngày {{ new Date(printTarget.createdAt).getDate() }} tháng {{ new Date(printTarget.createdAt).getMonth() + 1 }} năm {{ new Date(printTarget.createdAt).getFullYear() }}</p>
-            <p style="margin: 5px 0 40px 0; font-weight: bold; text-transform: uppercase;">Bác sĩ điều trị</p>
-            <p style="margin: 0; font-weight: bold; color: green; border: 2px solid green; display: inline-block; padding: 4px 8px; border-radius: 4px; text-transform: uppercase;">Đã ký điện tử</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -271,6 +219,7 @@
   const records = ref<MedicalRecord[]>([])
   const printTarget = ref<MedicalRecord | null>(null)
   const notifications = ref<any[]>([])
+  const showNotificationOverlay = ref(false)
 
   const newRecordCount = computed(() => {
     const now = Date.now()
@@ -290,13 +239,18 @@
     try {
       const res = await api.get('/Notifications/my')
       const list = res.data || []
-      notifications.value = list.slice(0, 3).map((n: any) => ({
+      notifications.value = list.slice(0, 5).map((n: any) => ({
         id: n.id,
         title: n.title || 'Thông báo y khoa',
         message: n.message || '',
         type: n.type === 'info' ? 'medical' : n.type,
         time: n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''
       }))
+      if (notifications.value.length > 0) {
+        showNotificationOverlay.value = true
+        // Auto-dismiss after 8 seconds
+        setTimeout(() => { showNotificationOverlay.value = false }, 8000)
+      }
     } catch { }
   }
 
@@ -361,32 +315,94 @@
   }
 
   function printPrescription(rec: MedicalRecord) {
-    printTarget.value = rec
-    setTimeout(() => {
-      const printContents = document.getElementById('print-area')?.innerHTML
-      if (printContents) {
-        const printWindow = window.open('', '_blank')
-        if (printWindow) {
-          printWindow.document.write(`
-            <html>
-              <head>
-                <title>In Toa Thuoc - Medicare Hospital</title>
-                <style>
-                  body { margin: 0; padding: 0; font-family: 'Times New Roman', serif; }
-                  @media print {
-                    @page { margin: 1.5cm; }
-                  }
-                </style>
-              </head>
-              <body onload="window.print(); window.close();">
-                ${printContents}
-              </body>
-            </html>
-          `)
-          printWindow.document.close()
-        }
-      }
-    }, 100)
+    if (!rec.prescription || !rec.prescription.details || rec.prescription.details.length === 0) {
+      alert('Bệnh án này không có đơn thuốc để in.')
+      return
+    }
+    const pName = patientInfo.value.fullName || authStore.user.value?.fullName || 'Bệnh nhân Medicare'
+    const recordId = String(rec.id || '').substring(0, 8).toUpperCase()
+    const dateCreated = rec.createdAt ? new Date(rec.createdAt) : new Date()
+    const dateStr = formatDateFull(rec.createdAt)
+    
+    let medsHtml = ''
+    rec.prescription.details.forEach((med, idx) => {
+      medsHtml += `
+        <tr style="border-bottom: 1px dashed #ccc;">
+          <td style="padding: 8px 0;">${idx + 1}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${med.medicationName}</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: bold;">${med.quantity} Viên</td>
+          <td style="padding: 8px 0; padding-left: 20px; font-style: italic;">${med.dosage}</td>
+        </tr>
+      `
+    })
+
+    const instructionsHtml = rec.prescription.instructions 
+      ? `<div style="margin-bottom: 30px; border: 1px solid black; padding: 10px; font-style: italic;"><strong>Lời dặn của bác sĩ:</strong> ${rec.prescription.instructions}</div>` 
+      : ''
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Trình duyệt đã chặn popup. Vui lòng cho phép popup để in toa thuốc.')
+      return
+    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>In Toa Thuốc - Medicare Hospital</title>
+          <style>
+            body { margin: 0; padding: 2.5cm; font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: black; line-height: 1.4; }
+            @media print { @page { margin: 1.5cm; } body { padding: 0; } }
+            table { width: 100%; border-collapse: collapse; }
+          </style>
+        </head>
+        <body>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">
+            <div>
+              <h3 style="margin: 0; font-size: 16pt; font-weight: bold; text-transform: uppercase;">Bệnh viện quốc tế Medicare</h3>
+              <p style="margin: 3px 0; font-size: 10pt; font-style: italic;">Địa chỉ: 78 Giải Phóng, Đống Đa, Hà Nội</p>
+              <p style="margin: 0; font-size: 10pt; font-style: italic;">Điện thoại: 1900 6789</p>
+            </div>
+            <div style="text-align: right;">
+              <p style="margin: 0; font-size: 10pt; font-weight: bold;">Mã số BA: #${recordId}</p>
+              <p style="margin: 3px 0; font-size: 10pt;">Ngày khám: ${dateStr}</p>
+            </div>
+          </div>
+          <h2 style="text-align: center; text-transform: uppercase; font-size: 20pt; font-weight: bold; margin: 30px 0;">Đơn thuốc y khoa</h2>
+          <div style="margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>Họ và tên bệnh nhân:</strong> ${pName}</p>
+            <p style="margin: 5px 0;"><strong>Chẩn đoán:</strong> ${rec.diagnosis}</p>
+            <p style="margin: 5px 0;"><strong>Triệu chứng lâm sàng:</strong> ${rec.symptoms}</p>
+          </div>
+          <h3 style="font-size: 13pt; font-weight: bold; border-bottom: 1px solid black; padding-bottom: 4px; margin-top: 30px; margin-bottom: 10px;">Thuốc chỉ định</h3>
+          <table style="margin-bottom: 30px;">
+            <thead>
+              <tr style="border-bottom: 1px solid black; text-align: left;">
+                <th style="padding: 6px 0; width: 50px;">STT</th>
+                <th style="padding: 6px 0;">Tên thuốc / Biệt dược</th>
+                <th style="padding: 6px 0; text-align: right; width: 100px;">Số lượng</th>
+                <th style="padding: 6px 0; padding-left: 20px;">Cách dùng (Liều lượng)</th>
+              </tr>
+            </thead>
+            <tbody>${medsHtml}</tbody>
+          </table>
+          ${instructionsHtml}
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 50px;">
+            <div>
+              <p style="margin: 0; font-size: 10pt; font-style: italic;">(Toa thuốc có giá trị sử dụng trong 5 ngày kể từ ngày kê đơn)</p>
+            </div>
+            <div style="text-align: center; width: 250px;">
+              <p style="margin: 0; font-style: italic;">Hà Nội, ngày ${dateCreated.getDate()} tháng ${dateCreated.getMonth() + 1} năm ${dateCreated.getFullYear()}</p>
+              <p style="margin: 5px 0 40px 0; font-weight: bold; text-transform: uppercase;">Bác sĩ điều trị</p>
+              <p style="margin: 0; font-weight: bold; color: green; border: 2px solid green; display: inline-block; padding: 4px 8px; border-radius: 4px; text-transform: uppercase;">Đã ký điện tử</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.onload = () => {
+      printWindow.print()
+    }
   }
 
   function formatDateFull(iso?: string) {

@@ -360,9 +360,10 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue';
 import dayjs, { Dayjs } from 'dayjs';
-import { message } from 'ant-design-vue';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { getInventoryTransactions, getMedicines } from '@/services/pharmacyService';
@@ -559,7 +560,7 @@ async function loadTransactions() {
     })
   } catch (err) {
     console.error('Failed to load inventory transactions:', err)
-    message.error('Không thể tải dữ liệu lịch sử kho!')
+    notif.show({ type: 'error', message: 'Không thể tải dữ liệu lịch sử kho!' })
     transactions.value = []
   } finally {
     loading.value = false
@@ -652,16 +653,16 @@ function customRowClick(record: StockTransaction) {
 }
 
 function openDocument(record: StockTransaction) {
-  message.info(`Xem chứng từ liên quan: ${record.document}`);
+  notif.show({ type: 'info', message: `Xem chứng từ liên quan: ${record.document}` });
 }
 
 function printReceipt(record: StockTransaction) {
-  message.success(`Đang gửi lệnh in phiếu giao dịch ${record.code}...`);
+  notif.show({ type: 'success', message: `Đang gửi lệnh in phiếu giao dịch ${record.code}...` });
 }
 
 // Admin action handlers
 function exportExcel() {
-  message.success('Đang xuất file Excel danh sách giao dịch kho...');
+  notif.show({ type: 'success', message: 'Đang xuất file Excel danh sách giao dịch kho...' });
 }
 
 function refreshData() {
@@ -669,7 +670,7 @@ function refreshData() {
   currentPage.value = 1;
   searchQuery.value = '';
   activeFilter.value = 'all';
-  message.success('Đã làm mới dữ liệu lịch sử kho!');
+  notif.show({ type: 'success', message: 'Đã làm mới dữ liệu lịch sử kho!' });
 }
 
 // Initialize

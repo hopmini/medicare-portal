@@ -765,9 +765,10 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { message } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
@@ -1085,7 +1086,7 @@ async function initBills() {
     transactionsList.value = tList;
 
   } catch (err: any) {
-    message.error('Lỗi tải dữ liệu thanh toán: ' + err.message);
+    notif.show({ type: 'error', message: 'Lỗi tải dữ liệu thanh toán: ' + err.message });
   } finally {
     loading.value = false;
   }
@@ -1209,7 +1210,7 @@ function viewFullDetail(bill: AdminPayBill) {
 
 function printInvoiceDetail() {
   if (selectedBillDetail.value) {
-    message.success(`Đang gửi lệnh in hóa đơn ${selectedBillDetail.value.code}...`);
+    notif.show({ type: 'success', message: `Đang gửi lệnh in hóa đơn ${selectedBillDetail.value.code}...` });
   }
 }
 
@@ -1251,9 +1252,9 @@ async function confirmPayment(bill: AdminPayBill) {
       txStatus: 'Thành công',
     });
 
-    message.success(`Đã xác nhận thanh toán hóa đơn ${bill.code} thành công!`);
+    notif.show({ type: 'success', message: `Đã xác nhận thanh toán hóa đơn ${bill.code} thành công!` });
   } catch (err: any) {
-    message.error('Lỗi xác nhận thanh toán: ' + err.message);
+    notif.show({ type: 'error', message: 'Lỗi xác nhận thanh toán: ' + err.message });
   }
 }
 
@@ -1341,11 +1342,11 @@ const dailyRevenueData = [
 ];
 
 function applyReportFilter() {
-  message.success('Đã áp dụng lọc khoảng ngày báo cáo!');
+  notif.show({ type: 'success', message: 'Đã áp dụng lọc khoảng ngày báo cáo!' });
 }
 
 function exportReport(type: 'Excel' | 'PDF') {
-  message.success(`Đang tạo và tải xuống báo cáo thanh toán dạng ${type}...`);
+  notif.show({ type: 'success', message: `Đang tạo và tải xuống báo cáo thanh toán dạng ${type}...` });
 }
 
 // ==================== General Helpers ====================
@@ -1379,11 +1380,11 @@ function getMethodLabel(method: string) {
 }
 
 function printInvoice(bill: any) {
-  message.success(`Đang gửi lệnh in hóa đơn ${bill.code}...`);
+  notif.show({ type: 'success', message: `Đang gửi lệnh in hóa đơn ${bill.code}...` });
 }
 
 function printReceipt(tx: any) {
-  message.success(`Đang gửi lệnh in biên nhận giao dịch ${tx.txCode}...`);
+  notif.show({ type: 'success', message: `Đang gửi lệnh in biên nhận giao dịch ${tx.txCode}...` });
 }
 
 const customTableRow = (record: any) => {

@@ -184,8 +184,9 @@
 </template>
 
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/notificationStore';
+const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getMedicines } from '@/services/pharmacyService'
@@ -340,7 +341,7 @@ async function loadRealBatches() {
       }
     })
   } catch (err) {
-    message.error('Không tải được dữ liệu tồn kho theo lô từ máy chủ!')
+    notif.show({ type: 'error', message: 'Không tải được dữ liệu tồn kho theo lô từ máy chủ!' })
   } finally {
     loading.value = false
   }
@@ -348,7 +349,7 @@ async function loadRealBatches() {
 
 function refreshData() {
   loadRealBatches()
-  message.success('Đã cập nhật dữ liệu tồn kho theo lô mới nhất!')
+  notif.show({ type: 'success', message: 'Đã cập nhật dữ liệu tồn kho theo lô mới nhất!' })
 }
 
 onMounted(() => {
