@@ -61,6 +61,13 @@
             <span style="font-weight: 700; color: #1e293b;">{{ record.name }}</span>
           </template>
 
+          <!-- Address Column styling with truncation -->
+          <template v-else-if="column.key === 'address'">
+            <div style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.address">
+              {{ record.address }}
+            </div>
+          </template>
+
           <!-- Status Tag column -->
           <template v-else-if="column.key === 'status'">
             <a-tag :color="record.status === 'active' ? 'success' : 'error'" style="font-weight: 700; border-radius: 4px; padding: 2px 8px;">
@@ -71,7 +78,7 @@
           <!-- Actions column -->
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết">
+              <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết" @click="openModal('view', record)">
                 <i class="far fa-eye" />
               </a-button>
               <a-button type="link" style="padding: 0; color: #0047AB;" title="Sửa" @click="openModal('edit', record)">
@@ -89,30 +96,30 @@
     </a-card>
 
     <!-- Modal Form (Add/Edit Supplier) -->
-    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
+    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;" :footer="modalMode === 'view' ? null : undefined">
       <a-form :model="form" layout="vertical">
         <a-form-item label="Mã nhà cung cấp" required>
-          <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit'" />
+          <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit' || modalMode === 'view'" />
         </a-form-item>
         <a-form-item label="Tên nhà cung cấp" required>
-          <a-input v-model:value="form.name" placeholder="Nhập tên nhà cung cấp..." />
+          <a-input v-model:value="form.name" placeholder="Nhập tên nhà cung cấp..." :disabled="modalMode === 'view'" />
         </a-form-item>
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Số điện thoại" required>
-              <a-input v-model:value="form.phone" placeholder="VD: 024 xxxx xxxx" />
+              <a-input v-model:value="form.phone" placeholder="VD: 024 xxxx xxxx" :disabled="modalMode === 'view'" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="Email">
-              <a-input v-model:value="form.email" placeholder="VD: info@company.com" />
+              <a-input v-model:value="form.email" placeholder="VD: info@company.com" :disabled="modalMode === 'view'" />
             </a-form-item>
           </a-col>
         </a-row>
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Nhóm nhà cung cấp">
-              <a-select v-model:value="form.group" style="width: 100%;">
+              <a-select v-model:value="form.group" style="width: 100%;" :disabled="modalMode === 'view'">
                 <a-select-option value="Dược phẩm">Dược phẩm</a-select-option>
                 <a-select-option value="Thiết bị y tế">Thiết bị y tế</a-select-option>
                 <a-select-option value="Vật tư y tế">Vật tư y tế</a-select-option>
@@ -121,7 +128,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="Trạng thái hoạt động">
-              <a-select v-model:value="form.status" style="width: 100%;">
+              <a-select v-model:value="form.status" style="width: 100%;" :disabled="modalMode === 'view'">
                 <a-select-option value="active">Hoạt động</a-select-option>
                 <a-select-option value="inactive">Ngừng hoạt động</a-select-option>
               </a-select>
@@ -129,7 +136,7 @@
           </a-col>
         </a-row>
         <a-form-item label="Địa chỉ">
-          <a-input v-model:value="form.address" placeholder="Nhập địa chỉ nhà cung cấp..." />
+          <a-input v-model:value="form.address" placeholder="Nhập địa chỉ nhà cung cấp..." :disabled="modalMode === 'view'" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -210,6 +217,13 @@
                 <span style="font-weight: 700; color: #1e293b;">{{ record.name }}</span>
               </template>
 
+              <!-- Address Column styling with truncation -->
+              <template v-else-if="column.key === 'address'">
+                <div style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.address">
+                  {{ record.address }}
+                </div>
+              </template>
+
               <!-- Status Tag column -->
               <template v-else-if="column.key === 'status'">
                 <a-tag :color="record.status === 'active' ? 'success' : 'error'" style="font-weight: 700; border-radius: 4px; padding: 2px 8px;">
@@ -220,7 +234,7 @@
               <!-- Actions column -->
               <template v-else-if="column.key === 'action'">
                 <a-space>
-                  <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết">
+                  <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết" @click="openModal('view', record)">
                     <i class="far fa-eye" />
                   </a-button>
                   <a-button type="link" style="padding: 0; color: #0047AB;" title="Sửa" @click="openModal('edit', record)">
@@ -241,30 +255,30 @@
     </a-layout>
 
     <!-- Modal Form (Add/Edit Supplier) -->
-    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;">
+    <a-modal v-model:open="modalVisible" :title="modalTitle" @ok="handleModalOk" ok-text="Lưu lại" cancel-text="Hủy" style="border-radius: 8px;" :footer="modalMode === 'view' ? null : undefined">
       <a-form :model="form" layout="vertical">
         <a-form-item label="Mã nhà cung cấp" required>
-          <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit'" />
+          <a-input v-model:value="form.code" placeholder="VD: NCC008" :disabled="modalMode === 'edit' || modalMode === 'view'" />
         </a-form-item>
         <a-form-item label="Tên nhà cung cấp" required>
-          <a-input v-model:value="form.name" placeholder="Nhập tên nhà cung cấp..." />
+          <a-input v-model:value="form.name" placeholder="Nhập tên nhà cung cấp..." :disabled="modalMode === 'view'" />
         </a-form-item>
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Số điện thoại" required>
-              <a-input v-model:value="form.phone" placeholder="VD: 024 xxxx xxxx" />
+              <a-input v-model:value="form.phone" placeholder="VD: 024 xxxx xxxx" :disabled="modalMode === 'view'" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="Email">
-              <a-input v-model:value="form.email" placeholder="VD: info@company.com" />
+              <a-input v-model:value="form.email" placeholder="VD: info@company.com" :disabled="modalMode === 'view'" />
             </a-form-item>
           </a-col>
         </a-row>
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Nhóm nhà cung cấp">
-              <a-select v-model:value="form.group" style="width: 100%;">
+              <a-select v-model:value="form.group" style="width: 100%;" :disabled="modalMode === 'view'">
                 <a-select-option value="Dược phẩm">Dược phẩm</a-select-option>
                 <a-select-option value="Thiết bị y tế">Thiết bị y tế</a-select-option>
                 <a-select-option value="Vật tư y tế">Vật tư y tế</a-select-option>
@@ -273,7 +287,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="Trạng thái hoạt động">
-              <a-select v-model:value="form.status" style="width: 100%;">
+              <a-select v-model:value="form.status" style="width: 100%;" :disabled="modalMode === 'view'">
                 <a-select-option value="active">Hoạt động</a-select-option>
                 <a-select-option value="inactive">Ngừng hoạt động</a-select-option>
               </a-select>
@@ -281,7 +295,7 @@
           </a-col>
         </a-row>
         <a-form-item label="Địa chỉ">
-          <a-input v-model:value="form.address" placeholder="Nhập địa chỉ nhà cung cấp..." />
+          <a-input v-model:value="form.address" placeholder="Nhập địa chỉ nhà cung cấp..." :disabled="modalMode === 'view'" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -323,7 +337,7 @@ const statusFilter = ref('all')
 const groupFilter = ref('all')
 
 const modalVisible = ref(false)
-const modalMode = ref<'add' | 'edit'>('add')
+const modalMode = ref<'add' | 'edit' | 'view'>('add')
 const selectedId = ref<number | null>(null)
 
 const form = ref({
@@ -373,7 +387,7 @@ const filteredSuppliers = computed(() => {
   return list
 })
 
-const modalTitle = computed(() => modalMode.value === 'add' ? 'Thêm nhà cung cấp mới' : 'Chỉnh sửa nhà cung cấp')
+const modalTitle = computed(() => modalMode.value === 'add' ? 'Thêm nhà cung cấp mới' : (modalMode.value === 'view' ? 'Chi tiết nhà cung cấp' : 'Chỉnh sửa nhà cung cấp'))
 
 async function loadSuppliers() {
   loading.value = true
@@ -398,9 +412,9 @@ async function loadSuppliers() {
   }
 }
 
-function openModal(mode: 'add' | 'edit', record?: Supplier) {
+function openModal(mode: 'add' | 'edit' | 'view', record?: Supplier) {
   modalMode.value = mode
-  if (mode === 'edit' && record) {
+  if ((mode === 'edit' || mode === 'view') && record) {
     selectedId.value = record.id
     form.value = {
       code: record.code,

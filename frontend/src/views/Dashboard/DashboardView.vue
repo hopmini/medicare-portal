@@ -761,20 +761,35 @@
                   <strong style="color: #64748b;">{{ index + 1 }}</strong>
                 </template>
                 <template v-else-if="column.key === 'id'">
-                  <code>#{{ String(record.id || '').substring(0, 8).toUpperCase() }}</code>
+                  <code style="font-size: 0.8rem; font-weight: 600;">#{{ String(record.id || '').substring(0, 8).toUpperCase() }}</code>
                 </template>
                 <template v-else-if="column.key === 'patientId'">
-                  <span style="font-family: monospace; font-size: 0.8rem; background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
-                    {{ String(record.patientId || '').substring(24) }}
-                  </span>
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 700; color: #1e293b; font-size: 0.85rem;">
+                      {{ getPatientInfo(record.patientId)?.fullName || 'Chưa rõ' }}
+                    </span>
+                    <span style="font-family: monospace; font-size: 0.75rem; color: #0047AB; background: #e0f2fe; padding: 1px 4px; border-radius: 4px; width: fit-content;" :title="record.patientId">
+                      {{ getPatientInfo(record.patientId)?.gatewayPatientId ? '#' + getPatientInfo(record.patientId).gatewayPatientId : String(record.patientId || '').substring(24) }}
+                    </span>
+                  </div>
                 </template>
                 <template v-else-if="column.key === 'symptoms'">
-                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.symptoms">
-                    {{ record.symptoms }}
+                  <div 
+                    style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; color: #475569;"
+                    :title="record.symptoms"
+                    @click="viewRecordDetails(record)"
+                    class="clickable-text"
+                  >
+                    {{ record.symptoms || 'Chưa ghi nhận' }}
                   </div>
                 </template>
                 <template v-else-if="column.key === 'diagnosis'">
-                  <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 2px 8px; border-radius: 6px;">
+                  <span 
+                    class="badge badge--completed clickable-badge"
+                    style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 4px 8px; border-radius: 6px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; cursor: pointer;"
+                    :title="record.diagnosis"
+                    @click="viewRecordDetails(record)"
+                  >
                     {{ record.diagnosis }}
                   </span>
                 </template>
@@ -847,7 +862,14 @@
                   <strong style="color: #64748b;">{{ index + 1 }}</strong>
                 </template>
                 <template v-else-if="column.key === 'id'">
-                  <code>#{{ String(record.id || '').substring(24) }}</code>
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span v-if="record.gatewayPatientId" style="font-weight: 700; color: #0047AB; font-size: 0.85rem; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; display: inline-block; width: fit-content;">
+                      #{{ record.gatewayPatientId }}
+                    </span>
+                    <span style="font-family: monospace; font-size: 0.75rem; color: #64748b;" :title="record.id">
+                      {{ record.id ? (record.id.length > 8 ? record.id.substring(0, 8) + '...' : record.id) : 'N/A' }}
+                    </span>
+                  </div>
                 </template>
                 <template v-else-if="column.key === 'fullName'">
                   <strong style="color: #1e293b;">{{ record.fullName }}</strong>
@@ -861,12 +883,22 @@
                   </span>
                 </template>
                 <template v-else-if="column.key === 'medicalHistory'">
-                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.medicalHistory">
+                  <div 
+                    style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;" 
+                    :title="record.medicalHistory"
+                    @click="viewPatientDetails(record)"
+                    class="clickable-text"
+                  >
                     {{ record.medicalHistory || 'Chưa cập nhật' }}
                   </div>
                 </template>
                 <template v-else-if="column.key === 'allergies'">
-                  <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626; font-weight: 600;" :title="record.allergies">
+                  <div 
+                    style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626; font-weight: 600; cursor: pointer;" 
+                    :title="record.allergies"
+                    @click="viewPatientDetails(record)"
+                    class="clickable-text"
+                  >
                     {{ record.allergies || 'Không dị ứng' }}
                   </div>
                 </template>
@@ -1215,29 +1247,60 @@
 
    
     <!-- 4. Medical Record Detail Modal -->
+    <!-- 4. Medical Record Detail Modal -->
     <div v-if="selectedRecord" class="modal-backdrop">
       <div class="modal-card shadow-lg animate-fade-in" style="width: 600px;">
         <div class="modal-header">
-          <h3><i class="fas fa-file-medical text-red" /> Chi tiết bệnh án #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}</h3>
-          <button class="btn-close-modal" @click="selectedRecord = null">&times;</button>
+          <h3><i class="fas fa-file-medical text-red" /> {{ isEditingRecord ? 'Sửa bệnh án' : 'Chi tiết bệnh án' }} #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}</h3>
+          <button class="btn-close-modal" @click="selectedRecord = null; isEditingRecord = false">&times;</button>
         </div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left; max-height: 70vh; overflow-y: auto;">
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Mã bệnh nhân (Guid)</label>
-            <p style="background: #f8fafc; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 0.85rem;">{{ selectedRecord.patientId }}</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Bệnh nhân</label>
+              <p style="font-size: 0.95rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
+                {{ getPatientInfo(selectedRecord.patientId)?.fullName || 'Chưa rõ' }}
+              </p>
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã bệnh nhân (Guid)</label>
+              <p style="font-family: monospace; font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0;" :title="selectedRecord.patientId">
+                {{ selectedRecord.patientId }}
+              </p>
+            </div>
           </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
-            <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.4; white-space: pre-wrap;">{{ selectedRecord.symptoms }}</p>
-          </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
-            <p style="background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; color: #15803d; font-weight: bold;">{{ selectedRecord.diagnosis }}</p>
-          </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
-            <p style="line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 6px;">{{ selectedRecord.notes || 'Không có ghi chú thêm.' }}</p>
-          </div>
+
+          <!-- Edit mode -->
+          <template v-if="isEditingRecord">
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
+              <textarea v-model="editRecordForm.symptoms" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
+              <input v-model="editRecordForm.diagnosis" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
+              <textarea v-model="editRecordForm.notes" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+            </div>
+          </template>
+
+          <!-- Read-only mode -->
+          <template v-else>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
+              <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.4; white-space: pre-wrap;">{{ selectedRecord.symptoms }}</p>
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
+              <p style="background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; color: #15803d; font-weight: bold;">{{ selectedRecord.diagnosis }}</p>
+            </div>
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
+              <p style="line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 6px;">{{ selectedRecord.notes || 'Không có ghi chú thêm.' }}</p>
+            </div>
+          </template>
           
           <div v-if="selectedRecord.prescription" style="border-top: 1.5px dashed #fca5a5; padding-top: 15px; margin-top: 5px;">
             <h4 style="margin: 0 0 10px 0; color: #b91c1c; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
@@ -1254,45 +1317,183 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer" style="padding-top: 10px; display: flex; justify-content: flex-end;">
-          <button class="btn-cancel-modal" @click="selectedRecord = null">Đóng thông tin</button>
+        <div class="modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+          <template v-if="isEditingRecord">
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #166534; color: white;" @click="saveRecord">
+              <i class="fas fa-save" /> Lưu thay đổi
+            </button>
+            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #94a3b8; color: white;" @click="isEditingRecord = false">Hủy</button>
+          </template>
+          <template v-else>
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #0047AB; color: white;" @click="startEditingRecord">
+              <i class="fas fa-edit" /> Sửa bệnh án
+            </button>
+            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #64748b; color: white;" @click="selectedRecord = null; isEditingRecord = false">Đóng thông tin</button>
+          </template>
         </div>
       </div>
     </div>
 
     <!-- 5. Patient Profile View Modal -->
     <div v-if="selectedPatient" class="modal-backdrop">
-      <div class="modal-card shadow-lg animate-fade-in" style="width: 550px;">
-        <div class="modal-header">
-          <h3><i class="fas fa-id-card text-blue" /> Hồ sơ Bệnh nhân</h3>
-          <button class="btn-close-modal" @click="selectedPatient = null">&times;</button>
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 700px; max-width: 90vw;">
+        <div class="modal-header" style="background: #eff6ff; color: #1e40af; border-bottom: 1px solid #dbeafe;">
+          <h3><i class="fas fa-id-card text-blue" /> {{ isEditingPatient ? 'Sửa hồ sơ Bệnh nhân' : 'Hồ sơ Bệnh nhân' }}</h3>
+          <button class="btn-close-modal" @click="selectedPatient = null; isEditingPatient = false">&times;</button>
         </div>
-        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem; text-align: left; max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
+          <!-- Patient identifiers -->
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
             <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Họ và tên</label>
-              <p style="font-size: 1.1rem; font-weight: bold; color: #0f172a; margin: 4px 0 0 0;">{{ selectedPatient.fullName }}</p>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã số (Gateway ID)</label>
+              <p style="font-family: monospace; font-size: 0.9rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
+                #{{ selectedPatient.gatewayPatientId || 'Chưa đồng bộ' }}
+              </p>
             </div>
             <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Giới tính</label>
-              <p style="margin: 4px 0 0 0;">{{ selectedPatient.gender }}</p>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã định danh (GUID)</label>
+              <p style="font-family: monospace; font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0;">
+                {{ selectedPatient.id }}
+              </p>
             </div>
           </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Ngày sinh</label>
-            <p style="margin: 4px 0 0 0;">{{ formatDate(selectedPatient.dateOfBirth) }}</p>
-          </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Tiền sử bệnh lý</label>
-            <p style="background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 4px 0 0 0;">{{ selectedPatient.medicalHistory || 'Chưa có ghi nhận' }}</p>
-          </div>
-          <div>
-            <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Dị ứng thuốc / Thức ăn</label>
-            <p style="background: #fff5f5; padding: 8px; border-radius: 6px; border: 1px solid #fee2e2; color: #991b1b; margin: 4px 0 0 0;">{{ selectedPatient.allergies || 'Không dị ứng' }}</p>
+
+          <!-- Edit mode -->
+          <template v-if="isEditingPatient">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên bệnh nhân</label>
+                <input v-model="editPatientForm.fullName" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Giới tính</label>
+                <select v-model="editPatientForm.gender" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Nhóm máu</label>
+                <select v-model="editPatientForm.bloodGroup" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                  <option value="">Chưa rõ</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="AB">AB</option>
+                  <option value="O">O</option>
+                  <option value="A+">A+</option>
+                  <option value="B+">B+</option>
+                  <option value="AB+">AB+</option>
+                  <option value="O+">O+</option>
+                  <option value="A-">A-</option>
+                  <option value="B-">B-</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
+              <input v-model="editPatientForm.dateOfBirth" type="date" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Tiền sử bệnh lý</label>
+                <textarea v-model="editPatientForm.medicalHistory" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Dị ứng thuốc / Thức ăn</label>
+                <textarea v-model="editPatientForm.allergies" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; color: #991b1b; font-weight: 600;"></textarea>
+              </div>
+            </div>
+          </template>
+
+          <!-- Read-only mode -->
+          <template v-else>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên bệnh nhân</label>
+                <p style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 4px 0 0 0;">{{ selectedPatient.fullName }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Giới tính</label>
+                <p style="margin: 4px 0 0 0; font-weight: 600;">{{ selectedPatient.gender }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Nhóm máu</label>
+                <p style="margin: 4px 0 0 0;">
+                  <span class="badge" style="background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+                    {{ selectedPatient.bloodGroup || 'Chưa rõ' }}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
+              <p style="margin: 4px 0 0 0; font-weight: 500;">{{ formatDate(selectedPatient.dateOfBirth) }}</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Tiền sử bệnh lý</label>
+                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 4px 0 0 0; font-size: 0.85rem; min-height: 50px;">
+                  {{ selectedPatient.medicalHistory || 'Chưa có ghi nhận' }}
+                </p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Dị ứng thuốc / Thức ăn</label>
+                <p style="background: #fff5f5; padding: 10px; border-radius: 8px; border: 1px solid #fee2e2; color: #991b1b; margin: 4px 0 0 0; font-size: 0.85rem; font-weight: 600; min-height: 50px;">
+                  {{ selectedPatient.allergies || 'Không dị ứng' }}
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Examination History -->
+          <div style="margin-top: 5px; border-top: 1.5px dashed #cbd5e1; padding-top: 15px;">
+            <h4 style="font-weight: 800; color: #1e3a8a; margin: 0 0 12px 0; display: flex; align-items: center; gap: 6px; font-size: 0.95rem;">
+              <i class="fas fa-history" /> Lịch sử khám lâm sàng ({{ selectedPatientRecords.length }})
+            </h4>
+            <div v-if="selectedPatientRecords.length > 0" style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+              <div v-for="rec in selectedPatientRecords" :key="rec.id" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; font-weight: 700; color: #64748b; margin-bottom: 6px;">
+                  <span><i class="far fa-calendar-alt" /> {{ formatDate(rec.createdAt) }}</span>
+                  <span style="color: #0047AB;">BS. {{ rec.doctorName || 'Medicare' }}</span>
+                </div>
+                <div style="margin-bottom: 4px; line-height: 1.4;">
+                  <strong style="color: #475569;">Triệu chứng:</strong> {{ rec.symptoms }}
+                </div>
+                <div style="line-height: 1.4;">
+                  <strong style="color: #475569;">Chẩn đoán:</strong> 
+                  <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 4px;">
+                    {{ rec.diagnosis }}
+                  </span>
+                </div>
+                <div v-if="rec.notes" style="margin-top: 4px; font-style: italic; color: #64748b;">
+                  * Lời dặn: {{ rec.notes }}
+                </div>
+              </div>
+            </div>
+            <div v-else style="text-align: center; color: #94a3b8; font-style: italic; padding: 20px 0; font-size: 0.85rem;">
+              Chưa có lịch sử khám bệnh nào trên hệ thống.
+            </div>
           </div>
         </div>
-        <div class="modal-footer" style="padding-top: 10px; display: flex; justify-content: flex-end;">
-          <button class="btn-cancel-modal" @click="selectedPatient = null">Đóng hồ sơ</button>
+        <div class="modal-footer" style="padding: 10px 1.5rem 1.5rem 1.5rem; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9;">
+          <template v-if="isEditingPatient">
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #166534; color: white;" @click="savePatientProfile">
+              <i class="fas fa-save" /> Lưu thay đổi
+            </button>
+            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #94a3b8; color: white;" @click="isEditingPatient = false">Hủy</button>
+          </template>
+          <template v-else>
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #0047AB; color: white;" @click="startEditingPatient">
+              <i class="fas fa-edit" /> Sửa hồ sơ
+            </button>
+            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #64748b; color: white;" @click="selectedPatient = null; isEditingPatient = false">Đóng hồ sơ</button>
+          </template>
         </div>
       </div>
     </div>
@@ -1305,7 +1506,7 @@
   import api, { publicApi } from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
-  import { medicalRecordService } from '@/services/medicalRecordService'
+  import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
   import MedicineManagement from '@/views/Pharmacy/MedicineManagement.vue'
   import SupplierManagement from '@/views/Pharmacy/SupplierManagement.vue'
   import ImportBill from '@/views/Pharmacy/ImportBill.vue'
@@ -1399,25 +1600,28 @@
       title: 'Mã BA',
       dataIndex: 'id',
       key: 'id',
-      width: '120px',
+      width: '100px',
       sorter: (a, b) => a.id.localeCompare(b.id)
     },
     {
-      title: 'Mã Bệnh nhân',
+      title: 'Bệnh nhân',
       dataIndex: 'patientId',
       key: 'patientId',
+      width: '200px',
       sorter: (a, b) => a.patientId.localeCompare(b.patientId)
     },
     {
       title: 'Triệu chứng',
       dataIndex: 'symptoms',
       key: 'symptoms',
+      width: '200px',
       sorter: (a, b) => (a.symptoms || '').localeCompare(b.symptoms || '')
     },
     {
       title: 'Chẩn đoán',
       dataIndex: 'diagnosis',
       key: 'diagnosis',
+      width: '200px',
       customFilterDropdown: true,
       onFilter: (value, record) => (record.diagnosis || '').toLowerCase().includes(value.toLowerCase()),
       sorter: (a, b) => (a.diagnosis || '').localeCompare(b.diagnosis || '')
@@ -1425,6 +1629,7 @@
     {
       title: 'Đơn thuốc',
       key: 'prescription',
+      width: '120px',
       sorter: (a, b) => (a.prescription ? 1 : 0) - (b.prescription ? 1 : 0),
       filters: [
         { text: 'Có kê đơn', value: true },
@@ -1436,6 +1641,7 @@
       title: 'Ngày khám',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: '120px',
       sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     },
     {
@@ -1737,16 +1943,156 @@
   const selectedRecord = ref(null)
   const selectedPatient = ref(null)
 
+  const getPatientInfo = (patientId) => {
+    if (!patientId) return null
+    return allPatientsList.value.find(p => p.id === patientId) || null
+  }
+
+  const isEditingRecord = ref(false)
+  const editRecordForm = ref({
+    symptoms: '',
+    diagnosis: '',
+    notes: ''
+  })
+
+  function startEditingRecord() {
+    if (!selectedRecord.value) return
+    editRecordForm.value.symptoms = selectedRecord.value.symptoms || ''
+    editRecordForm.value.diagnosis = selectedRecord.value.diagnosis || ''
+    editRecordForm.value.notes = selectedRecord.value.notes || ''
+    isEditingRecord.value = true
+  }
+
+  async function saveRecord() {
+    if (!selectedRecord.value) return
+    if (!editRecordForm.value.symptoms.trim() || !editRecordForm.value.diagnosis.trim()) {
+      alert('Vui lòng điền triệu chứng và chẩn đoán!')
+      return
+    }
+    loading.value = true
+    try {
+      const res = await medicalRecordService.updateRecord(selectedRecord.value.id, {
+        patientId: selectedRecord.value.patientId,
+        doctorId: selectedRecord.value.doctorId,
+        title: selectedRecord.value.title,
+        symptoms: editRecordForm.value.symptoms,
+        diagnosis: editRecordForm.value.diagnosis,
+        notes: editRecordForm.value.notes,
+        weight: selectedRecord.value.weight,
+        height: selectedRecord.value.height,
+        bloodPressure: selectedRecord.value.bloodPressure,
+        heartRate: selectedRecord.value.heartRate,
+        temperature: selectedRecord.value.temperature,
+        customMetricsJson: selectedRecord.value.customMetricsJson,
+        attachmentsJson: selectedRecord.value.attachmentsJson
+      })
+      if (res.success) {
+        alert('Cập nhật bệnh án thành công!')
+        
+        // Cập nhật tại chỗ
+        selectedRecord.value.symptoms = editRecordForm.value.symptoms
+        selectedRecord.value.diagnosis = editRecordForm.value.diagnosis
+        selectedRecord.value.notes = editRecordForm.value.notes
+        
+        // Tải lại toàn bộ bệnh án
+        const recordsData = await medicalRecordService.getAllRecords()
+        allMedicalRecords.value = recordsData || []
+        
+        isEditingRecord.value = false
+      } else {
+        alert(res.message || 'Lỗi khi cập nhật.')
+      }
+    } catch (e) {
+      alert('Lỗi: ' + (e.message || e))
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const isEditingPatient = ref(false)
+  const editPatientForm = ref({
+    fullName: '',
+    dateOfBirth: '',
+    gender: 'Nam',
+    bloodGroup: '',
+    medicalHistory: '',
+    allergies: ''
+  })
+
+  const selectedPatientRecords = computed(() => {
+    if (!selectedPatient.value) return []
+    const patientGuid = mapUserIdToGuid(selectedPatient.value.id).toLowerCase()
+    return allMedicalRecords.value.filter(r => {
+      if (!r.patientId) return false
+      return mapUserIdToGuid(r.patientId).toLowerCase() === patientGuid
+    })
+  })
+
+  function startEditingPatient() {
+    if (!selectedPatient.value) return
+    editPatientForm.value.fullName = selectedPatient.value.fullName || ''
+    editPatientForm.value.dateOfBirth = selectedPatient.value.dateOfBirth ? new Date(selectedPatient.value.dateOfBirth).toISOString().split('T')[0] : ''
+    editPatientForm.value.gender = selectedPatient.value.gender || 'Nam'
+    editPatientForm.value.bloodGroup = selectedPatient.value.bloodGroup || ''
+    editPatientForm.value.medicalHistory = selectedPatient.value.medicalHistory || ''
+    editPatientForm.value.allergies = selectedPatient.value.allergies || ''
+    isEditingPatient.value = true
+  }
+
+  async function savePatientProfile() {
+    if (!selectedPatient.value) return
+    if (!editPatientForm.value.fullName.trim()) {
+      alert('Vui lòng điền họ và tên!')
+      return
+    }
+    loading.value = true
+    try {
+      const res = await medicalRecordService.updatePatientProfile(selectedPatient.value.id, {
+        fullName: editPatientForm.value.fullName,
+        dateOfBirth: editPatientForm.value.dateOfBirth,
+        gender: editPatientForm.value.gender,
+        bloodGroup: editPatientForm.value.bloodGroup,
+        medicalHistory: editPatientForm.value.medicalHistory,
+        allergies: editPatientForm.value.allergies
+      })
+      if (res.success) {
+        alert('Cập nhật thông tin bệnh nhân thành công!')
+        
+        // Cập nhật thông tin hiển thị tại chỗ
+        selectedPatient.value.fullName = editPatientForm.value.fullName
+        selectedPatient.value.dateOfBirth = editPatientForm.value.dateOfBirth
+        selectedPatient.value.gender = editPatientForm.value.gender
+        selectedPatient.value.bloodGroup = editPatientForm.value.bloodGroup
+        selectedPatient.value.medicalHistory = editPatientForm.value.medicalHistory
+        selectedPatient.value.allergies = editPatientForm.value.allergies
+        
+        // Tải lại toàn bộ danh sách bệnh nhân
+        const patientsRes = await medicalRecordService.getAllPatients()
+        allPatientsList.value = patientsRes || []
+        
+        isEditingPatient.value = false
+      } else {
+        alert(typeof res.message === 'object' ? JSON.stringify(res.message) : (res.message || 'Lỗi khi cập nhật.'))
+      }
+    } catch (e) {
+      alert('Lỗi: ' + (e.message || e))
+    } finally {
+      loading.value = false
+    }
+  }
+
   const filteredRecords = computed(() => {
     let list = [...allMedicalRecords.value]
     if (searchRecordQuery.value) {
       const q = searchRecordQuery.value.toLowerCase()
-      list = list.filter(r => 
-        r.symptoms?.toLowerCase().includes(q) || 
-        r.diagnosis?.toLowerCase().includes(q) ||
-        r.notes?.toLowerCase().includes(q) ||
-        r.patientId?.toLowerCase().includes(q)
-      )
+      list = list.filter(r => {
+        const pName = getPatientInfo(r.patientId)?.fullName || ''
+        return r.symptoms?.toLowerCase().includes(q) || 
+               r.diagnosis?.toLowerCase().includes(q) ||
+               r.notes?.toLowerCase().includes(q) ||
+               r.patientId?.toLowerCase().includes(q) ||
+               pName.toLowerCase().includes(q)
+      })
     }
     return list
   })
@@ -2443,5 +2789,21 @@
 }
 .custom-antd-table :deep(.ant-table-pagination) {
   margin: 16px 0;
+}
+.clickable-text {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.clickable-text:hover {
+  color: #0047AB !important;
+  text-decoration: underline;
+}
+.clickable-badge {
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.clickable-badge:hover {
+  transform: scale(1.02);
+  opacity: 0.95;
 }
 </style>

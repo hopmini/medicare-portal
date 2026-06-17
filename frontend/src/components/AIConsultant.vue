@@ -61,7 +61,7 @@
                   </div>
                 </div>
                 <div class="diag-actions">
-                  <button class="btn-book-now" @click="redirectToBooking(msg.diagnostics.specialty)">
+                  <button class="btn-book-now" @click="redirectToBooking(msg.diagnostics.specialty, msg.diagnostics.serviceId)">
                     Đặt lịch khám ngay <i class="fas fa-arrow-right" />
                   </button>
                 </div>
@@ -108,6 +108,7 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { chatWithGroq, fetchServices } from '@/services/groqService'
 
 const router = useRouter()
 const isOpen = ref(false)
@@ -115,11 +116,16 @@ const showTooltip = ref(true)
 const userInput = ref('')
 const isTyping = ref(false)
 const messagesContainer = ref(null)
+const medicalServices = ref([])
+
+onMounted(async () => {
+  medicalServices.value = await fetchServices()
+})
 
 const messages = ref([
   {
     sender: 'ai',
-    text: 'Xin chào! Tôi là Trợ lý Y tế AI của Medicare. Hãy mô tả ngắn gọn các triệu chứng hoặc cảm giác khó chịu của bạn để tôi tư vấn chuyên khoa khám phù hợp nhất nhé! 🏥',
+    text: 'Xin chào! Tôi là Trợ lý Y tế AI của Medicare, được hỗ trợ bởi Groq AI. Hãy mô tả triệu chứng hoặc đặt bất kỳ câu hỏi nào về sức khỏe để tôi tư vấn nhé! 🏥',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 ])
@@ -138,17 +144,17 @@ function sendQuickPrompt(promptText) {
 }
 
 function getUrgencyClass(urgency) {
+  if (!urgency) return 'urgency-low'
   if (urgency.includes('Khẩn cấp')) return 'urgency-high'
   if (urgency.includes('Trung bình')) return 'urgency-medium'
   return 'urgency-low'
 }
 
-function redirectToBooking(specialty) {
+function redirectToBooking(specialty, serviceId) {
   isOpen.value = false
-  router.push({
-    path: '/book-appointment',
-    query: { autoSpecialty: specialty }
-  })
+  const query = { autoSpecialty: specialty }
+  if (serviceId) query.serviceId = serviceId
+  router.push({ path: '/patient', query })
 }
 
 function scrollToBottom() {
@@ -159,11 +165,10 @@ function scrollToBottom() {
   })
 }
 
-function handleSend() {
+async function handleSend() {
   const text = userInput.value.trim()
   if (!text) return
 
-  // Push user message
   messages.value.push({
     sender: 'user',
     text: text,
@@ -174,119 +179,26 @@ function handleSend() {
   isTyping.value = true
   scrollToBottom()
 
-  // Simulate AI Response with clinical rules
-  setTimeout(() => {
-    isTyping.value = false
-    const response = analyzeSymptoms(text)
-    messages.value.push({
-      sender: 'ai',
-      text: response.reply,
-      diagnostics: response.diagnostics,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-    })
-    scrollToBottom()
-  }, 1500)
-}
+  const groqMessages = messages.value
+    .filter(m => m.sender === 'ai' || m.sender === 'user')
+    .slice(-10)
+    .map(m => ({ role: m.sender === 'ai' ? 'assistant' : 'user', content: m.text }))
 
-function analyzeSymptoms(query) {
-  const q = query.toLowerCase()
-  
-  // Gastrointestinal rules
-  if (q.includes('dạ dày') || q.includes('bụng') || q.includes('tiêu hóa') || q.includes('nôn') || q.includes('bao tử') || q.includes('đi ngoài') || q.includes('tiêu chảy')) {
-    return {
-      reply: 'Dựa trên các triệu chứng liên quan đến tiêu hóa hoặc vùng bụng của bạn, hệ thống AI đề xuất bạn nên thăm khám tại **Khoa Tiêu Hóa** để thực hiện các kiểm tra chuyên sâu.',
-      diagnostics: {
-        specialty: 'Khoa Tiêu Hóa',
-        urgency: 'Trung bình - Cần đi khám sớm',
-        recommendedService: 'Khám Tiêu hóa & Siêu âm bụng tổng quát'
-      }
-    }
-  }
+  const result = await chatWithGroq(groqMessages, medicalServices.value)
 
-  // Respiratory / Flu rules
-  if (q.includes('ho') || q.includes('sốt') || q.includes('họng') || q.includes('cúm') || q.includes('covid') || q.includes('khó thở') || q.includes('phổi') || q.includes('sổ mũi')) {
-    const isEmergency = q.includes('khó thở') || q.includes('tức ngực')
-    return {
-      reply: isEmergency 
-        ? 'Bạn đang có triệu chứng khó thở hoặc tức ngực đi kèm sốt ho. Đây là những biểu hiện cần lưu ý đặc biệt, đề xuất kiểm tra sức khỏe khẩn cấp tại **Khoa Hô Hấp / Nội Tổng Quát**.'
-        : 'Bạn đang có các biểu hiện của nhiễm trùng hô hấp hoặc cảm cúm. Medicare đề xuất bạn nên thăm khám tại **Khoa Nội Tổng Quát** để được chẩn đoán và kê đơn phù hợp.',
-      diagnostics: {
-        specialty: 'Khoa Nội Tổng Quát',
-        urgency: isEmergency ? 'Khẩn cấp - Cần khám ngay' : 'Trung bình - Cần đi khám',
-        recommendedService: 'Khám Nội tổng quát & Chụp X-Quang Phổi thẳng'
-      }
-    }
-  }
-
-  // Cardiovascular rules
-  if (q.includes('tim') || q.includes('ngực') || q.includes('huyết áp') || q.includes('đập nhanh') || q.includes('nhói ngực')) {
-    return {
-      reply: 'Triệu chứng đau nhói ngực, hồi hộp hoặc bất ổn huyết áp có thể liên quan đến hệ tuần hoàn. Đề xuất bạn nên đặt lịch hẹn khẩn cấp tại **Khoa Tim Mạch**.',
-      diagnostics: {
-        specialty: 'Khoa Tim Mạch',
-        urgency: 'Khẩn cấp - Cần kiểm tra ngay',
-        recommendedService: 'Khám Tim Mạch & Đo Điện tâm đồ (ECG)'
-      }
-    }
-  }
-
-  // Dental / Oral rules
-  if (q.includes('răng') || q.includes('nướu') || q.includes('sâu') || q.includes('nhổ răng') || q.includes('buốt')) {
-    return {
-      reply: 'Các vấn đề đau buốt răng nướu cần được điều trị y khoa nha khoa chuyên biệt. Vui lòng đăng ký khám tại **Khoa Răng Hàm Mặt**.',
-      diagnostics: {
-        specialty: 'Khoa Răng Hàm Mặt',
-        urgency: 'Nhẹ - Hẹn khám thường quy',
-        recommendedService: 'Khám răng miệng & Chụp X-Quang quanh chóp'
-      }
-    }
-  }
-
-  // Ophthalmic rules
-  if (q.includes('mắt') || q.includes('mờ') || q.includes('cận') || q.includes('đỏ mắt') || q.includes('nhức mắt')) {
-    return {
-      reply: 'Triệu chứng nhức mắt, giảm thị lực hoặc đỏ mắt cần được đo khám thị lực bằng thiết bị chuyên khoa tại **Khoa Mắt**.',
-      diagnostics: {
-        specialty: 'Khoa Mắt',
-        urgency: 'Nhẹ - Cần đi khám',
-        recommendedService: 'Đo thị lực & Khám đáy mắt sinh hiển vi'
-      }
-    }
-  }
-
-  // ENT rules
-  if (q.includes('tai') || q.includes('mũi') || q.includes('ù tai') || q.includes('xoang') || q.includes('viêm mũi')) {
-    return {
-      reply: 'Các triệu chứng ù tai, nghẹt mũi kéo dài hoặc đau vùng xoang đề xuất kiểm tra lâm sàng và nội soi tại **Khoa Tai Mũi Họng**.',
-      diagnostics: {
-        specialty: 'Khoa Tai Mũi Họng',
-        urgency: 'Nhẹ - Hẹn khám thường quy',
-        recommendedService: 'Khám Tai Mũi Họng & Nội soi Tai Mũi Họng'
-      }
-    }
-  }
-
-  // Pediatrics rules
-  if (q.includes('trẻ') || q.includes('bé') || q.includes('con tôi') || q.includes('nhi') || q.includes('sơ sinh')) {
-    return {
-      reply: 'Triệu chứng của trẻ nhỏ cần được tiếp cận chuyên biệt bởi bác sĩ chuyên khoa nhi. Đề xuất đặt lịch tại **Khoa Nhi**.',
-      diagnostics: {
-        specialty: 'Khoa Nhi',
-        urgency: 'Trung bình - Cần đi khám',
-        recommendedService: 'Khám Nhi tổng quát'
-      }
-    }
-  }
-
-  // Fallback
-  return {
-    reply: 'Medicare AI Assistant đã tiếp nhận mô tả triệu chứng của bạn. Để có kết quả chính xác nhất, bạn nên đăng ký khám tổng quát tại **Khoa Nội Tổng Quát** để bác sĩ kiểm tra và hướng dẫn chuyển khoa nếu cần.',
-    diagnostics: {
-      specialty: 'Khoa Nội Tổng Quát',
-      urgency: 'Trung bình - Cần đi khám',
-      recommendedService: 'Khám sức khỏe tổng quát ban đầu'
-    }
-  }
+  isTyping.value = false
+  messages.value.push({
+    sender: 'ai',
+    text: result.reply,
+    diagnostics: result.specialty ? {
+      specialty: result.specialty,
+      urgency: result.urgency || 'Trung bình',
+      recommendedService: result.recommendedService || 'Khám tổng quát',
+      serviceId: result.serviceId || undefined
+    } : null,
+    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  })
+  scrollToBottom()
 }
 </script>
 

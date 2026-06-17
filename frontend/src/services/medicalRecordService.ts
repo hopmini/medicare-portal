@@ -13,9 +13,17 @@ export interface MedicalRecord {
   id?: string
   patientId: string
   doctorId: string
+  title?: string
   symptoms: string
   diagnosis: string
   notes?: string
+  weight?: number
+  height?: number
+  bloodPressure?: string
+  heartRate?: number
+  temperature?: number
+  customMetricsJson?: string
+  attachmentsJson?: string
   createdAt?: string
   prescription?: Prescription | null
 }
@@ -42,6 +50,7 @@ export interface PatientProfile {
   gender: string
   medicalHistory: string
   allergies: string
+  bloodGroup?: string
 }
 
 export const medicalRecordService = {
@@ -62,6 +71,7 @@ export const medicalRecordService = {
     gender: string
     medicalHistory: string
     allergies: string
+    bloodGroup?: string
   }): Promise<{ success: boolean; message?: string }> {
     try {
       const patientGuid = mapUserIdToGuid(userId)
@@ -123,9 +133,17 @@ export const medicalRecordService = {
   async createRecord(data: {
     patientId: string
     doctorId: string
+    title?: string
     symptoms: string
     diagnosis: string
     notes?: string
+    weight?: number
+    height?: number
+    bloodPressure?: string
+    heartRate?: number
+    temperature?: number
+    customMetricsJson?: string
+    attachmentsJson?: string
     appointmentId?: string
     patientName?: string
     gatewayPatientId?: number
@@ -200,6 +218,22 @@ export const medicalRecordService = {
       return {
         success: false,
         message: error.response?.data || 'Không thể kê đơn thuốc.'
+      }
+    }
+  },
+
+  async updateRecord(recordId: string, data: any): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await medicalApi.put(`/MedicalRecords/${recordId}`, data)
+      return {
+        success: true,
+        message: response.data?.message
+      }
+    } catch (error: any) {
+      console.error('Failed to update medical record:', error)
+      return {
+        success: false,
+        message: error.response?.data || 'Không thể cập nhật bệnh án.'
       }
     }
   }

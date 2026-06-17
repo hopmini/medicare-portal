@@ -1129,6 +1129,19 @@
       patientForm.value.insurance = u.insurance || ''
       patientForm.value.history = u.history || ''
     }
+    // Auto-select service from AI chatbot recommendation
+    const serviceId = route.query.serviceId
+    if (serviceId) {
+      const timer = setInterval(() => {
+        if (medicalServices.value.length > 0) {
+          const svc = medicalServices.value.find(s => String(s.id) === serviceId)
+          if (svc && !selectedServices.value.some(s => s.id === svc.id)) {
+            toggleService(svc)
+          }
+          clearInterval(timer)
+        }
+      }, 200)
+    }
   })
 </script>
 

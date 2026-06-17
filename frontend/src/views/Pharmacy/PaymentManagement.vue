@@ -84,6 +84,7 @@
                     :pagination="{ pageSize: 8, showSizeChanger: true }"
                     size="middle"
                     :customRow="customTableRow"
+                    :scroll="{ x: 1400 }"
                   >
                     <template #bodyCell="{ text, record, column }">
                       <template v-if="column.key === 'code'">
@@ -119,24 +120,15 @@
                       <template v-else-if="column.key === 'actions'">
                         <div style="display: flex; gap: 8px; justify-content: center;">
                           <a-tooltip title="Xem chi tiết">
-                            <a-button type="text" size="small" style="color: #0047AB;" @click="selectBill(record)">
+                            <a-button type="text" size="small" style="color: #0047AB;" @click.stop="selectBill(record)">
                               <i class="far fa-eye" />
                             </a-button>
                           </a-tooltip>
                           <a-tooltip title="In hóa đơn">
-                            <a-button type="text" size="small" style="color: #64748b;" @click="printInvoice(record)">
+                            <a-button type="text" size="small" style="color: #64748b;" @click.stop="printInvoice(record)">
                               <i class="fas fa-print" />
                             </a-button>
                           </a-tooltip>
-                          <a-dropdown>
-                            <a-button type="text" size="small" style="color: #64748b;"><i class="fas fa-ellipsis-v" /></a-button>
-                            <template #overlay>
-                              <a-menu>
-                                <a-menu-item key="export"><i class="fas fa-download" style="margin-right: 6px;" /> Xuất dữ liệu</a-menu-item>
-                                <a-menu-item key="history" @click="activeTab = 'history'; historySearchQuery = record.code;"><i class="fas fa-history" style="margin-right: 6px;" /> Xem lịch sử GD</a-menu-item>
-                              </a-menu>
-                            </template>
-                          </a-dropdown>
                         </div>
                       </template>
                     </template>
@@ -145,7 +137,7 @@
                 </a-card>
               </a-col>
 
-              <!-- Panel Chi tiết hóa đơn (Split panel on the right) -->
+              <!-- Panel Chi tiết hóa đơn -->
               <a-col :xs="24" :lg="9" v-if="selectedBill">
                 <a-card :bordered="false" class="main-card detail-panel">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -234,7 +226,7 @@
                     </a-button>
                   </div>
 
-                  <!-- Actions (Read-only for Admin) -->
+                  <!-- Actions -->
                   <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px;">
                     <a-button type="primary" style="background: #0047AB; border-color: #0047AB; border-radius: 8px; font-weight: 600;" @click="viewFullDetail(selectedBill)">
                       Xem chi tiết đầy đủ
@@ -247,6 +239,7 @@
               </a-col>
             </a-row>
           </div>
+
 
           <!-- ==================== TAB 2: Lịch sử thanh toán ==================== -->
           <div v-if="activeTab === 'history'">

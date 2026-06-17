@@ -13,6 +13,12 @@
     <!-- NAVBAR -->
     <Navbar />
 
+    <!-- FLOATING DARK MODE TOGGLE -->
+    <button class="theme-toggle-btn" @click="toggleTheme" title="Chuyển chế độ sáng/tối">
+      <i v-if="isDarkMode" class="fas fa-sun" />
+      <i v-else class="fas fa-moon" />
+    </button>
+
     <!-- ─── HERO ─── -->
     <section class="hero">
       <!-- Background elements -->
@@ -594,6 +600,19 @@
   const router = useRouter()
   const authStore = useAuthStore()
 
+  const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
+
+  function toggleTheme () {
+    isDarkMode.value = !isDarkMode.value
+    if (isDarkMode.value) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }
+
   function redirectToBooking () {
     if (authStore.isAuthenticated.value) {
       const user = authStore.user.value
@@ -659,6 +678,11 @@
 
   // ── Lifecycle ──────────────────────────────────────────────────────
   onMounted(() => {
+    if (isDarkMode.value) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
     fetchRealDoctors()
     setTimeout(() => {
       loaded.value = true
@@ -836,4 +860,295 @@
 
 <style scoped>
 @import '@/styles/home.css';
+</style>
+
+<style>
+/* [ignoring loop detection] */
+html.dark {
+  --white:         #1e293b;
+  --off-white:     #0f172a;
+  --gray-50:       #0f172a;
+  --gray-100:      #1e293b;
+  --gray-200:      #334155;
+  --gray-300:      #475569;
+  --gray-400:      #64748b;
+  --gray-500:      #94a3b8;
+  --gray-600:      #cbd5e1;
+  --gray-700:      #e2e8f0;
+  --gray-800:      #f1f5f9;
+  --gray-900:      #ffffff;
+  --text:          #f1f5f9;
+  --text-muted:    #94a3b8;
+  --cobalt-pale:   #1e3a8a;
+  --cobalt-faint:  #172554;
+}
+
+html.dark body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+html.dark .home {
+  background-color: #1e293b;
+}
+
+/* Navbar */
+html.dark .navbar {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .navbar--scrolled {
+  background: #0f172a !important;
+}
+html.dark .nav-links li a,
+html.dark .dropdown-toggle {
+  color: #cbd5e1 !important;
+}
+html.dark .nav-links li a:hover,
+html.dark .nav-links li a.router-link-active,
+html.dark .dropdown:hover .dropdown-toggle {
+  color: #3b82f6 !important;
+}
+html.dark .dropdown-menu {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .dropdown-menu a {
+  color: #e2e8f0 !important;
+}
+html.dark .dropdown-menu a:hover {
+  background: #334155 !important;
+  color: #3b82f6 !important;
+}
+html.dark .user-pill {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .user-pill__name {
+  color: #f1f5f9 !important;
+}
+
+/* Hero / Sections */
+html.dark .hero {
+  background: #0f172a !important;
+}
+html.dark .hero__title {
+  color: #ffffff !important;
+}
+html.dark .hero__subtitle {
+  color: #94a3b8 !important;
+}
+html.dark .hero__eyebrow {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #3b82f6 !important;
+}
+html.dark .hero__stats,
+html.dark .hcard {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .stat-item {
+  border-right-color: #334155 !important;
+}
+html.dark .stat-item__num {
+  color: #3b82f6 !important;
+}
+html.dark .hcard__name {
+  color: #ffffff !important;
+}
+html.dark .hcard__avatar {
+  background: #1e3a8a !important;
+  color: #3b82f6 !important;
+}
+html.dark .slot--taken {
+  background: #334155 !important;
+  color: #94a3b8 !important;
+}
+html.dark .hcard__mini-title {
+  color: #ffffff !important;
+}
+
+/* Services / How / Doctors */
+html.dark .services {
+  background: #1e293b !important;
+}
+html.dark .section-title {
+  color: #ffffff !important;
+}
+html.dark .section-sub {
+  color: #94a3b8 !important;
+}
+html.dark .service-card {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+html.dark .service-card:hover {
+  background: #1e293b !important;
+}
+html.dark .service-card__num {
+  color: #1e293b !important;
+}
+html.dark .service-card:hover .service-card__num {
+  color: #1e3a8a !important;
+}
+html.dark .service-card__title {
+  color: #f1f5f9 !important;
+}
+html.dark .service-card__desc {
+  color: #94a3b8 !important;
+}
+html.dark .doctors {
+  background: #0f172a !important;
+}
+html.dark .doctor-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .doctor-card__avatar {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+}
+html.dark .doctor-card__name {
+  color: #ffffff !important;
+}
+html.dark .doctor-card__specialty {
+  background: #1e3a8a !important;
+  color: #3b82f6 !important;
+}
+html.dark .doctor-card__fee {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+}
+html.dark .doctor-card__fee strong {
+  color: #3b82f6 !important;
+}
+html.dark .doctors-more p {
+  color: #cbd5e1 !important;
+}
+html.dark .doctors-more strong {
+  color: #ffffff !important;
+}
+html.dark .how {
+  background: #1e293b !important;
+}
+html.dark .how-step__bubble {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .how-step__body h3 {
+  color: #ffffff !important;
+}
+html.dark .how-step__body p {
+  color: #94a3b8 !important;
+}
+html.dark .timeline-bar {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+html.dark .timeline-bar__label {
+  color: #94a3b8 !important;
+}
+html.dark .timeline-bar__total {
+  color: #3b82f6 !important;
+}
+html.dark .testimonials {
+  background: #0f172a !important;
+}
+html.dark .testi-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+html.dark .testi-card__text {
+  color: #cbd5e1 !important;
+}
+html.dark .testi-card__name {
+  color: #ffffff !important;
+}
+html.dark .contact {
+  background: #1e293b !important;
+}
+html.dark .contact-item__label {
+  color: #94a3b8 !important;
+}
+html.dark .contact-item__value {
+  color: #ffffff !important;
+}
+html.dark .contact-hours {
+  background: #0f172a !important;
+}
+html.dark .contact-hours h4 {
+  color: #ffffff !important;
+}
+html.dark .hours-row {
+  border-bottom-color: #1e293b !important;
+}
+html.dark .hours-row span {
+  color: #cbd5e1 !important;
+}
+html.dark .hours-time {
+  color: #ffffff !important;
+}
+html.dark .footer {
+  background: #0f172a !important;
+  border-top: 1px solid #1e293b !important;
+}
+html.dark .footer__col h5 {
+  color: #ffffff !important;
+}
+html.dark .footer__col a {
+  color: #94a3b8 !important;
+}
+html.dark .footer__col a:hover {
+  color: #3b82f6 !important;
+}
+html.dark .footer__bottom {
+  border-top-color: #1e293b !important;
+}
+html.dark .footer__bottom p {
+  color: #64748b !important;
+}
+html.dark .badge {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+/* Floating theme switch button */
+.theme-toggle-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 96px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 71, 171, 0.15);
+  color: #0047AB;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0, 71, 171, 0.15);
+  z-index: 9999;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.theme-toggle-btn:hover {
+  transform: scale(1.1) rotate(15deg);
+  background: white;
+  box-shadow: 0 12px 40px rgba(0, 71, 171, 0.25);
+  border-color: #0047AB;
+}
+html.dark .theme-toggle-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fbbf24;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+html.dark .theme-toggle-btn:hover {
+  background: #1e293b;
+  border-color: #fbbf24;
+  box-shadow: 0 12px 40px rgba(251, 191, 36, 0.25);
+}
 </style>

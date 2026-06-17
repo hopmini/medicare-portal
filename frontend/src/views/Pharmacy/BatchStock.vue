@@ -189,7 +189,7 @@ const notif = useNotificationStore();
 import { ref, computed, onMounted } from 'vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
-import { getMedicines } from '@/services/pharmacyService'
+import { getMedicines, getImportBills } from '@/services/pharmacyService'
 
 const props = withDefaults(
   defineProps<{
@@ -305,42 +305,101 @@ function getStatusText(status: string) {
 async function loadRealBatches() {
   loading.value = true
   try {
-    const data = await getMedicines()
-    batchList.value = data.map((m: any, idx: number) => {
-      // Determine status dynamically from stock and dates
-      let status: 'normal' | 'near' | 'expired' | 'low' = 'normal'
-      if (m.stock <= 10) {
-        status = 'low'
-      } else if (m.expiryDate) {
-        const expiry = new Date(m.expiryDate)
-        const now = new Date()
-        const diffTime = expiry.getTime() - now.getTime()
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-        if (diffDays < 0) {
-          status = 'expired'
-        } else if (diffDays <= 30) {
-          status = 'near'
+    const [medicinesData, importBillsData] = await Promise.all([
+      getMedicines(),
+      getImportBills()
+    ])
+
+    const medicineStockMap: Record<string, { stock: number; code: string }> = {}
+    medicinesData.forEach((m: any) => {
+      if (m.name) {
+        medicineStockMap[m.name.toLowerCase()] = {
+          stock: m.stockQuantity ?? m.stock ?? 0,
+          code: m.code
         }
       }
-
-      const expiryFormatted = m.expiryDate 
-        ? new Date(m.expiryDate).toLocaleDateString('vi-VN')
-        : '30/08/2026'
-
-      return {
-        id: m.id,
-        medCode: m.code || `MED${String(m.id).padStart(3, '0')}`,
-        name: m.name,
-        batch: `LO${String(m.id).padStart(3, '0')}`,
-        expiryDate: expiryFormatted,
-        stock: m.stock || 0,
-        unit: m.unit || 'Viên',
-        importDate: '12/03/2025',
-        importCode: `PN${String(100 + m.id)}`,
-        status: status
-      }
     })
+
+    const list: BatchStock[] = []
+    let tempId = 1
+
+    if (importBillsData && importBillsData.length > 0) {
+      importBillsData.forEach((bill: any) => {
+        const billCode = bill.code || `PN${bill.id}`;
+        const billDate = bill.date ? new Date(bill.date).toLocaleDateString('vi-VN') : '';
+        
+        (bill.medications || []).forEach((med: any) => {
+          const medKey = med.name ? med.name.toLowerCase() : '';
+          const currentStock = medicineStockMap[medKey]?.stock ?? med.qty;
+          const medCode = med.code || medicineStockMap[medKey]?.code || 'MED001';
+
+          let status: 'normal' | 'near' | 'expired' | 'low' = 'normal'
+          if (currentStock <= 10) {
+            status = 'low'
+          } else if (med.expiryDate) {
+            const expiry = new Date(med.expiryDate)
+            const now = new Date()
+            const diffTime = expiry.getTime() - now.getTime()
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+            if (diffDays < 0) {
+              status = 'expired'
+            } else if (diffDays <= 30) {
+              status = 'near'
+            }
+          }
+
+          list.push({
+            id: med.id || tempId++,
+            medCode: medCode,
+            name: med.name,
+            batch: med.batch || 'LO001',
+            expiryDate: med.expiryDate ? new Date(med.expiryDate).toLocaleDateString('vi-VN') : '30/08/2026',
+            stock: currentStock,
+            unit: med.unit || 'Viên',
+            importDate: billDate,
+            importCode: billCode,
+            status: status
+          })
+        })
+      })
+    }
+
+    if (list.length === 0) {
+      medicinesData.forEach((m: any, idx: number) => {
+        let status: 'normal' | 'near' | 'expired' | 'low' = 'normal'
+        const stockVal = m.stockQuantity ?? m.stock ?? 0
+        if (stockVal <= 10) {
+          status = 'low'
+        } else if (m.expiryDate) {
+          const expiry = new Date(m.expiryDate)
+          const now = new Date()
+          const diffTime = expiry.getTime() - now.getTime()
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+          if (diffDays < 0) {
+            status = 'expired'
+          } else if (diffDays <= 30) {
+            status = 'near'
+          }
+        }
+
+        list.push({
+          id: m.id,
+          medCode: m.code || `MED${String(m.id).padStart(3, '0')}`,
+          name: m.name,
+          batch: `LO${String(m.id).padStart(3, '0')}`,
+          expiryDate: m.expiryDate ? new Date(m.expiryDate).toLocaleDateString('vi-VN') : '30/08/2026',
+          stock: stockVal,
+          unit: m.unit || 'Viên',
+          importDate: '12/03/2025',
+          importCode: `PN${String(100 + m.id)}`,
+          status: status
+        })
+      })
+    }
+
+    batchList.value = list
   } catch (err) {
+    console.error(err)
     notif.show({ type: 'error', message: 'Không tải được dữ liệu tồn kho theo lô từ máy chủ!' })
   } finally {
     loading.value = false

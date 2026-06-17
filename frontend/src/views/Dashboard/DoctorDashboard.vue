@@ -630,6 +630,11 @@
             
             <div class="form-fields-grid">
               <div class="form-group">
+                <label class="form-label">Tiêu đề bệnh án *</label>
+                <input v-model="formTitle" type="text" class="form-input" placeholder="Ví dụ: Khám sức khỏe tổng quát, Tái khám dạ dày..." required />
+              </div>
+
+              <div class="form-group">
                 <label class="form-label">Triệu chứng lâm sàng *</label>
                 <textarea v-model="formSymptoms" rows="2" class="form-textarea" placeholder="Ví dụ: Đau thượng vị kèm buồn nôn, mệt mỏi..." required />
               </div>
@@ -642,6 +647,87 @@
               <div class="form-group">
                 <label class="form-label">Lời dặn bác sĩ / Ghi chú điều trị</label>
                 <textarea v-model="formNotes" rows="2" class="form-textarea" placeholder="Ghi chú: Ăn chín uống sôi, kiêng đồ chua cay, nghỉ ngơi..." />
+              </div>
+            </div>
+
+            <!-- VITAL SIGNS SECTION -->
+            <div class="biometrics-section" style="margin-top: 1.5rem; border-top: 1.5px dashed #e2e8f0; padding-top: 1.5rem;">
+              <h5 style="margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 800; color: #0047AB; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-heartbeat" /> Chỉ số sinh tồn & Thể trạng
+              </h5>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Cân nặng (kg)</label>
+                  <input v-model.number="formWeight" type="number" step="0.1" class="form-input" placeholder="kg" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Chiều cao (cm)</label>
+                  <input v-model.number="formHeight" type="number" step="1" class="form-input" placeholder="cm" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Huyết áp (mmHg)</label>
+                  <input v-model="formBloodPressure" type="text" class="form-input" placeholder="Ví dụ: 120/80" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nhịp tim (bpm)</label>
+                  <input v-model.number="formHeartRate" type="number" step="1" class="form-input" placeholder="bpm" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nhiệt độ (°C)</label>
+                  <input v-model.number="formTemperature" type="number" step="0.1" class="form-input" placeholder="°C" />
+                </div>
+              </div>
+            </div>
+
+            <!-- CUSTOM METRICS CONFIGURATOR -->
+            <div class="custom-metrics-section" style="margin-top: 1.5rem; border-top: 1.5px dashed #e2e8f0; padding-top: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0047AB; display: flex; align-items: center; gap: 6px;">
+                  <i class="fas fa-file-medical-alt" /> Bảng chỉ số dịch vụ khám (Chi tiết sau khám)
+                </h5>
+                <button type="button" @click="addCustomMetric" style="background: #eff6ff; color: #0047AB; border: 1px dashed #bfdbfe; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.15s;">
+                  <i class="fas fa-plus" /> Thêm chỉ số
+                </button>
+              </div>
+
+              <div v-if="formCustomMetrics.length === 0" style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; text-align: center; font-size: 0.85rem; color: #64748b;">
+                Chưa cấu hình chỉ số khám dịch vụ nào (Ví dụ: Đường huyết, Cholesterol, SpO2, Men gan...).
+              </div>
+
+              <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+                <div v-for="(metric, index) in formCustomMetrics" :key="index" style="display: flex; gap: 8px; align-items: center;">
+                  <input v-model="metric.name" type="text" class="form-input" placeholder="Tên chỉ số (Ví dụ: SpO2, Men gan AST...)" style="flex: 1;" />
+                  <input v-model="metric.value" type="text" class="form-input" placeholder="Giá trị kết quả (Ví dụ: 98%, 35 U/L...)" style="flex: 1;" />
+                  <button type="button" @click="removeCustomMetric(index)" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="fas fa-trash-alt" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ATTACHMENTS SECTION -->
+            <div class="attachments-section" style="margin-top: 1.5rem; border-top: 1.5px dashed #e2e8f0; padding-top: 1.5rem;">
+              <h5 style="margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 800; color: #0047AB; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-paperclip" /> Đính kèm tệp kết quả (Ảnh chụp, PDF cận lâm sàng...)
+              </h5>
+              
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <label style="background: white; border: 1.5px dashed #cbd5e1; color: #475569; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.15s;" class="attachment-upload-label">
+                  <i class="fas fa-upload" style="color: #0047AB;" /> Chọn tệp đính kèm
+                  <input type="file" multiple @change="handleFileUpload" style="display: none;" />
+                </label>
+                <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">Hỗ trợ ảnh JPG/PNG, file PDF, X-ray...</div>
+              </div>
+
+              <div v-if="formAttachments.length > 0" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 6px;">
+                <div v-for="(file, idx) in formAttachments" :key="idx" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.85rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
+                    <i class="far fa-file-alt" style="color: #64748b;" /> {{ file.name }}
+                  </span>
+                  <button type="button" @click="removeAttachment(idx)" style="background: none; border: none; color: #dc2626; cursor: pointer; padding: 4px; font-size: 0.9rem;">
+                    <i class="fas fa-times-circle" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -709,16 +795,16 @@
 
     <!-- DETAIL RECORD HISTORICAL MODAL -->
     <div v-if="selectedRecord" class="detail-modal-overlay" @click.self="selectedRecord = null">
-      <div class="detail-modal-card animate-scale-up" style="width: 600px;">
+      <div class="detail-modal-card animate-scale-up" style="width: 650px;">
         <div class="modal-header">
           <div class="modal-header__title">
             <span class="ref-code-lg">MÃ BỆNH ÁN #{{ selectedRecord.id.toUpperCase() }}</span>
-            <h3>Chi tiết hồ sơ bệnh án</h3>
+            <h3 style="margin: 0; color: white;">{{ selectedRecord.title || 'Chi tiết hồ sơ bệnh án' }}</h3>
           </div>
           <button class="modal-close-btn" @click="selectedRecord = null">&times;</button>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
           <div class="clinical-section">
             <h4 class="section-heading"><i class="fas fa-user" /> Thông tin bệnh nhân</h4>
             <div class="clinical-details-grid">
@@ -731,6 +817,40 @@
               <div class="detail-cell">
                 <span class="cell-label">Ngày khám ghi nhận:</span>
                 <span class="cell-value">{{ formatDateWithTime(selectedRecord.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- NEW VITAL SIGNS DISPLAY -->
+          <div v-if="selectedRecord.weight || selectedRecord.height || selectedRecord.bloodPressure || selectedRecord.heartRate || selectedRecord.temperature" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-heartbeat" /> Chỉ số sinh tồn & Thể trạng</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 8px;">
+              <div v-if="selectedRecord.weight" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">Cân nặng</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #0047AB;">{{ selectedRecord.weight }} <span style="font-size: 0.8rem; font-weight: 500;">kg</span></span>
+              </div>
+              <div v-if="selectedRecord.height" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">Chiều cao</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #0047AB;">{{ selectedRecord.height }} <span style="font-size: 0.8rem; font-weight: 500;">cm</span></span>
+              </div>
+              <div v-if="calculateBMI(selectedRecord.weight, selectedRecord.height)" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">BMI</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #16a34a;">{{ calculateBMI(selectedRecord.weight, selectedRecord.height) }}</span>
+                <span v-if="getBMICategory(calculateBMI(selectedRecord.weight, selectedRecord.height))" style="font-size: 0.65rem; font-weight: 800; display: block; margin-top: 2px;" :class="getBMICategory(calculateBMI(selectedRecord.weight, selectedRecord.height)).class">
+                  {{ getBMICategory(calculateBMI(selectedRecord.weight, selectedRecord.height)).text }}
+                </span>
+              </div>
+              <div v-if="selectedRecord.bloodPressure" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">Huyết áp</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #dc2626;">{{ selectedRecord.bloodPressure }} <span style="font-size: 0.65rem; font-weight: 500;">mmHg</span></span>
+              </div>
+              <div v-if="selectedRecord.heartRate" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">Nhịp tim</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #dc2626;">{{ selectedRecord.heartRate }} <span style="font-size: 0.72rem; font-weight: 500;">bpm</span></span>
+              </div>
+              <div v-if="selectedRecord.temperature" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px;">Nhiệt độ</span>
+                <span style="font-size: 1.1rem; font-weight: 850; color: #ea580c;">{{ selectedRecord.temperature }} <span style="font-size: 0.8rem; font-weight: 500;">°C</span></span>
               </div>
             </div>
           </div>
@@ -750,6 +870,40 @@
             <div class="symptom-box" style="margin-top: 10px;" v-if="selectedRecord.notes">
               <span class="cell-label">Lời dặn / Ghi chú:</span>
               <p class="symptom-text">{{ selectedRecord.notes }}</p>
+            </div>
+          </div>
+
+          <!-- NEW CUSTOM METRICS TABLE DISPLAY -->
+          <div v-if="selectedRecord.customMetricsJson && safeParseJson(selectedRecord.customMetricsJson).length > 0" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-file-medical-alt" /> Kết quả chỉ số dịch vụ khám</h4>
+            <table class="data-table" style="margin-top: 8px; border: 1px solid #e2e8f0;">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 8px 12px; background: #f8fafc; font-size: 0.8rem;">Tên chỉ số dịch vụ</th>
+                  <th style="text-align: left; padding: 8px 12px; background: #f8fafc; font-size: 0.8rem;">Kết quả chi tiết</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(metric, idx) in safeParseJson(selectedRecord.customMetricsJson)" :key="idx" style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 8px 12px; font-weight: 700; font-size: 0.85rem; color: #334155;">{{ metric.name }}</td>
+                  <td style="padding: 8px 12px; font-size: 0.85rem; color: #0047AB; font-weight: 800;">{{ metric.value }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- NEW ATTACHMENTS DISPLAY -->
+          <div v-if="selectedRecord.attachmentsJson && safeParseJson(selectedRecord.attachmentsJson).length > 0" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-paperclip" /> Tài liệu đính kèm</h4>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+              <a v-for="(file, idx) in safeParseJson(selectedRecord.attachmentsJson)" :key="idx" :href="file.data" :download="file.name" style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #0047AB; font-weight: 700; font-size: 0.85rem; transition: 0.15s;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <i class="far fa-file-alt" /> {{ file.name }}
+                </span>
+                <span style="font-size: 0.75rem; background: #0047AB; color: white; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fas fa-download" /> Tải về
+                </span>
+              </a>
             </div>
           </div>
 
@@ -799,21 +953,55 @@
           </div>
 
           <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 50vh; overflow-y: auto; padding-right: 4px;">
-            <div v-for="rec in patientHistoryRecords" :key="rec.id" style="border: 1px solid #cbd5e1; border-radius: 10px; padding: 1.25rem; background: #f8fafc;">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px dashed #cbd5e1; padding-bottom: 6px; margin-bottom: 8px;">
-                <span style="font-weight: 850; color: #0047AB; font-size: 0.85rem;">Ngày khám: {{ formatDateWithTime(rec.createdAt) }}</span>
+            <div v-for="rec in patientHistoryRecords" :key="rec.id" style="border: 1px solid #cbd5e1; border-radius: 10px; padding: 1.25rem; background: #f8fafc; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px dashed #cbd5e1; padding-bottom: 6px; margin-bottom: 4px;">
+                <span style="font-weight: 850; color: #0047AB; font-size: 0.88rem; display: flex; align-items: center; gap: 4px;">
+                  <i class="far fa-calendar-alt" /> {{ rec.title || ('Khám bệnh ngày: ' + formatDateWithTime(rec.createdAt)) }}
+                </span>
                 <span style="font-family: monospace; font-size: 0.72rem; background: #cbd5e1; color: #475569; padding: 2px 6px; border-radius: 4px; font-weight: 800;">
                   #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                 </span>
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 6px; text-align: left;">
+
+              <!-- Vital Signs inside History list item -->
+              <div v-if="rec.weight || rec.height || rec.bloodPressure || rec.heartRate || rec.temperature" style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.8rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px;">
+                <span v-if="rec.weight" style="color: #475569;"><i class="fas fa-weight" style="color: #0047AB;" /> {{ rec.weight }}kg</span>
+                <span v-if="rec.height" style="color: #475569;"><i class="fas fa-ruler-vertical" style="color: #0047AB;" /> {{ rec.height }}cm</span>
+                <span v-if="calculateBMI(rec.weight, rec.height)" style="font-weight: 700; color: #16a34a;">BMI: {{ calculateBMI(rec.weight, rec.height) }}</span>
+                <span v-if="rec.bloodPressure" style="color: #475569;"><i class="fas fa-heartbeat" style="color: #dc2626;" /> {{ rec.bloodPressure }} mmHg</span>
+                <span v-if="rec.heartRate" style="color: #475569;"><i class="fas fa-pulse" style="color: #dc2626;" /> {{ rec.heartRate }} bpm</span>
+                <span v-if="rec.temperature" style="color: #475569;"><i class="fas fa-thermometer-half" style="color: #ea580c;" /> {{ rec.temperature }}°C</span>
+              </div>
+
+              <div style="font-size: 0.85rem; text-align: left;">
                 <strong>Triệu chứng:</strong> {{ rec.symptoms }}
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 6px; text-align: left;">
+              <div style="font-size: 0.85rem; text-align: left;">
                 <strong>Chẩn đoán:</strong> <span style="font-weight: 700; color: #15803d;">{{ rec.diagnosis }}</span>
               </div>
               <div style="font-size: 0.85rem; text-align: left;" v-if="rec.notes">
                 <strong>Ghi chú/Lời dặn:</strong> {{ rec.notes }}
+              </div>
+
+              <!-- Custom Metrics table inside History list item -->
+              <div v-if="rec.customMetricsJson && safeParseJson(rec.customMetricsJson).length > 0" style="margin-top: 4px;">
+                <div style="font-size: 0.8rem; font-weight: 800; color: #0047AB; margin-bottom: 4px;">Kết quả chỉ số dịch vụ:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px;">
+                  <div v-for="(metric, idx) in safeParseJson(rec.customMetricsJson)" :key="idx" style="font-size: 0.78rem; display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">
+                    <span style="color: #64748b;">{{ metric.name }}:</span>
+                    <span style="font-weight: 700; color: #0047AB;">{{ metric.value }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File Attachments inside History list item -->
+              <div v-if="rec.attachmentsJson && safeParseJson(rec.attachmentsJson).length > 0" style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-size: 0.8rem; font-weight: 800; color: #475569;">Tài liệu đính kèm:</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  <a v-for="(file, idx) in safeParseJson(rec.attachmentsJson)" :key="idx" :href="file.data" :download="file.name" style="background: white; border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; color: #0047AB; font-size: 0.75rem; font-weight: 700;">
+                    <i class="far fa-file-alt" /> {{ file.name }} <i class="fas fa-download" style="font-size: 0.65rem;" />
+                  </a>
+                </div>
               </div>
               
               <!-- Prescription details inside specific record -->
@@ -977,9 +1165,21 @@
   const availableMedicines = ref<any[]>([])
 
   // Medical Record Form State
+  const formTitle = ref('')
   const formSymptoms = ref('')
   const formDiagnosis = ref('')
   const formNotes = ref('')
+  const formWeight = ref<number | null>(null)
+  const formHeight = ref<number | null>(null)
+  const formBloodPressure = ref('')
+  const formHeartRate = ref<number | null>(null)
+  const formTemperature = ref<number | null>(null)
+  
+  // Custom metrics table state
+  const formCustomMetrics = ref<Array<{ name: string; value: string }>>([])
+  
+  // Attachments state
+  const formAttachments = ref<Array<{ name: string; data: string }>>([])
 
   // Prescription Form State
   const hasPrescription = ref(false)
@@ -1333,9 +1533,17 @@
       }
     }
     
+    formTitle.value = 'Khám bệnh chuyên khoa - ' + formatDate(new Date())
     formSymptoms.value = symptomsText
     formDiagnosis.value = ''
     formNotes.value = ''
+    formWeight.value = null
+    formHeight.value = null
+    formBloodPressure.value = ''
+    formHeartRate.value = null
+    formTemperature.value = null
+    formCustomMetrics.value = []
+    formAttachments.value = []
     hasPrescription.value = false
     prescriptionInstructions.value = ''
     prescriptionItems.value = []
@@ -1398,13 +1606,25 @@
       loading.value = true
       const patientGuid = mapUserIdToGuid(completingApp.value.patientId)
       const doctorGuid = await getCurrentDoctorGuid()
+      if (!doctorGuid) {
+        alert('Lỗi: Không xác định được định danh bác sĩ trên hệ thống. Vui lòng đăng nhập lại hoặc liên hệ quản trị viên!')
+        return
+      }
 
       const recordResult = await medicalRecordService.createRecord({
         patientId: patientGuid,
         doctorId: doctorGuid,
+        title: formTitle.value || ('Khám bệnh chuyên khoa - ' + formatDate(new Date())),
         symptoms: formSymptoms.value,
         diagnosis: formDiagnosis.value,
         notes: formNotes.value,
+        weight: formWeight.value || undefined,
+        height: formHeight.value || undefined,
+        bloodPressure: formBloodPressure.value || undefined,
+        heartRate: formHeartRate.value || undefined,
+        temperature: formTemperature.value || undefined,
+        customMetricsJson: formCustomMetrics.value.length > 0 ? JSON.stringify(formCustomMetrics.value) : undefined,
+        attachmentsJson: formAttachments.value.length > 0 ? JSON.stringify(formAttachments.value) : undefined,
         appointmentId: completingApp.value.id,
         patientName: completingApp.value.patientName || 'Bệnh nhân Medicare',
         gatewayPatientId: completingApp.value.patientId
@@ -1546,6 +1766,66 @@
 
   function closeDetail () {
     selectedApp.value = null
+  }
+
+  // Custom metrics helpers
+  function addCustomMetric() {
+    formCustomMetrics.value.push({ name: '', value: '' })
+  }
+  function removeCustomMetric(index: number) {
+    formCustomMetrics.value.splice(index, 1)
+  }
+
+  // File upload base64 helpers
+  function handleFileUpload(event: Event) {
+    const target = event.target as HTMLInputElement
+    const files = target.files
+    if (!files) return
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const base64Data = e.target?.result as string
+        if (base64Data) {
+          formAttachments.value.push({
+            name: file.name,
+            data: base64Data
+          })
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  function removeAttachment(index: number) {
+    formAttachments.value.splice(index, 1)
+  }
+
+  // BMI utilities
+  function calculateBMI(w?: number, h?: number) {
+    if (!w || !h) return null
+    const heightInMeters = h / 100
+    return (w / (heightInMeters * heightInMeters)).toFixed(1)
+  }
+
+  function getBMICategory(bmiVal?: string | null) {
+    if (!bmiVal) return null
+    const val = parseFloat(bmiVal)
+    if (val < 18.5) return { text: 'Thiếu cân', class: 'bmi-underweight' }
+    if (val < 25) return { text: 'Bình thường', class: 'bmi-normal' }
+    if (val < 30) return { text: 'Thừa cân', class: 'bmi-overweight' }
+    return { text: 'Béo phì', class: 'bmi-obese' }
+  }
+
+  // Parse JSON helpers safely
+  function safeParseJson(jsonStr?: string) {
+    if (!jsonStr) return []
+    try {
+      return JSON.parse(jsonStr)
+    } catch (e) {
+      return []
+    }
   }
 
   onMounted(() => {
@@ -2644,5 +2924,22 @@
   .logo__text {
     display: none;
   }
+}
+
+.bmi-underweight {
+  color: #0284c7 !important;
+  font-weight: 800;
+}
+.bmi-normal {
+  color: #16a34a !important;
+  font-weight: 800;
+}
+.bmi-overweight {
+  color: #ea580c !important;
+  font-weight: 800;
+}
+.bmi-obese {
+  color: #dc2626 !important;
+  font-weight: 800;
 }
 </style>

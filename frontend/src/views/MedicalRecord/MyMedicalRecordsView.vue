@@ -57,30 +57,88 @@
         </div>
       </div>
 
-      <!-- Patient Information Summary Card (Read-only) -->
-      <div style="background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.01); display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center;">
-        <div style="background: #eff6ff; color: #0047AB; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800;">
-          {{ (patientInfo.fullName || authStore.user.value?.fullName || 'BN').substring(0, 2).toUpperCase() }}
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
-          <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Bệnh nhân</div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ patientInfo.fullName || authStore.user.value?.fullName || 'Đang tải...' }}</div>
+      <!-- Patient Information Summary Card (Editable) -->
+      <div style="background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; margin-bottom: 2.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.01); position: relative;">
+        <!-- Card Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #eff6ff; color: #0047AB; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+              <i class="fas fa-id-card" />
+            </div>
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Hồ sơ sức khỏe cá nhân</h3>
           </div>
-          <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Ngày sinh / Giới tính</div>
-            <div style="font-size: 0.95rem; font-weight: 700; color: #334155; margin-top: 2px;">
-              {{ patientInfo.dateOfBirth ? formatDateShort(patientInfo.dateOfBirth) : '--' }} / {{ patientInfo.gender || '--' }}
+          
+          <div v-if="!isEditingProfile">
+            <button @click="startEditing" style="background: #f1f5f9; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;">
+              <i class="fas fa-edit" /> Chỉnh sửa hồ sơ
+            </button>
+          </div>
+          <div v-else style="display: flex; gap: 8px;">
+            <button @click="isEditingProfile = false" style="background: white; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; color: #475569; cursor: pointer; transition: 0.15s;">
+              Hủy
+            </button>
+            <button @click="saveProfile" :disabled="profileLoading" style="background: #0047AB; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;">
+              <i v-if="profileLoading" class="fas fa-circle-notch fa-spin" />
+              <i v-else class="fas fa-save" /> Lưu lại
+            </button>
+          </div>
+        </div>
+
+        <!-- Detail Layout (Read-Only Mode) -->
+        <div v-if="!isEditingProfile" style="display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center;">
+          <div style="background: #eff6ff; color: #0047AB; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; box-shadow: 0 4px 10px rgba(0,71,171,0.08);">
+            {{ (patientInfo.fullName || authStore.user.value?.fullName || 'BN').substring(0, 2).toUpperCase() }}
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Bệnh nhân</div>
+              <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ patientInfo.fullName || authStore.user.value?.fullName || 'Đang tải...' }}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Ngày sinh / Giới tính</div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: #334155; margin-top: 2px;">
+                {{ patientInfo.dateOfBirth ? formatDateShort(patientInfo.dateOfBirth) : '--' }} / {{ patientInfo.gender || '--' }}
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Tiền sử bệnh lý & Triệu chứng hiện tại</div>
+              <div style="font-size: 0.9rem; font-weight: 600; color: #475569; margin-top: 2px;">{{ patientInfo.medicalHistory || 'Chưa ghi nhận' }}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: #b91c1c; text-transform: uppercase;">Dị ứng thuốc/Thức ăn</div>
+              <div style="font-size: 0.9rem; font-weight: 700; color: #991b1b; margin-top: 2px;">{{ patientInfo.allergies || 'Không dị ứng' }}</div>
             </div>
           </div>
-          <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Tiền sử bệnh lý</div>
-            <div style="font-size: 0.9rem; font-weight: 600; color: #475569; margin-top: 2px;">{{ patientInfo.medicalHistory || 'Chưa ghi nhận' }}</div>
+        </div>
+
+        <!-- Detail Layout (Edit Mode) -->
+        <div v-else style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; text-align: left;">Họ và tên bệnh nhân</label>
+            <input v-model="editForm.fullName" type="text" style="width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #334155; outline: none; transition: 0.15s;" placeholder="Họ và tên đầy đủ..." />
           </div>
-          <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #b91c1c; text-transform: uppercase;">Dị ứng thuốc/Thức ăn</div>
-            <div style="font-size: 0.9rem; font-weight: 700; color: #991b1b; margin-top: 2px;">{{ patientInfo.allergies || 'Không dị ứng' }}</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; text-align: left;">Ngày sinh</label>
+              <input v-model="editForm.dateOfBirth" type="date" style="width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #334155; outline: none;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; text-align: left;">Giới tính</label>
+              <select v-model="editForm.gender" style="width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #334155; outline: none; background: white;">
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; text-align: left;">Tiền sử bệnh lý & Triệu chứng hiện tại</label>
+            <textarea v-model="editForm.medicalHistory" rows="2" style="width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #334155; outline: none; resize: vertical;" placeholder="Nhập tiền sử bệnh lý và các triệu chứng hiện tại bạn đang gặp phải..."></textarea>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: #b91c1c; text-transform: uppercase; text-align: left;">Dị ứng thuốc/Thức ăn</label>
+            <textarea v-model="editForm.allergies" rows="2" style="width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid #fca5a5; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #991b1b; outline: none; resize: vertical;" placeholder="Nhập chi tiết các dị ứng y khoa nếu có..."></textarea>
           </div>
         </div>
       </div>
@@ -108,8 +166,15 @@
                   <i class="fas fa-file-prescription" />
                 </div>
                 <div>
-                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Bệnh án ngày</div>
-                  <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">{{ formatDateFull(rec.createdAt) }}</div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {{ rec.title ? 'Khám bệnh chuyên khoa' : 'Bệnh án ngày' }}
+                  </div>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">
+                    {{ rec.title || formatDateFull(rec.createdAt) }}
+                  </div>
+                  <div v-if="rec.title" style="font-size: 0.75rem; color: #64748b; font-weight: 600; margin-top: 1px;">
+                    Ngày lập: {{ formatDateFull(rec.createdAt) }}
+                  </div>
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -129,6 +194,41 @@
             <div class="card-body" style="padding: 1.5rem; display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem;">
               <!-- Left column: Clinical history -->
               <div class="clinical-details" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                
+                <!-- Vital Signs Grid -->
+                <div v-if="rec.weight || rec.height || rec.bloodPressure || rec.heartRate || rec.temperature" style="display: flex; flex-direction: column; gap: 6px;">
+                  <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Chỉ số sinh tồn & Thể trạng</h4>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;">
+                    <div v-if="rec.weight" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Cân nặng</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #0047AB;">{{ rec.weight }} kg</div>
+                    </div>
+                    <div v-if="rec.height" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Chiều cao</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #0047AB;">{{ rec.height }} cm</div>
+                    </div>
+                    <div v-if="calculateBMI(rec.weight, rec.height)" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">BMI</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #16a34a;">{{ calculateBMI(rec.weight, rec.height) }}</div>
+                      <div v-if="getBMICategory(calculateBMI(rec.weight, rec.height))" style="font-size: 0.6rem; font-weight: 800; margin-top: 1px;" :class="getBMICategory(calculateBMI(rec.weight, rec.height)).class">
+                        {{ getBMICategory(calculateBMI(rec.weight, rec.height)).text }}
+                      </div>
+                    </div>
+                    <div v-if="rec.bloodPressure" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Huyết áp</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #dc2626;">{{ rec.bloodPressure }}</div>
+                    </div>
+                    <div v-if="rec.heartRate" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Nhịp tim</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #dc2626;">{{ rec.heartRate }} bpm</div>
+                    </div>
+                    <div v-if="rec.temperature" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; text-align: center;">
+                      <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Nhiệt độ</div>
+                      <div style="font-size: 0.95rem; font-weight: 800; color: #ea580c;">{{ rec.temperature }} °C</div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Triệu chứng lâm sàng</h4>
                   <p style="margin: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">{{ rec.symptoms }}</p>
@@ -139,9 +239,35 @@
                   <p style="margin: 0; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.9rem; color: #15803d; font-weight: 700; line-height: 1.5;">{{ rec.diagnosis }}</p>
                 </div>
 
+                <!-- Custom diagnostic test metrics table -->
+                <div v-if="rec.customMetricsJson && safeParseJson(rec.customMetricsJson).length > 0">
+                  <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Bảng chỉ số dịch vụ cận lâm sàng</h4>
+                  <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff;">
+                    <div v-for="(metric, idx) in safeParseJson(rec.customMetricsJson)" :key="idx" style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">
+                      <span style="font-weight: 700; color: #475569;">{{ metric.name }}</span>
+                      <span style="font-weight: 800; color: #0047AB;">{{ metric.value }}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Lời dặn y khoa</h4>
                   <p style="margin: 0; font-size: 0.9rem; color: #475569; line-height: 1.5;">{{ rec.notes || 'Không có ghi chú thêm.' }}</p>
+                </div>
+
+                <!-- File Attachments display -->
+                <div v-if="rec.attachmentsJson && safeParseJson(rec.attachmentsJson).length > 0">
+                  <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Tài liệu / Tệp đính kèm kết quả</h4>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <a v-for="(file, idx) in safeParseJson(rec.attachmentsJson)" :key="idx" :href="file.data" :download="file.name" style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #0047AB; font-weight: 700; font-size: 0.85rem; transition: 0.15s;">
+                      <span style="display: flex; align-items: center; gap: 6px;">
+                        <i class="far fa-file-alt" /> {{ file.name }}
+                      </span>
+                      <span style="font-size: 0.75rem; background: #0047AB; color: white; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-download" /> Tải về
+                      </span>
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -221,6 +347,57 @@
   const notifications = ref<any[]>([])
   const showNotificationOverlay = ref(false)
 
+  const isEditingProfile = ref(false)
+  const editForm = ref({
+    fullName: '',
+    dateOfBirth: '',
+    gender: 'Nam',
+    medicalHistory: '',
+    allergies: ''
+  })
+
+  function startEditing() {
+    editForm.value.fullName = patientInfo.value.fullName
+    editForm.value.dateOfBirth = patientInfo.value.dateOfBirth ? new Date(patientInfo.value.dateOfBirth).toISOString().split('T')[0] : ''
+    editForm.value.gender = patientInfo.value.gender || 'Nam'
+    editForm.value.medicalHistory = patientInfo.value.medicalHistory
+    editForm.value.allergies = patientInfo.value.allergies
+    isEditingProfile.value = true
+  }
+
+  async function saveProfile() {
+    if (!editForm.value.fullName.trim()) {
+      alert('Vui lòng điền họ và tên!')
+      return
+    }
+    profileLoading.value = true
+    try {
+      const userId = authStore.user.value?.id
+      if (!userId) {
+        alert('Phiên làm việc hết hạn, vui lòng đăng nhập lại.')
+        return
+      }
+      const res = await medicalRecordService.updatePatientProfile(userId, {
+        fullName: editForm.value.fullName,
+        dateOfBirth: editForm.value.dateOfBirth,
+        gender: editForm.value.gender,
+        medicalHistory: editForm.value.medicalHistory,
+        allergies: editForm.value.allergies
+      })
+      if (res.success) {
+        alert('Cập nhật hồ sơ sức khỏe thành công!')
+        isEditingProfile.value = false
+        await fetchProfile()
+      } else {
+        alert(res.message || 'Lỗi khi cập nhật hồ sơ.')
+      }
+    } catch (e: any) {
+      alert('Lỗi: ' + (e.message || e))
+    } finally {
+      profileLoading.value = false
+    }
+  }
+
   const newRecordCount = computed(() => {
     const now = Date.now()
     const dayAgo = now - 24 * 60 * 60 * 1000
@@ -269,7 +446,10 @@
     try {
       const res = await medicalRecordService.getPatientProfile(authStore.user.value.id)
       if (res) {
-        patientInfo.value.fullName = res.fullName || authStore.user.value.fullName || ''
+        const rawName = res.fullName || ''
+        patientInfo.value.fullName = (rawName === 'Bệnh nhân Medicare' && authStore.user.value?.fullName)
+          ? authStore.user.value.fullName
+          : (rawName || authStore.user.value?.fullName || '')
         patientInfo.value.gender = res.gender || 'Nam'
         patientInfo.value.medicalHistory = res.medicalHistory || ''
         patientInfo.value.allergies = res.allergies || ''
@@ -412,11 +592,35 @@
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
+  function calculateBMI(w?: number, h?: number) {
+    if (!w || !h) return null
+    const heightInMeters = h / 100
+    return (w / (heightInMeters * heightInMeters)).toFixed(1)
+  }
+
   function formatDateShort(iso?: string) {
     if (!iso) return ''
     const d = new Date(iso)
     if (isNaN(d.getTime())) return iso
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
+  }
+
+  function getBMICategory(bmiVal?: string | null) {
+    if (!bmiVal) return null
+    const val = parseFloat(bmiVal)
+    if (val < 18.5) return { text: 'Thiếu cân', class: 'bmi-underweight' }
+    if (val < 25) return { text: 'Bình thường', class: 'bmi-normal' }
+    if (val < 30) return { text: 'Thừa cân', class: 'bmi-overweight' }
+    return { text: 'Béo phì', class: 'bmi-obese' }
+  }
+
+  function safeParseJson(jsonStr?: string) {
+    if (!jsonStr) return []
+    try {
+      return JSON.parse(jsonStr)
+    } catch (e) {
+      return []
+    }
   }
 
   onMounted(async () => {
