@@ -2780,7 +2780,7 @@
         isActive: true
       }
       if (editingServiceId.value) {
-        await api.put(`/MedicalServices/${editingServiceId.value}`, payload)
+        await api.put(`/MedicalServices/${editingServiceId.value}`, { ...payload, id: editingServiceId.value })
         alert('Cập nhật dịch vụ thành công!')
       } else {
         await api.post('/MedicalServices', payload)

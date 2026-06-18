@@ -47,7 +47,7 @@ import { normalizeSearch } from '@/utils/search'
 const props = defineProps({
   visible: Boolean
 })
-const emit = defineEmits(['close', 'navigate'])
+const emit = defineEmits(['close', 'navigate', 'open'])
 
 const query = ref('')
 const activeIndex = ref(0)

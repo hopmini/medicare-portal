@@ -135,6 +135,7 @@
           style="margin-top: 20px"
           class="custom-table"
           size="middle"
+          :scroll="{ x: 'max-content' }"
         >
           <!-- Info left pagination slot -->
           <template #footer>
@@ -160,12 +161,12 @@
 
             <!-- Price localized formatting -->
             <template v-else-if="column.key === 'price'">
-              <span>{{ record.price.toLocaleString() }} đ</span>
+              <span style="white-space: nowrap;">{{ record.price.toLocaleString() }} đ</span>
             </template>
 
             <!-- Action buttons -->
             <template v-else-if="column.key === 'action'">
-              <a-space>
+              <a-space style="white-space: nowrap;">
                 <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết" @click="viewDetail(record)">
                   <i class="far fa-eye" />
                 </a-button>
@@ -399,6 +400,7 @@
               style="margin-top: 20px"
               class="custom-table"
               size="middle"
+              :scroll="{ x: 'max-content' }"
             >
               <!-- Info left pagination slot -->
               <template #footer>
@@ -424,12 +426,12 @@
 
                 <!-- Price localized formatting -->
                 <template v-else-if="column.key === 'price'">
-                  <span>{{ record.price.toLocaleString() }} đ</span>
+                  <span style="white-space: nowrap;">{{ record.price.toLocaleString() }} đ</span>
                 </template>
 
                 <!-- Action buttons -->
                 <template v-else-if="column.key === 'action'">
-                  <a-space>
+                  <a-space style="white-space: nowrap;">
                     <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết" @click="viewDetail(record)">
                       <i class="far fa-eye" />
                     </a-button>
