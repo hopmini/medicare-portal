@@ -83,9 +83,7 @@
         <!-- Chat Input Area -->
         <div class="ai-chat-input-area">
           <div class="quick-prompts">
-            <button class="btn-quick-prompt" @click="sendQuickPrompt('Tôi bị đau dạ dày và ợ chua')">Đau dạ dày</button>
-            <button class="btn-quick-prompt" @click="sendQuickPrompt('Bị sốt ho kéo dài 3 ngày nay')">Sốt ho, cúm</button>
-            <button class="btn-quick-prompt" @click="sendQuickPrompt('Bị đau răng đau nướu buốt')">Đau răng buốt</button>
+            <button v-for="(q, idx) in suggestedQuestions" :key="idx" class="btn-quick-prompt" @click="sendQuickPrompt(q.prompt)">{{ q.text }}</button>
           </div>
           <div class="input-container">
             <input
@@ -106,26 +104,68 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { chatWithGroq, fetchServices } from '@/services/groqService'
+import { useAuthStore } from '@/stores/authStore'
+import { chatWithGroq, fetchServices, fetchDoctors } from '@/services/groqService'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const isOpen = ref(false)
 const showTooltip = ref(true)
 const userInput = ref('')
 const isTyping = ref(false)
 const messagesContainer = ref(null)
 const medicalServices = ref([])
+const doctors = ref([])
+
+const userRole = computed(() => {
+  return authStore.user?.role || 'Patient'
+})
+
+const suggestedQuestions = computed(() => {
+  const role = userRole.value
+  if (role === 'Admin') {
+    return [
+      { text: 'Tổng quan hoạt động hôm nay?', prompt: 'Tổng quan hoạt động phòng khám hôm nay thế nào?' },
+      { text: 'Lịch hẹn chờ duyệt', prompt: 'Có bao nhiêu lịch hẹn đang chờ duyệt?' },
+      { text: 'Danh sách dịch vụ', prompt: 'Phòng khám có những dịch vụ gì?' },
+      { text: 'Bác sĩ đang làm việc', prompt: 'Danh sách bác sĩ đang làm việc tại phòng khám?' }
+    ]
+  }
+  if (role === 'Doctor') {
+    return [
+      { text: 'Lịch hẹn hôm nay', prompt: 'Lịch hẹn khám hôm nay của tôi thế nào?' },
+      { text: 'Bác sĩ cùng khoa', prompt: 'Ai là bác sĩ tim mạch?' },
+      { text: 'Triệu chứng đau bụng', prompt: 'Tôi bị đau bụng và ợ chua' },
+      { text: 'Tra cứu thuốc', prompt: 'Paracetamol có tác dụng gì?' }
+    ]
+  }
+  if (role === 'Receptionist') {
+    return [
+      { text: 'Lịch hẹn hôm nay', prompt: 'Danh sách lịch hẹn hôm nay thế nào?' },
+      { text: 'Bác sĩ trực', prompt: 'Bác sĩ nào đang trực hôm nay?' },
+      { text: 'Dịch vụ khám', prompt: 'Các dịch vụ khám đang có?' },
+      { text: 'Hỗ trợ đặt lịch', prompt: 'Hướng dẫn đặt lịch khám cho bệnh nhân' }
+    ]
+  }
+  return [
+    { text: 'Đau bụng, ợ chua', prompt: 'Tôi bị đau dạ dày và ợ chua' },
+    { text: 'Sốt, ho kéo dài', prompt: 'Bị sốt ho kéo dài 3 ngày nay' },
+    { text: 'Đau răng buốt', prompt: 'Bị đau răng đau nướu buốt' },
+    { text: 'Bác sĩ tim mạch', prompt: 'Có bác sĩ tim mạch nào không?' }
+  ]
+})
 
 onMounted(async () => {
   medicalServices.value = await fetchServices()
+  doctors.value = await fetchDoctors()
 })
 
 const messages = ref([
   {
     sender: 'ai',
-    text: 'Xin chào! Tôi là Trợ lý Y tế AI của Medicare, được hỗ trợ bởi Groq AI. Hãy mô tả triệu chứng hoặc đặt bất kỳ câu hỏi nào về sức khỏe để tôi tư vấn nhé! 🏥',
+    text: 'Xin chào! Tôi là Trợ lý AI của Medicare. Hãy đặt câu hỏi về sức khỏe, bác sĩ, dịch vụ hoặc hệ thống để tôi hỗ trợ nhé!',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 ])
@@ -184,7 +224,7 @@ async function handleSend() {
     .slice(-10)
     .map(m => ({ role: m.sender === 'ai' ? 'assistant' : 'user', content: m.text }))
 
-  const result = await chatWithGroq(groqMessages, medicalServices.value)
+  const result = await chatWithGroq(groqMessages, medicalServices.value, doctors.value, userRole.value)
 
   isTyping.value = false
   messages.value.push({

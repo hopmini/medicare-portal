@@ -15,6 +15,7 @@ import ContactView from './views/Appointment/ContactView.vue'
 import GuideView from './views/Appointment/GuideView.vue'
 import ProfileView from './views/ProfileView.vue'
 import MyMedicalRecordsView from './views/MedicalRecord/MyMedicalRecordsView.vue'
+import MedicalRecordsListView from './views/MedicalRecord/MedicalRecordsListView.vue'
 // Pharmacy components
 import MedicineManagement from './views/Pharmacy/MedicineManagement.vue'
 import InventoryManagement from './views/Pharmacy/InventoryManagement.vue'
@@ -106,6 +107,13 @@ const routes = [
     name: 'Guide',
     component: GuideView
   },
+  {
+    path: '/medical-records',
+    name: 'MedicalRecords',
+    component: MedicalRecordsListView,
+    meta: { requiresAuth: true, roles: ['Admin', 'Patient'] }
+  },
+  { path: '/patient-profile', redirect: '/dashboard?tab=patient-profile' },
   {
     path: '/profile',
     name: 'Profile',

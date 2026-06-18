@@ -218,8 +218,12 @@
         router.push('/doctor')
         return
       }
+      if (role === 'admin') {
+        router.push('/medical-records')
+        return
+      }
       if (role === 'patient') {
-        router.push('/my-medical-records')
+        router.push('/medical-records')
         return
       }
     }

@@ -541,15 +541,14 @@ async function loadTransactions() {
 
     transactions.value = (txData || []).map((tx: any, idx: number) => {
       const medInfo = medMap.get(Number(tx.medicine?.replace(/\D/g, '')) || 0) || { name: tx.medicine || 'Thuốc', code: 'MED000' }
-      const isIn = tx.type === 'in' || tx.type === 'import' || tx.type === 'Nhập kho'
       const qty = Math.abs(tx.qty || 0)
       return {
         id: tx.id || idx + 1,
         code: `GD${String(tx.id || idx + 1).padStart(8, '0')}`,
-        type: isIn ? 'Nhập kho' : 'Xuất kho',
+        type: tx.type || 'Xuất kho',
         medicine: medInfo.name,
         batch: tx.batch || `LO${String(idx + 1).padStart(3, '0')}`,
-        qty: isIn ? qty : -qty,
+        qty: tx.qty || 0,
         tonTruoc: tx.beforeStock || 1000,
         tonSau: tx.afterStock || 1000,
         document: tx.document || `HD-${String(tx.id || idx + 1).padStart(6, '0')}`,

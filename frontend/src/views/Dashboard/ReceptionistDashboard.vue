@@ -43,6 +43,20 @@
           <span>Danh sách lịch hẹn</span>
         </div>
 
+        <div class="sidebar__divider">HỒ SƠ BỆNH ÁN</div>
+
+        <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'medical-records' }" @click="activeTab = 'medical-records'">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </span>
+          <span>Quản lý hồ sơ bệnh án</span>
+        </div>
+
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'payments' }" @click="activeTab = 'payments'">
           <span class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
@@ -437,6 +451,82 @@
           </table>
         </div>
 
+        <!-- TAB: QUẢN LÝ HỒ SƠ BỆNH ÁN -->
+        <div v-else-if="activeTab === 'medical-records'" class="tab-content animate-fade-in">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0047AB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Danh sách hồ sơ bệnh án
+            </h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input v-model="recSearchQuery" type="text" placeholder="Tìm theo tên BN, mã BA, chẩn đoán..." style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; width: 280px;" @input="onRecSearchDebounce" />
+              <select v-model="recStatusFilter" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem;" @change="loadMedicalRecords">
+                <option value="">Tất cả trạng thái</option>
+                <option value="Active">Đang hoạt động</option>
+                <option value="Completed">Hoàn tất</option>
+                <option value="Closed">Đã đóng</option>
+                <option value="Locked">Đã khóa</option>
+                <option value="Draft">Nháp</option>
+              </select>
+              <button class="action-btn action-btn--primary" @click="loadMedicalRecords">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Tìm
+              </button>
+            </div>
+          </div>
+
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                  <th style="padding: 10px 14px; text-align: left; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Mã BA</th>
+                  <th style="padding: 10px 14px; text-align: left; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Bệnh nhân</th>
+                  <th style="padding: 10px 14px; text-align: left; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Mã BN</th>
+                  <th style="padding: 10px 14px; text-align: left; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Chẩn đoán</th>
+                  <th style="padding: 10px 14px; text-align: left; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Ngày</th>
+                  <th style="padding: 10px 14px; text-align: center; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Trạng thái</th>
+                  <th style="padding: 10px 14px; text-align: center; font-size: 0.72rem; color: #64748b; text-transform: uppercase;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="recLoading" style="border-bottom: 1px solid #f1f5f9;">
+                  <td colspan="7" style="padding: 2rem; text-align: center; color: #94a3b8;">
+                    <i class="fas fa-circle-notch fa-spin"></i> Đang tải...
+                  </td>
+                </tr>
+                <tr v-else-if="medicalRecords.length === 0" style="border-bottom: 1px solid #f1f5f9;">
+                  <td colspan="7" style="padding: 2rem; text-align: center; color: #94a3b8;">Không có hồ sơ bệnh án nào.</td>
+                </tr>
+                <tr v-for="rec in medicalRecords" :key="rec.id" style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 10px 14px; font-family: monospace; font-size: 0.78rem; font-weight: 600; color: #64748b;">
+                    #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
+                  </td>
+                  <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">{{ rec.patientName || rec.patient?.fullName || '--' }}</td>
+                  <td style="padding: 10px 14px; font-family: monospace; font-size: 0.78rem; color: #0047AB;">
+                    {{ rec.gatewayPatientId ? '#' + rec.gatewayPatientId : (patientIdFromGuid(rec.patientId)) }}
+                  </td>
+                  <td style="padding: 10px 14px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #15803d; font-weight: 600;">{{ rec.diagnosis }}</td>
+                  <td style="padding: 10px 14px; color: #475569; font-size: 0.82rem;">{{ formatRecDate(rec.createdAt) }}</td>
+                  <td style="padding: 10px 14px; text-align: center;">
+                    <span :style="statusBadgeStyle(rec.status)">{{ rec.status || 'Active' }}</span>
+                  </td>
+                  <td style="padding: 10px 14px; text-align: center;">
+                    <button class="action-btn action-btn--sm" @click="viewRecDetail(rec)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Chi tiết
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- TAB: HÓA ĐƠN BÁN THUỐC (BILLING) -->
         <div v-else-if="activeTab === 'billing'" class="tab-content animate-fade-in">
           <BillingManagement :inline="true" />
@@ -567,6 +657,106 @@
         </div>
       </div>
     </div>
+
+    <!-- MEDICAL RECORD DETAIL MODAL -->
+    <div v-if="selectedRecord" class="detail-modal-overlay" @click.self="closeRecDetail">
+      <div class="detail-modal-card" style="width: 680px;">
+        <div class="modal-header">
+          <div class="modal-header__title">
+            <span class="ref-code-lg">MÃ BỆNH ÁN #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}</span>
+            <h3>{{ selectedRecord.title || 'Chi tiết hồ sơ bệnh án' }}</h3>
+          </div>
+          <button class="modal-close-btn" @click="closeRecDetail">&times;</button>
+        </div>
+        <div class="modal-body" style="gap: 1rem;">
+          <div class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-user" /> Bệnh nhân</h4>
+            <div class="symptom-box" style="margin: 0;">
+              <span class="cell-label">Họ tên:</span>
+              <p class="symptom-text" style="font-weight: 700;">{{ selectedRecord.patientName || '--' }}</p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;">
+              <span class="cell-label">Mã BN:</span>
+              <p class="symptom-text" style="font-weight: 700; font-family: monospace;">
+                {{ selectedRecord.gatewayPatientId ? '#' + selectedRecord.gatewayPatientId : patientIdFromGuid(selectedRecord.patientId) }}
+              </p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;">
+              <span class="cell-label">Ngày khám:</span>
+              <p class="symptom-text">{{ formatRecDate(selectedRecord.createdAt) }}</p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;">
+              <span class="cell-label">Trạng thái:</span>
+              <p class="symptom-text">
+                <span :style="statusBadgeStyle(selectedRecord.status)">{{ selectedRecord.status || 'Active' }}</span>
+              </p>
+            </div>
+          </div>
+
+          <div v-if="selectedRecord.weight || selectedRecord.height || selectedRecord.bloodPressure || selectedRecord.heartRate || selectedRecord.temperature" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-heartbeat" /> Chỉ số sinh tồn</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px;">
+              <div v-if="selectedRecord.weight" class="vital-chip"><strong>Cân nặng:</strong> {{ selectedRecord.weight }} kg</div>
+              <div v-if="selectedRecord.height" class="vital-chip"><strong>Chiều cao:</strong> {{ selectedRecord.height }} cm</div>
+              <div v-if="selectedRecord.bloodPressure" class="vital-chip"><strong>Huyết áp:</strong> {{ selectedRecord.bloodPressure }} mmHg</div>
+              <div v-if="selectedRecord.heartRate" class="vital-chip"><strong>Nhịp tim:</strong> {{ selectedRecord.heartRate }} bpm</div>
+              <div v-if="selectedRecord.temperature" class="vital-chip"><strong>Nhiệt độ:</strong> {{ selectedRecord.temperature }} °C</div>
+            </div>
+          </div>
+
+          <div class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-stethoscope" /> Ghi nhận lâm sàng</h4>
+            <div class="symptom-box" style="margin: 0;">
+              <span class="cell-label">Triệu chứng:</span>
+              <p class="symptom-text">{{ selectedRecord.symptoms }}</p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;">
+              <span class="cell-label">Chẩn đoán:</span>
+              <p class="symptom-text" style="font-weight: 700; color: #15803d;">{{ selectedRecord.diagnosis }}</p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;" v-if="selectedRecord.diagnosisCode">
+              <span class="cell-label">Mã ICD-10:</span>
+              <p class="symptom-text"><strong>{{ selectedRecord.diagnosisCode }}</strong><span v-if="selectedRecord.diagnosisCodeName" style="margin-left: 4px;">- {{ selectedRecord.diagnosisCodeName }}</span></p>
+            </div>
+            <div class="symptom-box" style="margin-top: 8px;" v-if="selectedRecord.notes">
+              <span class="cell-label">Ghi chú:</span>
+              <p class="symptom-text">{{ selectedRecord.notes }}</p>
+            </div>
+          </div>
+
+          <div v-if="selectedRecord.labTests?.length" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-flask" /> Xét nghiệm</h4>
+            <div v-for="lt in selectedRecord.labTests" :key="lt.id" style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-weight: 700;">{{ lt.testName }}</span>
+                <span :style="statusBadgeStyle(lt.status)">{{ lt.status }}</span>
+              </div>
+              <div v-if="lt.result" style="margin-top: 4px;"><strong>Kết quả:</strong> {{ lt.result }} {{ lt.unit || '' }}</div>
+              <div v-if="lt.normalRange" style="font-size: 0.78rem; color: #64748b;">Bình thường: {{ lt.normalRange }}</div>
+            </div>
+          </div>
+
+          <div v-if="selectedRecord.treatmentPlans?.length" class="clinical-section">
+            <h4 class="section-heading"><i class="fas fa-notes-medical" /> Phác đồ điều trị</h4>
+            <div v-for="tp in selectedRecord.treatmentPlans" :key="tp.id" style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-weight: 700;">{{ tp.planName }}</span>
+                <span :style="statusBadgeStyle(tp.status)">{{ tp.status }}</span>
+              </div>
+              <div v-if="tp.description" style="margin-top: 4px; color: #475569;">{{ tp.description }}</div>
+              <div v-if="tp.progressions?.length" style="margin-top: 6px; font-size: 0.82rem;">
+                <div v-for="pr in tp.progressions" :key="pr.id" style="padding: 4px 0; border-bottom: 1px dashed #e2e8f0;">
+                  <span style="color: #64748b;">{{ new Date(pr.recordedAt).toLocaleDateString('vi-VN') }}:</span> {{ pr.notes }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-close" @click="closeRecDetail">Đóng</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -575,6 +765,8 @@
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { getBills, payBill } from '@/services/pharmacyService'
+  import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
+  import { medicalApi } from '@/services/api'
   import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
   import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
 
@@ -591,6 +783,71 @@
   const loadingBills = ref(false)
   const searchBillQuery = ref('')
   const filterBillStatus = ref('All')
+
+  // Medical records state
+  const medicalRecords = ref<any[]>([])
+  const recLoading = ref(false)
+  const recSearchQuery = ref('')
+  const recStatusFilter = ref('')
+  const selectedRecord = ref<any>(null)
+  let recSearchTimer: any = null
+
+  function onRecSearchDebounce () {
+    clearTimeout(recSearchTimer)
+    recSearchTimer = setTimeout(loadMedicalRecords, 400)
+  }
+
+  async function loadMedicalRecords () {
+    recLoading.value = true
+    try {
+      const params: any = {}
+      if (recSearchQuery.value) params.q = recSearchQuery.value
+      if (recStatusFilter.value) params.status = recStatusFilter.value
+      const qs = new URLSearchParams(params).toString()
+      const res = await medicalApi.get(`/MedicalRecords${qs ? '?' + qs : ''}`)
+      medicalRecords.value = (res.data || []).map((r: any) => ({
+        ...r,
+        patientName: r.patientName || r.patient?.fullName || '--'
+      }))
+    } catch (e) {
+      console.error('Failed to load medical records:', e)
+      medicalRecords.value = []
+    } finally {
+      recLoading.value = false
+    }
+  }
+
+  function patientIdFromGuid (guid: string): string {
+    if (!guid) return '--'
+    const lastSeg = guid.split('-').pop() || ''
+    const num = parseInt(lastSeg, 10)
+    return num ? `#${num}` : guid.substring(0, 8).toUpperCase()
+  }
+
+  function formatRecDate (d: string) {
+    if (!d) return '--'
+    return new Date(d).toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  }
+
+  function viewRecDetail (rec: any) {
+    selectedRecord.value = rec
+  }
+
+  function closeRecDetail () {
+    selectedRecord.value = null
+  }
+
+  function statusBadgeStyle (status: string) {
+    const styles: Record<string, any> = {
+      Active: { background: '#dcfce7', color: '#16a34a' },
+      Completed: { background: '#dbeafe', color: '#2563eb' },
+      Closed: { background: '#f3f4f6', color: '#6b7280' },
+      Locked: { background: '#fee2e2', color: '#dc2626' },
+      Draft: { background: '#fef3c7', color: '#d97706' }
+    }
+    const s = styles[status] || styles.Active
+    return { padding: '3px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, ...s }
+  }
 
   const stats = computed(() => {
     return {
@@ -866,6 +1123,7 @@
 
   onMounted(() => {
     fetchData()
+    loadMedicalRecords()
   })
 </script>
 

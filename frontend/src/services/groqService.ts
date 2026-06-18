@@ -3,6 +3,7 @@ const MODEL = 'llama-3.3-70b-versatile'
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || ''
 
 let cachedServices: any[] | null = null
+let cachedDoctors: any[] | null = null
 
 export async function fetchServices(): Promise<any[]> {
   if (cachedServices) return cachedServices
@@ -18,15 +19,70 @@ export async function fetchServices(): Promise<any[]> {
   return []
 }
 
-export async function chatWithGroq(messages: { role: string; content: string }[], services: any[] = []) {
+export async function fetchDoctors(): Promise<any[]> {
+  if (cachedDoctors) return cachedDoctors
+  try {
+    const res = await fetch(`${GATEWAY_URL}/api/appointment/public/Doctors`)
+    if (res.ok) {
+      cachedDoctors = await res.json()
+      return cachedDoctors || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch doctors:', e)
+  }
+  return []
+}
+
+function buildSystemPrompt(services: any[], doctors: any[], role: string): string {
+  const serviceList = services.length > 0
+    ? `Danh sách dịch vụ khám đang có:\n${services.map(s => `- ID: ${s.id}, Tên: ${s.name}, Giá: ${s.price}đ, Mô tả: ${s.description || 'Không có'}`).join('\n')}`
+    : ''
+
+  const doctorList = doctors.length > 0
+    ? `Danh sách bác sĩ:\n${doctors.map(d => `- ${d.fullName} - Chuyên khoa: ${d.specialty || 'Đa khoa'}, Học vị: ${d.degree || 'Không có'}`).join('\n')}`
+    : ''
+
+  let roleContext = ''
+  switch (role) {
+    case 'Admin':
+      roleContext = 'Người dùng là Quản trị viên hệ thống. Hỗ trợ các câu hỏi về tổng quan doanh thu, quản lý lịch hẹn, bệnh án, thuốc, phiếu nhập, tồn kho, hóa đơn.'
+      break
+    case 'Doctor':
+      roleContext = 'Người dùng là Bác sĩ. Hỗ trợ các câu hỏi về lịch hẹn khám, bệnh nhân, bệnh án, đơn thuốc, lịch trực.'
+      break
+    case 'Receptionist':
+      roleContext = 'Người dùng là Lễ tân. Hỗ trợ các câu hỏi về danh sách lịch hẹn, trạng thái thanh toán, hóa đơn bán thuốc.'
+      break
+    default:
+      roleContext = 'Người dùng là Bệnh nhân. Hỗ trợ các câu hỏi về triệu chứng, bác sĩ, dịch vụ khám, lịch sử khám bệnh, đơn thuốc.'
+  }
+
+  return `Bạn là trợ lý AI của Medicare, nói tiếng Việt. ${roleContext}
+
+Bạn có thể trả lời các câu hỏi về sức khỏe, bệnh lý, thuốc men, hoặc tra cứu thông tin hệ thống.
+
+${serviceList}
+
+${doctorList}
+
+Khi người dùng hỏi về bác sĩ cụ thể (vd: "bác sĩ tim mạch", "bác sĩ nội"), hãy trả lời DỰA TRÊN DANH SÁCH BÁC SĨ THẬT bên trên.
+
+Khi người dùng mô tả TRIỆU CHỨNG bệnh, hãy phân tích và chọn dịch vụ PHÙ HỢP NHẤT từ danh sách trên, trả lời ở dạng JSON:
+{ "reply": "câu trả lời tư vấn bằng markdown", "serviceId": "ID của dịch vụ phù hợp nhất", "specialty": "tên chuyên khoa", "urgency": "Nhẹ / Trung bình / Khẩn cấp", "recommendedService": "tên dịch vụ đề xuất" }
+
+Khi không có triệu chứng (hỏi thăm, hỏi kiến thức, tán gẫu, hỏi về bác sĩ), trả lời text thuần đơn giản, KHÔNG cần JSON.`
+}
+
+export async function chatWithGroq(
+  messages: { role: string; content: string }[],
+  services: any[] = [],
+  doctors: any[] = [],
+  role: string = 'Patient'
+) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
   if (!apiKey) {
     return fallbackAnalysis(messages[messages.length - 1]?.content || '', services)
   }
-
-  const serviceList = services.length > 0
-    ? `Danh sách dịch vụ khám đang có:\n${services.map(s => `- ID: ${s.id}, Tên: ${s.name}, Giá: ${s.price}đ, Mô tả: ${s.description || 'Không có'}`).join('\n')}`
-    : ''
 
   try {
     const res = await fetch(GROQ_API_URL, {
@@ -40,16 +96,7 @@ export async function chatWithGroq(messages: { role: string; content: string }[]
         messages: [
           {
             role: 'system',
-            content: `Bạn là trợ lý y tế AI thân thiện của Medicare, nói tiếng Việt.
-Bạn có thể trả lời các câu hỏi về sức khỏe, bệnh lý, thuốc men, dinh dưỡng, tập luyện...
-Nếu người dùng hỏi thăm hoặc chuyện phiếm, hãy trả lời tự nhiên như một người bạn.
-
-${serviceList}
-
-Khi người dùng mô tả TRIỆU CHỨNG bệnh, hãy phân tích và chọn dịch vụ PHÙ HỢP NHẤT từ danh sách trên, trả lời ở dạng JSON:
-{ "reply": "câu trả lời tư vấn bằng markdown", "serviceId": "ID của dịch vụ phù hợp nhất", "specialty": "tên chuyên khoa", "urgency": "Nhẹ / Trung bình / Khẩn cấp", "recommendedService": "tên dịch vụ đề xuất" }
-
-Khi không có triệu chứng (hỏi thăm, hỏi kiến thức, tán gẫu), trả lời text thuần đơn giản, KHÔNG cần JSON.`
+            content: buildSystemPrompt(services, doctors, role)
           },
           ...messages
         ],

@@ -62,25 +62,53 @@ export async function getInventoryTransactions() {
     medicines.forEach((m: any) => { medMap[m.id] = m.name })
 
     const transactions = logs
-      .filter((l: any) => l.eventType === 'prescription.created')
-      .map((l: any) => {
+      .flatMap((l: any) => {
         try {
           const payload = JSON.parse(l.payload)
-          return (payload.medicines || payload.Medicines || []).map((m: any, mIdx: number) => {
-            const medId = m.medicineId || m.MedicineId
-            return {
+
+          // Import events
+          if (l.eventType === 'import.created') {
+            const code = payload.code || `PN${String(payload.importBillId || l.id).padStart(4, '0')}`
+            return (payload.medicines || []).map((m: any, mIdx: number) => ({
               id: Number(`${l.id}${mIdx}`),
-              type: 'out',
-              medicine: medMap[medId] || `Thuốc #${medId}`,
-              qty: m.quantity || m.Quantity || 0,
-              date: new Date(l.timestamp).toISOString().split('T')[0]
-            }
-          })
+              type: 'Nhập kho',
+              medicine: m.medicineName || 'Thuốc',
+              qty: m.qty || 0,
+              batch: m.batch || `LO${String(mIdx + 1).padStart(3, '0')}`,
+              beforeStock: m.beforeStock || 0,
+              afterStock: m.afterStock || m.qty || 0,
+              document: code,
+              date: new Date(l.timestamp).toISOString().split('T')[0],
+              staff: payload.supplierName || 'Hệ thống',
+              note: `Nhập kho từ nhà cung cấp: ${payload.supplierName || 'N/A'}`
+            }))
+          }
+
+          // Prescription (export) events
+          if (l.eventType === 'prescription.created') {
+            return (payload.medicines || payload.Medicines || []).map((m: any, mIdx: number) => {
+              const medId = m.medicineId || m.MedicineId
+              return {
+                id: Number(`${l.id}${mIdx}`),
+                type: 'Xuất kho',
+                medicine: medMap[medId] || `Thuốc #${medId}`,
+                qty: -(m.quantity || m.Quantity || 0),
+                batch: `LO${String(mIdx + 1).padStart(3, '0')}`,
+                beforeStock: 1000,
+                afterStock: 1000,
+                document: payload.prescriptionCode || `HD-${String(l.id).padStart(6, '0')}`,
+                date: new Date(l.timestamp).toISOString().split('T')[0],
+                staff: 'Hệ thống',
+                note: 'Xuất thuốc theo đơn cho bệnh nhân'
+              }
+            })
+          }
+
+          return []
         } catch (e) {
           return []
         }
       })
-      .flat()
 
     return transactions
   } catch (err) {
@@ -265,6 +293,36 @@ export async function getImportBills() {
   } catch (err) {
     console.error('Failed to fetch import bills from backend:', err)
     return []
+  }
+}
+
+export async function updateImportBill(id: number, bill: any) {
+  try {
+    const response = await pharmacyApi.put(`/ImportBills/${id}`, {
+      supplierCode: bill.supplierCode,
+      supplierName: bill.supplierName,
+      date: bill.date || new Date().toISOString(),
+      creator: bill.creator || 'admin',
+      note: bill.note || '',
+      goodsTotal: bill.goodsTotal || 0,
+      discountTotal: bill.discountTotal || 0,
+      vatTotal: bill.vatTotal || 0,
+      finalTotal: bill.finalTotal || 0,
+      medications: (bill.medications || []).map((m: any) => ({
+        code: m.code,
+        name: m.name,
+        batch: m.batch,
+        expiryDate: m.expiryDate,
+        qty: m.qty,
+        unit: m.unit || 'Viên',
+        price: m.price,
+        total: m.price * m.qty
+      }))
+    })
+    return response.data
+  } catch (err) {
+    console.error('Failed to update import bill:', err)
+    throw err
   }
 }
 

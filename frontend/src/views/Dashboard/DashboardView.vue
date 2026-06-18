@@ -1,4 +1,5 @@
 <template>
+  <CommandPalette :visible="showCommandPalette" @close="showCommandPalette = false" @navigate="handleCommandNavigate" @open="showCommandPalette = true" />
   <div class="dashboard-layout">
     <!-- SIDEBAR (Rich Navigation covering all 3 Services) -->
     <aside class="sidebar">
@@ -53,7 +54,7 @@
         </div>
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'patient-registry' }" @click="activeTab = 'patient-registry'">
           <span class="nav-icon"><i class="fas fa-id-card text-red" /></span>
-          <span>Hồ sơ Bệnh nhân</span>
+          <span>Hồ sơ Bệnh nhân (tab)</span>
         </div>
 
         <div class="sidebar__divider">3. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
@@ -717,8 +718,11 @@
               <span style="font-weight: 700; color: #475569; font-size: 0.9rem; white-space: nowrap;">Tìm kiếm bệnh án:</span>
               <a-input v-model:value="searchRecordQuery" placeholder="Triệu chứng, chẩn đoán..." allow-clear />
             </div>
-            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
-              Tổng số bệnh án: <strong style="color: #0f172a; font-size: 1rem;">{{ allMedicalRecords.length }}</strong> bản ghi
+            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 12px;">
+              <span>Tổng số bệnh án: <strong style="color: #0f172a; font-size: 1rem;">{{ allMedicalRecords.length }}</strong> bản ghi</span>
+              <button class="btn-primary-cockpit" style="padding: 4px 12px; border-radius: 6px; font-weight: 700; background: #991b1b; color: white; border: none; cursor: pointer; font-size: 0.8rem;" @click="loadDeletedRecords">
+                <i class="fas fa-trash-restore" /> Khôi phục
+              </button>
             </div>
           </div>
 
@@ -769,7 +773,7 @@
                       {{ getPatientInfo(record.patientId)?.fullName || 'Chưa rõ' }}
                     </span>
                     <span style="font-family: monospace; font-size: 0.75rem; color: #0047AB; background: #e0f2fe; padding: 1px 4px; border-radius: 4px; width: fit-content;" :title="record.patientId">
-                      {{ getPatientInfo(record.patientId)?.gatewayPatientId ? '#' + getPatientInfo(record.patientId).gatewayPatientId : String(record.patientId || '').substring(24) }}
+                      {{ getPatientInfo(record.patientId)?.gatewayPatientId ? '#' + getPatientInfo(record.patientId).gatewayPatientId : (record.gatewayPatientId ? '#' + record.gatewayPatientId : '#' + (parseInt(String(record.patientId || '').split('-').pop() || '0', 10) || '?')) }}
                     </span>
                   </div>
                 </template>
@@ -950,6 +954,7 @@
         <div v-if="activeTab === 'pharmacy-stock-history'" class="tab-content">
           <InventoryManagement :inline="true" />
         </div>
+
 
       </div>
     </main>
@@ -1263,9 +1268,9 @@
               </p>
             </div>
             <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã bệnh nhân (Guid)</label>
-              <p style="font-family: monospace; font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0;" :title="selectedRecord.patientId">
-                {{ selectedRecord.patientId }}
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã BN</label>
+              <p style="font-family: monospace; font-size: 0.95rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
+                {{ selectedRecord.gatewayPatientId ? '#' + selectedRecord.gatewayPatientId : '#' + (parseInt(String(selectedRecord.patientId || '').split('-').pop() || '0', 10) || '?') }}
               </p>
             </div>
           </div>
@@ -1317,7 +1322,21 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+        <div class="modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto;">
+            <button v-if="!selectedRecord.isLocked" class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #dc2626; color: white; font-size: 0.8rem;" @click="lockRecord(selectedRecord.id)">
+              <i class="fas fa-lock" /> Khóa
+            </button>
+            <button v-if="selectedRecord.isLocked" class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #16a34a; color: white; font-size: 0.8rem;" @click="unlockRecord(selectedRecord.id)">
+              <i class="fas fa-unlock" /> Mở khóa
+            </button>
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #6b7280; color: white; font-size: 0.8rem;" @click="softDeleteRecord(selectedRecord.id)">
+              <i class="fas fa-trash" /> Xóa
+            </button>
+            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #2563eb; color: white; font-size: 0.8rem;" @click="showAuditHistory(selectedRecord.id)">
+              <i class="fas fa-history" /> Lịch sử
+            </button>
+          </div>
           <template v-if="isEditingRecord">
             <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #166534; color: white;" @click="saveRecord">
               <i class="fas fa-save" /> Lưu thay đổi
@@ -1330,6 +1349,74 @@
             </button>
             <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #64748b; color: white;" @click="selectedRecord = null; isEditingRecord = false">Đóng thông tin</button>
           </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT HISTORY MODAL -->
+    <div v-if="auditRecordId" class="modal-backdrop" @click.self="auditRecordId = null">
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 600px; max-width: 90vw;">
+        <div class="modal-header" style="background: #1e293b; color: white; border-bottom: 1px solid #334155;">
+          <h3 style="color: white;"><i class="fas fa-history" /> Lịch sử thay đổi bệnh án</h3>
+          <button class="btn-close-modal" @click="auditRecordId = null">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height: 60vh; overflow-y: auto; padding: 1.5rem;">
+          <div v-if="auditLoading" style="text-align: center; padding: 2rem; color: #94a3b8;">
+            <i class="fas fa-circle-notch fa-spin" /> Đang tải...
+          </div>
+          <div v-else-if="auditLogs.length === 0" style="text-align: center; padding: 2rem; color: #94a3b8;">
+            Chưa có lịch sử thay đổi.
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+            <div v-for="log in auditLogs" :key="log.id" style="display: flex; gap: 12px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
+              <div style="min-width: 80px; color: #64748b; font-weight: 600;">{{ formatDate(log.changedAt) }}</div>
+              <div style="flex: 1;">
+                <span style="font-weight: 700; color: #0f172a;">{{ log.changedBy || 'N/A' }}</span>
+                <span style="color: #475569;"> đã thay đổi </span>
+                <span style="font-weight: 700; color: #2563eb;">{{ log.field }}</span>
+                <div v-if="log.oldValue || log.newValue" style="margin-top: 4px; font-family: monospace; font-size: 0.8rem;">
+                  <span v-if="log.oldValue" style="color: #dc2626;">{{ log.oldValue }}</span>
+                  <span v-if="log.oldValue && log.newValue" style="color: #94a3b8;"> → </span>
+                  <span v-if="log.newValue" style="color: #16a34a;">{{ log.newValue }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel-modal" style="background: #64748b; color: white;" @click="auditRecordId = null">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESTORE DELETED MODAL -->
+    <div v-if="showDeletedRecords" class="modal-backdrop" @click.self="showDeletedRecords = false">
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 700px; max-width: 90vw;">
+        <div class="modal-header" style="background: #991b1b; color: white; border-bottom: 1px solid #7f1d1d;">
+          <h3 style="color: white;"><i class="fas fa-trash-restore" /> Bệnh án đã xóa</h3>
+          <button class="btn-close-modal" @click="showDeletedRecords = false">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height: 60vh; overflow-y: auto; padding: 1.5rem;">
+          <div v-if="deletedRecordsLoading" style="text-align: center; padding: 2rem; color: #94a3b8;">
+            <i class="fas fa-circle-notch fa-spin" /> Đang tải...
+          </div>
+          <div v-else-if="deletedRecords.length === 0" style="text-align: center; padding: 2rem; color: #94a3b8;">
+            Không có bệnh án nào đã xóa.
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+            <div v-for="rec in deletedRecords" :key="rec.id" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+              <div>
+                <div style="font-weight: 700; color: #0f172a;">#{{ String(rec.id || '').substring(0, 8).toUpperCase() }} - {{ rec.diagnosis }}</div>
+                <div style="font-size: 0.8rem; color: #64748b;">{{ rec.patientName || '' }}</div>
+              </div>
+              <button style="background: #16a34a; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-weight: 700; cursor: pointer;" @click="restoreRecord(rec.id)">
+                <i class="fas fa-undo" /> Khôi phục
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel-modal" style="background: #64748b; color: white;" @click="showDeletedRecords = false">Đóng</button>
         </div>
       </div>
     </div>
@@ -1500,13 +1587,14 @@
   </div>
 </template>
 
-<script setup>
-  import { computed, nextTick, onMounted, ref, watch } from 'vue'
+<script setup lang="ts">
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import api, { publicApi } from '@/services/api'
+  import api, { publicApi, medicalApi } from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
+  import type { AuditLogEntry } from '@/services/medicalRecordService'
   import MedicineManagement from '@/views/Pharmacy/MedicineManagement.vue'
   import SupplierManagement from '@/views/Pharmacy/SupplierManagement.vue'
   import ImportBill from '@/views/Pharmacy/ImportBill.vue'
@@ -1515,10 +1603,31 @@
   import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
   import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
   import InventoryManagement from '@/views/Pharmacy/InventoryManagement.vue'
+  import CommandPalette from '@/components/CommandPalette.vue'
 
   const router = useRouter()
   const authStore = useAuthStore()
   const loading = ref(false)
+  const showCommandPalette = ref(false)
+
+  function handleCommandNavigate(tab) {
+    activeTab.value = tab
+  }
+
+  function onGlobalKeydown(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault()
+      showCommandPalette.value = !showCommandPalette.value
+    }
+  }
+
+  onMounted(() => {
+    window.addEventListener('keydown', onGlobalKeydown)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('keydown', onGlobalKeydown)
+  })
 
   // Columns Definitions for Ant Design Tables
   const columnsAppointments = [
@@ -2007,6 +2116,76 @@
     } finally {
       loading.value = false
     }
+  }
+
+  // Admin features: lock/unlock, soft delete, restore, audit
+  const auditRecordId = ref<string | null>(null)
+  const auditLogs = ref<AuditLogEntry[]>([])
+  const auditLoading = ref(false)
+  const showDeletedRecords = ref(false)
+  const deletedRecords = ref<any[]>([])
+  const deletedRecordsLoading = ref(false)
+
+  async function lockRecord (id: string) {
+    if (!confirm('Khóa bệnh án này? Bệnh án sẽ không thể chỉnh sửa.')) return
+    loading.value = true
+    try {
+      await medicalRecordService.lockRecord(id)
+      alert('Đã khóa bệnh án.')
+      viewRecordDetails(selectedRecord.value)
+    } catch (e: any) { alert(e.message || 'Lỗi') }
+    finally { loading.value = false }
+  }
+
+  async function unlockRecord (id: string) {
+    if (!confirm('Mở khóa bệnh án này?')) return
+    loading.value = true
+    try {
+      await medicalRecordService.unlockRecord(id)
+      alert('Đã mở khóa bệnh án.')
+      viewRecordDetails(selectedRecord.value)
+    } catch (e: any) { alert(e.message || 'Lỗi') }
+    finally { loading.value = false }
+  }
+
+  async function softDeleteRecord (id: string) {
+    if (!confirm('Xóa bệnh án này? Có thể khôi phục sau.')) return
+    loading.value = true
+    try {
+      await medicalRecordService.softDeleteRecord(id)
+      alert('Đã xóa bệnh án.')
+      selectedRecord.value = null
+      allMedicalRecords.value = (await medicalRecordService.getAllRecords()) || []
+    } catch (e: any) { alert(e.message || 'Lỗi') }
+    finally { loading.value = false }
+  }
+
+  async function restoreRecord (id: string) {
+    if (!confirm('Khôi phục bệnh án này?')) return
+    try {
+      await medicalRecordService.restoreRecord(id)
+      alert('Đã khôi phục bệnh án.')
+      deletedRecords.value = (await medicalRecordService.getDeletedRecords()) || []
+    } catch (e: any) { alert(e.message || 'Lỗi') }
+  }
+
+  async function showAuditHistory (id: string) {
+    auditRecordId.value = id
+    auditLoading.value = true
+    auditLogs.value = []
+    try {
+      auditLogs.value = (await medicalRecordService.getRecordHistory(id)) || []
+    } catch (e) { console.error(e) }
+    finally { auditLoading.value = false }
+  }
+
+  async function loadDeletedRecords () {
+    showDeletedRecords.value = true
+    deletedRecordsLoading.value = true
+    try {
+      deletedRecords.value = (await medicalRecordService.getDeletedRecords()) || []
+    } catch (e) { console.error(e) }
+    finally { deletedRecordsLoading.value = false }
   }
 
   const isEditingPatient = ref(false)

@@ -181,6 +181,9 @@
                 <span style="font-family: monospace; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: 700;">
                   Mã BA: #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                 </span>
+                <button class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="downloadPdf(rec)">
+                  <i class="fas fa-file-pdf" /> Tải PDF
+                </button>
                 <button v-if="rec.prescription" class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="printPrescription(rec)">
                   <i class="fas fa-print" /> In toa thuốc
                 </button>
@@ -267,6 +270,28 @@
                         <i class="fas fa-download" /> Tải về
                       </span>
                     </a>
+                  </div>
+                </div>
+
+                <!-- Lab Tests display -->
+                <div v-if="rec.labTests && rec.labTests.length > 0">
+                  <h4 style="margin: 12px 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Xét nghiệm</h4>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div v-for="lt in rec.labTests" :key="lt.id" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 0.85rem;">{{ lt.testName }}</span>
+                        <span :style="{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, background: lt.status === 'Completed' ? '#dcfce7' : '#fef3c7', color: lt.status === 'Completed' ? '#16a34a' : '#d97706' }">{{ lt.status === 'Completed' ? 'Có kết quả' : lt.status }}</span>
+                      </div>
+                      <div v-if="lt.result" style="margin-top: 4px; font-size: 0.85rem;">
+                        <strong>Kết quả:</strong> {{ lt.result }} <span v-if="lt.unit">{{ lt.unit }}</span>
+                        <span v-if="lt.normalRange" style="color: #64748b; font-size: 0.75rem; margin-left: 8px;">(BT: {{ lt.normalRange }})</span>
+                      </div>
+                      <div v-if="lt.attachmentFileJson" style="margin-top: 6px;">
+                        <a :href="lt.attachmentFileJson" download style="font-size: 0.78rem; color: #2563eb; text-decoration: underline;">
+                          <i class="fas fa-download" /> Tải file kết quả
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -492,6 +517,62 @@
     } finally {
       loading.value = false
     }
+  }
+
+  function downloadPdf(rec: MedicalRecord) {
+    const pName = patientInfo.value.fullName || 'Bệnh nhân Medicare'
+    const recordId = String(rec.id || '').substring(0, 8).toUpperCase()
+    const dateStr = formatDateFull(rec.createdAt)
+
+    let labHtml = ''
+    if (rec.labTests?.length) {
+      labHtml = '<h4 style="margin: 20px 0 10px; font-size: 14pt;">KẾT QUẢ XÉT NGHIỆM</h4>'
+      rec.labTests.forEach((lt: any) => {
+        labHtml += `<div style="border: 1px solid #ddd; padding: 8px; margin-bottom: 8px;">
+          <strong>${lt.testName}</strong>${lt.result ? `: ${lt.result} ${lt.unit || ''}` : ''}
+          ${lt.normalRange ? `<span style="color: #666; margin-left: 8px;">(Bình thường: ${lt.normalRange})</span>` : ''}
+        </div>`
+      })
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) { alert('Trình duyệt đã chặn popup.'); return }
+    printWindow.document.write(`
+      <html>
+        <head><title>Bệnh án - Medicare</title>
+        <style>
+          body { padding: 2cm; font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.4; }
+          @media print { @page { margin: 1.5cm; } body { padding: 0; } }
+          table { width: 100%; border-collapse: collapse; }
+        </style></head>
+        <body>
+          <div style="border-bottom: 2px solid #0047AB; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between;">
+            <div>
+              <h2 style="margin: 0; color: #0047AB;">Bệnh viện Medicare</h2>
+              <p style="margin: 2px 0; font-size: 10pt;">78 Giải Phóng, Đống Đa, Hà Nội | 1900 6789</p>
+            </div>
+            <div style="text-align: right;">
+              <p style="margin: 0; font-weight: bold;">MÃ BA: #${recordId}</p>
+              <p style="margin: 2px 0; font-size: 10pt;">Ngày: ${dateStr}</p>
+            </div>
+          </div>
+          <h3 style="text-align: center; text-transform: uppercase;">BỆNH ÁN ĐIỆN TỬ</h3>
+          <p style="margin-top: 20px;"><strong>Bệnh nhân:</strong> ${pName}</p>
+          <p><strong>Chẩn đoán:</strong> ${rec.diagnosis || ''}</p>
+          ${rec.preliminaryDiagnosis ? `<p><strong>Chẩn đoán sơ bộ:</strong> ${rec.preliminaryDiagnosis}</p>` : ''}
+          ${rec.finalDiagnosis ? `<p><strong>Chẩn đoán cuối cùng:</strong> ${rec.finalDiagnosis}</p>` : ''}
+          <p><strong>Triệu chứng:</strong> ${rec.symptoms || ''}</p>
+          ${rec.diagnosisCode ? `<p><strong>Mã ICD-10:</strong> ${rec.diagnosisCode} - ${rec.diagnosisCodeName || ''}</p>` : ''}
+          ${rec.notes ? `<p><strong>Ghi chú:</strong> ${rec.notes}</p>` : ''}
+          ${labHtml}
+          <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 10px; text-align: center; font-size: 10pt; color: #666;">
+            Bệnh án điện tử - Medicare Hospital System
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    setTimeout(() => { printWindow.print() }, 500)
   }
 
   function printPrescription(rec: MedicalRecord) {

@@ -394,6 +394,9 @@
                   </td>
                   <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #15803d;">
                     {{ rec.diagnosis }}
+                    <span v-if="rec.diagnosisCode" style="font-weight: 600; font-size: 0.75rem; color: #2563eb; display: block;">
+                      ICD-10: {{ rec.diagnosisCode }}
+                    </span>
                   </td>
                   <td>{{ rec.createdAt ? formatDateWithTime(rec.createdAt) : '--' }}</td>
                   <td style="text-align: right;">
@@ -622,7 +625,7 @@
             <div class="brief-item"><strong>Bệnh nhân:</strong> {{ completingApp.patientName }}</div>
             <div class="brief-item"><strong>Dịch vụ chỉ định:</strong> {{ completingApp.serviceName }}</div>
             <div class="brief-item"><strong>Giờ khám:</strong> {{ formatTime(completingApp.startTime) }}</div>
-            <div class="brief-item"><strong>Mã BN:</strong> <code>{{ String(mapUserIdToGuid(completingApp.patientId) || '').substring(0, 8).toUpperCase() }}</code></div>
+            <div class="brief-item"><strong>Mã BN:</strong> <code>#{{ completingApp.patientId }}</code></div>
           </div>
 
           <div class="clinical-section-form">
@@ -642,6 +645,31 @@
               <div class="form-group">
                 <label class="form-label">Chẩn đoán chuyên môn *</label>
                 <input v-model="formDiagnosis" type="text" class="form-input" placeholder="Ví dụ: Viêm loét dạ dày tá tràng cấp tính..." required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Chẩn đoán sơ bộ</label>
+                <input v-model="formPreliminaryDiagnosis" type="text" class="form-input" placeholder="Chẩn đoán ban đầu trước khi có kết quả cận lâm sàng..." />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Chẩn đoán cuối cùng</label>
+                <input v-model="formFinalDiagnosis" type="text" class="form-input" placeholder="Chẩn đoán xác định sau khi có kết quả..." />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Tiền sử bệnh</label>
+                <textarea v-model="formMedicalHistory" rows="2" class="form-textarea" placeholder="Tiền sử bệnh lý của bệnh nhân..." />
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Tiền sử dị ứng</label>
+                <textarea v-model="formAllergies" rows="2" class="form-textarea" placeholder="Thông tin dị ứng của bệnh nhân..." />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Mã ICD-10</label>
+                <Icd10Picker v-model="formDiagnosisCode" @select="onIcd10Select" />
               </div>
 
               <div class="form-group">
@@ -867,6 +895,13 @@
                 {{ selectedRecord.diagnosis }}
               </p>
             </div>
+            <div class="symptom-box" style="margin-top: 10px;" v-if="selectedRecord.diagnosisCode">
+              <span class="cell-label">Mã ICD-10:</span>
+              <p class="symptom-text" style="background: #eff6ff; border-color: #bfdbfe; color: #1e40af;">
+                <span style="font-weight: 800;">{{ selectedRecord.diagnosisCode }}</span>
+                <span v-if="selectedRecord.diagnosisCodeName" style="font-weight: 400; margin-left: 4px;">- {{ selectedRecord.diagnosisCodeName }}</span>
+              </p>
+            </div>
             <div class="symptom-box" style="margin-top: 10px;" v-if="selectedRecord.notes">
               <span class="cell-label">Lời dặn / Ghi chú:</span>
               <p class="symptom-text">{{ selectedRecord.notes }}</p>
@@ -909,6 +944,24 @@
 
           <div class="clinical-section" v-if="selectedRecord.prescription">
             <h4 class="section-heading"><i class="fas fa-prescription-bottle" /> Đơn thuốc y khoa chỉ định</h4>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+              <span v-if="selectedRecord.prescription.status" :style="{
+                padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
+                background: selectedRecord.prescription.status === 'active' ? '#dcfce7' : selectedRecord.prescription.status === 'completed' ? '#dbeafe' : selectedRecord.prescription.status === 'cancelled' ? '#fee2e2' : '#f3f4f6',
+                color: selectedRecord.prescription.status === 'active' ? '#16a34a' : selectedRecord.prescription.status === 'completed' ? '#2563eb' : selectedRecord.prescription.status === 'cancelled' ? '#dc2626' : '#6b7280'
+              }">
+                {{ selectedRecord.prescription.status === 'active' ? 'Đang dùng' : selectedRecord.prescription.status === 'completed' ? 'Đã hoàn tất' : selectedRecord.prescription.status === 'cancelled' ? 'Đã hủy' : 'Hết hạn' }}
+              </span>
+              <span v-if="selectedRecord.prescription.expiryDate" style="font-size: 0.75rem; color: #6b7280;">
+                HSD: {{ formatDate(selectedRecord.prescription.expiryDate) }}
+              </span>
+              <button v-if="selectedRecord.prescription.status === 'active'" class="btn-icon-sm" style="margin-left: auto; color: #2563eb;" @click="openEditPrescription(selectedRecord.prescription)" title="Sửa đơn thuốc">
+                <i class="fas fa-edit" />
+              </button>
+              <button v-if="selectedRecord.prescription.status === 'active'" class="btn-icon-sm" style="color: #dc2626;" @click="deletePrescription(selectedRecord.prescription.id)" title="Xóa đơn thuốc">
+                <i class="fas fa-trash" />
+              </button>
+            </div>
             <div v-if="selectedRecord.prescription.instructions" style="font-size: 0.85rem; font-weight: 600; color: #b91c1c; margin-bottom: 8px;">
               Lời dặn: {{ selectedRecord.prescription.instructions }}
             </div>
@@ -922,10 +975,146 @@
               </div>
             </div>
           </div>
+
+          <div class="clinical-section" v-if="selectedRecord.labTests?.length">
+            <h4 class="section-heading"><i class="fas fa-flask" /> Xét nghiệm</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <div v-for="lt in selectedRecord.labTests" :key="lt.id" class="symptom-box" style="margin: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: #0f172a;">{{ lt.testName }}</span>
+                  <span :style="{ padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, background: lt.status === 'Completed' ? '#dcfce7' : lt.status === 'InProgress' ? '#fef3c7' : '#f1f5f9', color: lt.status === 'Completed' ? '#16a34a' : lt.status === 'InProgress' ? '#d97706' : '#6b7280' }">{{ lt.status }}</span>
+                </div>
+                <div v-if="lt.result" style="margin-top: 6px; display: flex; gap: 12px;">
+                  <span><strong>Kết quả:</strong> {{ lt.result }} {{ lt.unit || '' }}</span>
+                  <span v-if="lt.normalRange" style="color: #64748b;">(BT: {{ lt.normalRange }})</span>
+                </div>
+                <div v-if="lt.notes" style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">{{ lt.notes }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="clinical-section" v-if="selectedRecord.treatmentPlans?.length">
+            <h4 class="section-heading"><i class="fas fa-notes-medical" /> Phác đồ điều trị</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <div v-for="tp in selectedRecord.treatmentPlans" :key="tp.id" class="symptom-box" style="margin: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: #0f172a;">{{ tp.planName }}</span>
+                  <span :style="{ padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, background: tp.status === 'Active' ? '#dcfce7' : '#f1f5f9', color: tp.status === 'Active' ? '#16a34a' : '#6b7280' }">{{ tp.status }}</span>
+                </div>
+                <div v-if="tp.description" style="margin-top: 4px; color: #475569; font-size: 0.85rem;">{{ tp.description }}</div>
+                <div v-if="tp.progressions?.length" style="margin-top: 8px;">
+                  <div style="font-weight: 700; font-size: 0.8rem; color: #64748b; margin-bottom: 4px;">DIỄN BIẾN:</div>
+                  <div v-for="pr in tp.progressions" :key="pr.id" style="padding: 4px 8px; border-left: 3px solid #bfdbfe; margin-bottom: 4px; font-size: 0.82rem;">
+                    <span style="color: #64748b;">{{ formatDate(pr.recordedAt) }}:</span> {{ pr.notes }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="clinical-section" v-if="selectedRecord.admissionDate || selectedRecord.dischargeDate || selectedRecord.dischargeDiagnosis">
+            <h4 class="section-heading"><i class="fas fa-hospital" /> Giấy ra viện / Tóm tắt xuất viện</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+              <div v-if="selectedRecord.admissionDate" class="symptom-box" style="margin: 0;">
+                <span class="cell-label">Ngày nhập viện:</span>
+                <p class="symptom-text" style="font-weight: 700;">{{ formatDate(selectedRecord.admissionDate) }}</p>
+              </div>
+              <div v-if="selectedRecord.dischargeDate" class="symptom-box" style="margin: 0;">
+                <span class="cell-label">Ngày xuất viện:</span>
+                <p class="symptom-text" style="font-weight: 700;">{{ formatDate(selectedRecord.dischargeDate) }}</p>
+              </div>
+            </div>
+            <div v-if="selectedRecord.dischargeDiagnosis" class="symptom-box" style="margin-top: 10px;">
+              <span class="cell-label">Chẩn đoán xuất viện:</span>
+              <p class="symptom-text">{{ selectedRecord.dischargeDiagnosis }}</p>
+            </div>
+            <div v-if="selectedRecord.dischargeInstructions" class="symptom-box" style="margin-top: 10px;">
+              <span class="cell-label">Lời dặn khi xuất viện:</span>
+              <p class="symptom-text">{{ selectedRecord.dischargeInstructions }}</p>
+            </div>
+            <div v-if="selectedRecord.followUpInstructions" class="symptom-box" style="margin-top: 10px;">
+              <span class="cell-label">Hướng dẫn tái khám:</span>
+              <p class="symptom-text">{{ selectedRecord.followUpInstructions }}</p>
+            </div>
+            <div v-if="selectedRecord.followUpClinic || selectedRecord.followUpDate" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+              <div v-if="selectedRecord.followUpClinic" class="symptom-box" style="margin: 0;">
+                <span class="cell-label">Phòng khám tái khám:</span>
+                <p class="symptom-text">{{ selectedRecord.followUpClinic }}</p>
+              </div>
+              <div v-if="selectedRecord.followUpDate" class="symptom-box" style="margin: 0;">
+                <span class="cell-label">Ngày tái khám:</span>
+                <p class="symptom-text" style="font-weight: 700;">{{ formatDate(selectedRecord.followUpDate) }}</p>
+              </div>
+            </div>
+            <button class="btn-edit-discharge" @click="openDischargeSummary(selectedRecord)" style="margin-top: 12px;">
+              <i class="fas fa-edit" /> {{ selectedRecord.dischargeDiagnosis ? 'Cập nhật giấy ra viện' : 'Tạo giấy ra viện' }}
+            </button>
+          </div>
+          <div v-else-if="selectedRecord.id" style="margin-top: 12px;">
+            <button class="btn-edit-discharge" @click="openDischargeSummary(selectedRecord)">
+              <i class="fas fa-file-medical" /> Tạo giấy ra viện
+            </button>
+          </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn-modal-close" @click="selectedRecord = null">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISCHARGE SUMMARY MODAL -->
+    <div v-if="dischargeRecord" class="detail-modal-overlay" @click.self="closeDischargeSummary">
+      <div class="detail-modal-card animate-scale-up" style="width: 560px;">
+        <div class="modal-header">
+          <div class="modal-header__title">
+            <span class="ref-code-lg">GIẤY RA VIỆN</span>
+            <h3>{{ dischargeRecord.title || 'Tóm tắt xuất viện' }}</h3>
+          </div>
+          <button class="modal-close-btn" @click="closeDischargeSummary">&times;</button>
+        </div>
+
+        <div class="modal-body" style="gap: 1rem;">
+          <div class="form-fields-grid">
+            <div class="form-group">
+              <label class="form-label">Ngày nhập viện</label>
+              <input v-model="dischargeForm.admissionDate" type="date" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ngày xuất viện</label>
+              <input v-model="dischargeForm.dischargeDate" type="date" class="form-input" />
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Chẩn đoán xuất viện</label>
+              <textarea v-model="dischargeForm.dischargeDiagnosis" rows="2" class="form-textarea" placeholder="Chẩn đoán lúc ra viện..." />
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Lời dặn khi xuất viện</label>
+              <textarea v-model="dischargeForm.dischargeInstructions" rows="2" class="form-textarea" placeholder="Chế độ ăn uống, nghỉ ngơi, thuốc men..." />
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Hướng dẫn tái khám</label>
+              <textarea v-model="dischargeForm.followUpInstructions" rows="2" class="form-textarea" placeholder="Lịch tái khám, xét nghiệm cần làm..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phòng khám tái khám</label>
+              <input v-model="dischargeForm.followUpClinic" type="text" class="form-input" placeholder="Khoa khám lại..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ngày tái khám</label>
+              <input v-model="dischargeForm.followUpDate" type="date" class="form-input" />
+            </div>
+          </div>
+          <div v-if="dischargeSaving" style="text-align: center; color: #2563eb; font-size: 0.85rem;">
+            <i class="fas fa-spinner fa-spin" /> Đang lưu...
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-modal-close" @click="closeDischargeSummary">Hủy</button>
+          <button class="btn-submit" @click="saveDischargeSummary" :disabled="dischargeSaving">
+            <i class="fas fa-save" /> Lưu giấy ra viện
+          </button>
         </div>
       </div>
     </div>
@@ -978,6 +1167,9 @@
               </div>
               <div style="font-size: 0.85rem; text-align: left;">
                 <strong>Chẩn đoán:</strong> <span style="font-weight: 700; color: #15803d;">{{ rec.diagnosis }}</span>
+                <span v-if="rec.diagnosisCode" style="display: inline-block; margin-left: 6px; font-size: 0.75rem; color: #2563eb; font-weight: 700;">
+                  (ICD-10: {{ rec.diagnosisCode }})
+                </span>
               </div>
               <div style="font-size: 0.85rem; text-align: left;" v-if="rec.notes">
                 <strong>Ghi chú/Lời dặn:</strong> {{ rec.notes }}
@@ -1006,8 +1198,15 @@
               
               <!-- Prescription details inside specific record -->
               <div v-if="rec.prescription" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; text-align: left;">
-                <div style="font-size: 0.8rem; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 4px; margin-bottom: 6px;">
+                <div style="font-size: 0.8rem; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
                   <i class="fas fa-prescription-bottle" /> Đơn thuốc y khoa chỉ định
+                  <span v-if="rec.prescription.status" :style="{
+                    padding: '1px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
+                    background: rec.prescription.status === 'active' ? '#dcfce7' : rec.prescription.status === 'completed' ? '#dbeafe' : rec.prescription.status === 'cancelled' ? '#fee2e2' : '#f3f4f6',
+                    color: rec.prescription.status === 'active' ? '#16a34a' : rec.prescription.status === 'completed' ? '#2563eb' : rec.prescription.status === 'cancelled' ? '#dc2626' : '#6b7280'
+                  }">
+                    {{ rec.prescription.status === 'active' ? 'Đang dùng' : rec.prescription.status === 'completed' ? 'Đã hoàn tất' : rec.prescription.status === 'cancelled' ? 'Đã hủy' : 'Hết hạn' }}
+                  </span>
                 </div>
                 <div v-for="(med, mIdx) in rec.prescription.details" :key="mIdx" style="background: white; border: 1px solid #fee2e2; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
                   <span>{{ mIdx + 1 }}. <strong>{{ med.medicationName }}</strong> ({{ med.dosage }})</span>
@@ -1068,6 +1267,7 @@
   import { useAuthStore } from '@/stores/authStore'
   import { getMedicines } from '@/services/pharmacyService'
   import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
+  import Icd10Picker from '@/components/Icd10Picker.vue'
 
   const authStore = useAuthStore()
   const loading = ref(false)
@@ -1168,6 +1368,12 @@
   const formTitle = ref('')
   const formSymptoms = ref('')
   const formDiagnosis = ref('')
+  const formPreliminaryDiagnosis = ref('')
+  const formFinalDiagnosis = ref('')
+  const formMedicalHistory = ref('')
+  const formAllergies = ref('')
+  const formDiagnosisCode = ref('')
+  const formDiagnosisCodeName = ref('')
   const formNotes = ref('')
   const formWeight = ref<number | null>(null)
   const formHeight = ref<number | null>(null)
@@ -1180,6 +1386,19 @@
   
   // Attachments state
   const formAttachments = ref<Array<{ name: string; data: string }>>([])
+
+  // Discharge summary state
+  const dischargeRecord = ref<any>(null)
+  const dischargeSaving = ref(false)
+  const dischargeForm = ref({
+    admissionDate: '',
+    dischargeDate: '',
+    dischargeDiagnosis: '',
+    dischargeInstructions: '',
+    followUpInstructions: '',
+    followUpClinic: '',
+    followUpDate: ''
+  })
 
   // Prescription Form State
   const hasPrescription = ref(false)
@@ -1536,9 +1755,26 @@
     formTitle.value = 'Khám bệnh chuyên khoa - ' + formatDate(new Date())
     formSymptoms.value = symptomsText
     formDiagnosis.value = ''
+    formPreliminaryDiagnosis.value = ''
+    formFinalDiagnosis.value = ''
+    formMedicalHistory.value = ''
+    formAllergies.value = ''
+    formDiagnosisCode.value = ''
+    formDiagnosisCodeName.value = ''
     formNotes.value = ''
     formWeight.value = null
     formHeight.value = null
+
+    // Pre-fill medical history & allergies from patient profile
+    const patientId = completingApp.value.patientId
+    if (patientId) {
+      medicalRecordService.getPatientProfile(patientId).then(profile => {
+        if (profile) {
+          formMedicalHistory.value = profile.medicalHistory || ''
+          formAllergies.value = profile.allergies || ''
+        }
+      }).catch(() => {})
+    }
     formBloodPressure.value = ''
     formHeartRate.value = null
     formTemperature.value = null
@@ -1565,6 +1801,92 @@
 
   function closeCompleteModal () {
     completingApp.value = null
+  }
+
+  function onIcd10Select (code: string, name: string) {
+    formDiagnosisCode.value = code
+    formDiagnosisCodeName.value = name
+  }
+
+  function openDischargeSummary (record: any) {
+    dischargeRecord.value = record
+    dischargeForm.value = {
+      admissionDate: record.admissionDate ? record.admissionDate.substring(0, 10) : '',
+      dischargeDate: record.dischargeDate ? record.dischargeDate.substring(0, 10) : '',
+      dischargeDiagnosis: record.dischargeDiagnosis || '',
+      dischargeInstructions: record.dischargeInstructions || '',
+      followUpInstructions: record.followUpInstructions || '',
+      followUpClinic: record.followUpClinic || '',
+      followUpDate: record.followUpDate ? record.followUpDate.substring(0, 10) : ''
+    }
+  }
+
+  function closeDischargeSummary () {
+    dischargeRecord.value = null
+  }
+
+  async function saveDischargeSummary () {
+    if (!dischargeRecord.value) return
+    dischargeSaving.value = true
+    try {
+      const result = await medicalRecordService.setDischargeSummary(dischargeRecord.value.id, {
+        dischargeDate: dischargeForm.value.dischargeDate || undefined,
+        dischargeDiagnosis: dischargeForm.value.dischargeDiagnosis || undefined,
+        dischargeInstructions: dischargeForm.value.dischargeInstructions || undefined,
+        followUpInstructions: dischargeForm.value.followUpInstructions || undefined,
+        followUpClinic: dischargeForm.value.followUpClinic || undefined,
+        followUpDate: dischargeForm.value.followUpDate || undefined
+      })
+      if (result.success) {
+        // Update local record
+        Object.assign(dischargeRecord.value, dischargeForm.value)
+        alert('Đã lưu giấy ra viện thành công!')
+        closeDischargeSummary()
+        // Refresh records
+        loadDoctorRecords()
+      } else {
+        alert('Lỗi: ' + result.message)
+      }
+    } catch (e) {
+      alert('Không thể lưu giấy ra viện.')
+    } finally {
+      dischargeSaving.value = false
+    }
+  }
+
+  async function openEditPrescription (prescription: any) {
+    const newInstructions = prompt('Chỉnh sửa lời dặn:', prescription.instructions || '')
+    if (newInstructions === null) return
+    try {
+      const result = await medicalRecordService.updatePrescription(prescription.id, { instructions: newInstructions })
+      if (result.success) {
+        prescription.instructions = newInstructions
+        alert('Đã cập nhật đơn thuốc!')
+        loadDoctorRecords()
+      } else {
+        alert('Lỗi: ' + result.message)
+      }
+    } catch (e) {
+      alert('Không thể cập nhật đơn thuốc.')
+    }
+  }
+
+  async function deletePrescription (prescriptionId: string) {
+    if (!confirm('Xác nhận xóa đơn thuốc này?')) return
+    try {
+      const result = await medicalRecordService.deletePrescription(prescriptionId)
+      if (result.success) {
+        alert('Đã xóa đơn thuốc!')
+        if (selectedRecord.value?.prescription?.id === prescriptionId) {
+          selectedRecord.value.prescription = null
+        }
+        loadDoctorRecords()
+      } else {
+        alert('Lỗi: ' + result.message)
+      }
+    } catch (e) {
+      alert('Không thể xóa đơn thuốc.')
+    }
   }
 
   function addPrescriptionItem () {
@@ -1617,6 +1939,12 @@
         title: formTitle.value || ('Khám bệnh chuyên khoa - ' + formatDate(new Date())),
         symptoms: formSymptoms.value,
         diagnosis: formDiagnosis.value,
+        preliminaryDiagnosis: formPreliminaryDiagnosis.value || undefined,
+        finalDiagnosis: formFinalDiagnosis.value || undefined,
+        medicalHistorySnapshot: formMedicalHistory.value || undefined,
+        allergiesSnapshot: formAllergies.value || undefined,
+        diagnosisCode: formDiagnosisCode.value || undefined,
+        diagnosisCodeName: formDiagnosisCodeName.value || undefined,
         notes: formNotes.value,
         weight: formWeight.value || undefined,
         height: formHeight.value || undefined,
@@ -1627,7 +1955,8 @@
         attachmentsJson: formAttachments.value.length > 0 ? JSON.stringify(formAttachments.value) : undefined,
         appointmentId: completingApp.value.id,
         patientName: completingApp.value.patientName || 'Bệnh nhân Medicare',
-        gatewayPatientId: completingApp.value.patientId
+        gatewayPatientId: completingApp.value.patientId,
+        admissionDate: new Date().toISOString()
       })
 
       if (!recordResult.success || !recordResult.recordId) {
@@ -2941,5 +3270,38 @@
 .bmi-obese {
   color: #dc2626 !important;
   font-weight: 800;
+}
+
+.btn-icon-sm {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: 0.15s;
+}
+.btn-icon-sm:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-edit-discharge {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1.5px solid #bbf7d0;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.15s;
+}
+.btn-edit-discharge:hover {
+  background: #dcfce7;
+  border-color: #86efac;
 }
 </style>

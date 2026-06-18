@@ -143,12 +143,12 @@
                       </a-button>
                     </a-tooltip>
                     <a-tooltip title="Chỉnh sửa">
-                      <a-button type="text" size="small" style="color: #0047AB;" @click="editImportBill(record)" :disabled="record.status !== 'draft'">
+                      <a-button type="text" size="small" style="color: #0047AB;" @click="editImportBill(record)">
                         <i class="far fa-edit" />
                       </a-button>
                     </a-tooltip>
                     <a-tooltip title="In phiếu">
-                      <a-button type="text" size="small" style="color: #64748b;">
+                      <a-button type="text" size="small" style="color: #64748b;" @click="printImportBill(record)">
                         <i class="fas fa-print" />
                       </a-button>
                     </a-tooltip>
@@ -505,7 +505,8 @@ async function loadImportBills() {
     const data = await getImportBills()
     importBills.value = (data || []).map((b: any) => ({
       ...b,
-      status: b.status || 'Đã nhập'
+      code: b.code || `PN${String(b.id).padStart(4, '0')}`,
+      status: b.status || 'completed'
     }))
   } catch (e) {
     console.error('Failed to load import bills from backend:', e)
@@ -613,8 +614,8 @@ function switchToCreateMode() {
       email: ''
     }
   }
-  invoice.value = {
-    code: 'PN' + Math.floor(100000 + Math.random() * 900000).toString(),
+    invoice.value = {
+    code: 'PN' + String(importBills.value.length + 1).padStart(4, '0'),
     date: dayjs(),
     creator: 'admin',
     note: ''
@@ -691,6 +692,58 @@ function editImportBill(bill: any) {
 
 function exportToExcel() {
   notif.show({ type: 'success', message: 'Xuất file excel danh sách phiếu nhập thành công!' })
+}
+
+function printImportBill(bill: any) {
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) return
+  const medsHtml = (bill.medications || []).map((m: any, idx: number) =>
+    `<tr>
+      <td style="padding: 6px 8px; border: 1px solid #ddd;">${idx + 1}</td>
+      <td style="padding: 6px 8px; border: 1px solid #ddd;">${m.code || ''}</td>
+      <td style="padding: 6px 8px; border: 1px solid #ddd;">${m.name || ''}</td>
+      <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: center;">${m.qty || 0}</td>
+      <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${(m.price || 0).toLocaleString()}</td>
+      <td style="padding: 6px 8px; border: 1px solid #ddd; text-align: right;">${((m.price || 0) * (m.qty || 0)).toLocaleString()}</td>
+    </tr>`
+  ).join('')
+
+  printWindow.document.write(`
+    <html><head><title>In phiếu nhập - ${bill.code || 'PN' + String(bill.id).padStart(4, '0')}</title>
+    <style>
+      body { font-family: 'Inter', sans-serif; padding: 40px; }
+      h2 { text-align: center; margin-bottom: 4px; }
+      .sub { text-align: center; color: #666; margin-bottom: 24px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #f1f5f9; padding: 8px; border: 1px solid #ddd; text-align: left; }
+      .total-row td { font-weight: 700; padding: 8px; border: 1px solid #ddd; }
+      .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+      .footer div { text-align: center; }
+    </style></head><body>
+    <h2>PHIẾU NHẬP THUỐC</h2>
+    <p class="sub">Mã phiếu: ${bill.code || 'PN' + String(bill.id).padStart(4, '0')} - Ngày: ${bill.date || ''}</p>
+    <p><strong>Nhà cung cấp:</strong> ${bill.supplierName || ''} - <strong>Người lập:</strong> ${bill.creator || ''}</p>
+    <table>
+      <thead><tr>
+        <th style="width: 40px;">#</th><th>Mã thuốc</th><th>Tên thuốc</th><th style="width: 60px;">SL</th><th style="width: 100px;">Đơn giá</th><th style="width: 120px;">Thành tiền</th>
+      </tr></thead>
+      <tbody>${medsHtml}</tbody>
+      <tfoot>
+        <tr class="total-row"><td colspan="5" style="text-align: right;">Tổng tiền hàng</td><td style="text-align: right;">${(bill.goodsTotal || 0).toLocaleString()} đ</td></tr>
+        <tr class="total-row"><td colspan="5" style="text-align: right;">Chiết khấu</td><td style="text-align: right;">${(bill.discountTotal || 0).toLocaleString()} đ</td></tr>
+        <tr class="total-row"><td colspan="5" style="text-align: right;">VAT</td><td style="text-align: right;">${(bill.vatTotal || 0).toLocaleString()} đ</td></tr>
+        <tr class="total-row"><td colspan="5" style="text-align: right;">Tổng thanh toán</td><td style="text-align: right; color: #0047AB;">${(bill.finalTotal || 0).toLocaleString()} đ</td></tr>
+      </tfoot>
+    </table>
+    <div class="footer">
+      <div><strong>Người lập phiếu</strong><br><br>${bill.creator || ''}</div>
+      <div><strong>Người giao hàng</strong><br><br>................</div>
+      <div><strong>Thủ kho</strong><br><br>................</div>
+    </div>
+    <script>window.print()</scr` + `ipt>
+    </body></html>
+  `)
+  printWindow.document.close()
 }
 
 // -------------------- CREATE FORM CODE --------------------
