@@ -769,6 +769,7 @@
   import { medicalApi } from '@/services/api'
   import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
   import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
+  import { normalizeSearch } from '@/utils/search'
 
   const authStore = useAuthStore()
   const activeTab = ref('dashboard')
@@ -867,8 +868,8 @@
 
     // Filter by search query
     if (searchQuery.value.trim()) {
-      const q = searchQuery.value.toLowerCase().trim()
-      list = list.filter(a => a.patientName?.toLowerCase().includes(q))
+      const q = normalizeSearch(searchQuery.value)
+      list = list.filter(a => normalizeSearch(a.patientName).includes(q))
     }
 
     return list.sort((a, b) => {
@@ -1007,9 +1008,9 @@
 
     // Filter by search query
     if (searchBillQuery.value.trim()) {
-      const q = searchBillQuery.value.toLowerCase().trim()
+      const q = normalizeSearch(searchBillQuery.value)
       list = list.filter(b => 
-        (b.patient && b.patient.toLowerCase().includes(q)) || 
+        normalizeSearch(b.patient).includes(q) || 
         String(b.patientId).includes(q) ||
         String(b.id).includes(q)
       )

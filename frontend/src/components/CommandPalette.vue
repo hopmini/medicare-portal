@@ -9,9 +9,10 @@
             v-model="query"
             type="text"
             class="cp-input"
-            placeholder="Tìm kiếm chức năng..."
+            placeholder="Tìm kiếm trang, chức năng..."
             @keydown="onKeydown"
           />
+          <kbd class="cp-shortcut" style="margin-right: 4px;">Ctrl+K</kbd>
           <kbd class="cp-shortcut">ESC</kbd>
         </div>
         <div class="cp-results" v-if="filteredItems.length > 0">
@@ -41,6 +42,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { normalizeSearch } from '@/utils/search'
 
 const props = defineProps({
   visible: Boolean
@@ -53,30 +55,37 @@ const inputRef = ref(null)
 const modalRef = ref(null)
 
 const menuItems = [
-  { label: 'Dashboard', icon: 'fas fa-cubes', color: '#0047AB', section: 'QUẢN TRỊ CHIẾN LƯỢC', tab: 'overview', shortcut: 'Ctrl+1' },
-  { label: 'Lịch hẹn chờ duyệt', icon: 'fas fa-calendar-check', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', tab: 'appointments', shortcut: null },
-  { label: 'Quản lý Lịch trực', icon: 'fas fa-clock', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', tab: 'schedule', shortcut: null },
-  { label: 'Danh mục Bác sĩ', icon: 'fas fa-user-md', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', tab: 'doctors', shortcut: null },
-  { label: 'Dịch vụ y khoa', icon: 'fas fa-concierge-bell', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', tab: 'services', shortcut: null },
-  { label: 'Danh mục Phòng khám', icon: 'fas fa-door-open', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', tab: 'rooms', shortcut: null },
-  { label: 'Bệnh án điện tử', icon: 'fas fa-notes-medical', color: '#dc2626', section: 'PHÂN HỆ BỆNH ÁN ĐIỆN TỬ', tab: 'medical-records', shortcut: null },
-  { label: 'Hồ sơ Bệnh nhân', icon: 'fas fa-id-card', color: '#dc2626', section: 'PHÂN HỆ BỆNH ÁN ĐIỆN TỬ', tab: 'patient-registry', shortcut: null },
-  { label: 'Quản lý thuốc', icon: 'fas fa-prescription-bottle-alt', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-medicines', shortcut: null },
-  { label: 'Nhà cung cấp', icon: 'fas fa-truck', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-suppliers', shortcut: null },
-  { label: 'Phiếu nhập thuốc', icon: 'fas fa-file-import', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-import-bills', shortcut: null },
-  { label: 'Tồn kho theo lô', icon: 'fas fa-boxes', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-batches', shortcut: null },
-  { label: 'Đơn thuốc & Bán lẻ', icon: 'fas fa-file-prescription', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-prescriptions', shortcut: null },
-  { label: 'Hóa đơn bán thuốc', icon: 'fas fa-receipt', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-billing', shortcut: null },
-  { label: 'Quản lý thanh toán', icon: 'fas fa-credit-card', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-payments', shortcut: null },
-  { label: 'Lịch sử kho thuốc', icon: 'fas fa-history', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', tab: 'pharmacy-stock-history', shortcut: null }
+  { label: 'Trang chủ', icon: 'fas fa-home', color: '#0047AB', section: 'TỔNG QUAN', route: '/' },
+  { label: 'Dashboard', icon: 'fas fa-cubes', color: '#0047AB', section: 'QUẢN TRỊ CHIẾN LƯỢC', route: '/dashboard', shortcut: 'Ctrl+1' },
+  { label: 'Lịch hẹn chờ duyệt', icon: 'fas fa-calendar-check', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', route: '/dashboard?tab=appointments' },
+  { label: 'Quản lý Lịch trực', icon: 'fas fa-clock', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', route: '/dashboard?tab=schedule' },
+  { label: 'Danh mục Bác sĩ', icon: 'fas fa-user-md', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', route: '/dashboard?tab=doctors' },
+  { label: 'Dịch vụ y khoa', icon: 'fas fa-concierge-bell', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', route: '/dashboard?tab=services' },
+  { label: 'Danh mục Phòng khám', icon: 'fas fa-door-open', color: '#2563eb', section: 'PHÂN HỆ LỊCH KHÁM', route: '/dashboard?tab=rooms' },
+  { label: 'Bệnh án điện tử', icon: 'fas fa-notes-medical', color: '#dc2626', section: 'PHÂN HỆ BỆNH ÁN ĐIỆN TỬ', route: '/medical-records' },
+  { label: 'Hồ sơ Bệnh nhân', icon: 'fas fa-id-card', color: '#dc2626', section: 'PHÂN HỆ BỆNH ÁN ĐIỆN TỬ', route: '/dashboard?tab=patient-registry' },
+  { label: 'Bệnh nhân tự đặt lịch', icon: 'fas fa-user-plus', color: '#2563eb', section: 'CỔNG BỆNH NHÂN', route: '/patient' },
+  { label: 'Tra cứu lịch hẹn', icon: 'fas fa-search', color: '#2563eb', section: 'CỔNG BỆNH NHÂN', route: '/track' },
+  { label: 'Lịch hẹn của tôi', icon: 'fas fa-calendar-alt', color: '#2563eb', section: 'CỔNG BỆNH NHÂN', route: '/my-appointments' },
+  { label: 'Bệnh án của tôi', icon: 'fas fa-file-medical', color: '#dc2626', section: 'CỔNG BỆNH NHÂN', route: '/my-medical-records' },
+  { label: 'Quản lý thuốc', icon: 'fas fa-prescription-bottle-alt', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-medicines' },
+  { label: 'Nhà cung cấp', icon: 'fas fa-truck', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-suppliers' },
+  { label: 'Phiếu nhập thuốc', icon: 'fas fa-file-import', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-import-bills' },
+  { label: 'Tồn kho theo lô', icon: 'fas fa-boxes', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-batches' },
+  { label: 'Đơn thuốc & Bán lẻ', icon: 'fas fa-file-prescription', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-prescriptions' },
+  { label: 'Hóa đơn bán thuốc', icon: 'fas fa-receipt', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-billing' },
+  { label: 'Quản lý thanh toán', icon: 'fas fa-credit-card', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-payments' },
+  { label: 'Lịch sử kho thuốc', icon: 'fas fa-history', color: '#16a34a', section: 'PHÂN HỆ DƯỢC & HÓA ĐƠN', route: '/dashboard?tab=pharmacy-stock-history' },
+  { label: 'Hồ sơ cá nhân', icon: 'fas fa-user-circle', color: '#8b5cf6', section: 'CÁ NHÂN', route: '/profile' },
+  { label: 'Đăng xuất', icon: 'fas fa-sign-out-alt', color: '#ef4444', section: 'CÁ NHÂN', route: '/logout' },
 ]
 
 const filteredItems = computed(() => {
   if (!query.value) return menuItems
-  const q = query.value.toLowerCase().trim()
+  const q = normalizeSearch(query.value)
   return menuItems.filter(item =>
-    item.label.toLowerCase().includes(q) ||
-    item.section.toLowerCase().includes(q)
+    normalizeSearch(item.label).includes(q) ||
+    normalizeSearch(item.section).includes(q)
   )
 })
 
@@ -104,7 +113,7 @@ function onKeydown(e) {
 }
 
 function selectItem(item) {
-  emit('navigate', item.tab)
+  emit('navigate', item.route)
   close()
 }
 
@@ -203,7 +212,7 @@ onUnmounted(() => {
 }
 
 .cp-results {
-  max-height: 360px;
+  max-height: 400px;
   overflow-y: auto;
   padding: 6px 0;
 }

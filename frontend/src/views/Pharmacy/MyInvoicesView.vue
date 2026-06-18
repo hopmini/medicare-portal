@@ -366,6 +366,7 @@ import AppHeader from '@/components/AppHeader.vue';
 import { pharmacyApi } from '@/services/api';
 import { medicalRecordService } from '@/services/medicalRecordService';
 import { useAuthStore } from '@/stores/authStore';
+import { normalizeSearch } from '@/utils/search';
 const authStore = useAuthStore();
 
 interface InvoiceDetailItem {
@@ -497,8 +498,8 @@ const filteredInvoices = computed(() => {
   return allInvoices.value.filter(inv => {
     // Search filter
     if (searchQuery.value) {
-      const q = searchQuery.value.toLowerCase();
-      if (!inv.code.toLowerCase().includes(q)) return false;
+      const q = normalizeSearch(searchQuery.value);
+      if (!normalizeSearch(inv.code).includes(q)) return false;
     }
 
     // Status filter

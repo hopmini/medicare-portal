@@ -582,6 +582,7 @@
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { useDoctorStore } from '@/stores/doctorStore'
+  import { normalizeSearch } from '@/utils/search'
 
   const router = useRouter()
   const route = useRoute()
@@ -629,8 +630,8 @@
       list = list.filter(s => getServiceCategory(s) === selectedCategory.value)
     }
     if (searchServiceQuery.value.trim()) {
-      const q = searchServiceQuery.value.toLowerCase().trim()
-      list = list.filter(s => (s.name || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q))
+      const q = normalizeSearch(searchServiceQuery.value)
+      list = list.filter(s => normalizeSearch(s.name).includes(q) || normalizeSearch(s.description).includes(q))
     }
     return list
   })

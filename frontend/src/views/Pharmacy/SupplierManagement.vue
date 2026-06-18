@@ -56,9 +56,18 @@
         class="custom-table"
       >
         <template #bodyCell="{ text, record, column }">
-          <!-- Name Column styling -->
+          <!-- Name Column with truncation -->
           <template v-if="column.key === 'name'">
-            <span style="font-weight: 700; color: #1e293b;">{{ record.name }}</span>
+            <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #1e293b;" :title="record.name">
+              {{ record.name }}
+            </div>
+          </template>
+
+          <!-- Email Column with truncation -->
+          <template v-else-if="column.key === 'email'">
+            <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.email">
+              {{ record.email }}
+            </div>
           </template>
 
           <!-- Address Column styling with truncation -->
@@ -212,9 +221,18 @@
             class="custom-table"
           >
             <template #bodyCell="{ text, record, column }">
-              <!-- Name Column styling -->
+              <!-- Name Column with truncation -->
               <template v-if="column.key === 'name'">
-                <span style="font-weight: 700; color: #1e293b;">{{ record.name }}</span>
+                <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #1e293b;" :title="record.name">
+                  {{ record.name }}
+                </div>
+              </template>
+
+              <!-- Email Column with truncation -->
+              <template v-else-if="column.key === 'email'">
+                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.email">
+                  {{ record.email }}
+                </div>
               </template>
 
               <!-- Address Column styling with truncation -->
@@ -309,6 +327,7 @@ import { ref, computed, onMounted } from 'vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier as apiDeleteSupplier } from '@/services/pharmacyService'
+import { normalizeSearch } from '@/utils/search'
 
 const props = withDefaults(
   defineProps<{
@@ -376,10 +395,10 @@ const filteredSuppliers = computed(() => {
   }
 
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
+    const q = normalizeSearch(searchQuery.value)
     list = list.filter(s => 
-      s.name.toLowerCase().includes(q) || 
-      s.code.toLowerCase().includes(q) || 
+      normalizeSearch(s.name).includes(q) || 
+      normalizeSearch(s.code).includes(q) || 
       s.phone.includes(q)
     )
   }

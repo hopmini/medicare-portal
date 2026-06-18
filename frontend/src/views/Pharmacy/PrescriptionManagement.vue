@@ -119,8 +119,8 @@
                     </template>
                     <template v-else-if="column.key === 'action'">
                       <div style="display: flex; gap: 8px; justify-content: center;">
-                        <a-button type="text" size="small" style="color: #64748b;" @click.stop="selectPrescription(record)">
-                          <i class="far fa-eye" />
+                        <a-button type="primary" size="small" style="background: #0047AB; border: none; font-size: 0.75rem;" @click.stop="selectPrescription(record)">
+                          <i class="fas fa-file-prescription" /> Chi tiết
                         </a-button>
                       </div>
                     </template>
@@ -409,6 +409,7 @@ import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { getPrescriptions, getMedicines, processPrescription } from '@/services/pharmacyService';
 import { useAuthStore } from '@/stores/authStore';
+import { normalizeSearch } from '@/utils/search';
 
 const props = withDefaults(
   defineProps<{
@@ -483,8 +484,8 @@ const medicationColumns = [
 const filteredPrescriptions = computed(() => {
   return prescriptions.value.filter(p => {
     const matchesSearch = 
-      p.code.toLowerCase().includes(search.value.toLowerCase()) ||
-      p.patient.toLowerCase().includes(search.value.toLowerCase());
+      normalizeSearch(p.code).includes(normalizeSearch(search.value)) ||
+      normalizeSearch(p.patient).includes(normalizeSearch(search.value));
       
     const matchesStatus = statusFilter.value === 'all' || p.status === statusFilter.value;
     

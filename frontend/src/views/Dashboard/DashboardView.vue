@@ -1,5 +1,4 @@
 <template>
-  <CommandPalette :visible="showCommandPalette" @close="showCommandPalette = false" @navigate="handleCommandNavigate" @open="showCommandPalette = true" />
   <div class="dashboard-layout">
     <!-- SIDEBAR (Rich Navigation covering all 3 Services) -->
     <aside class="sidebar">
@@ -54,7 +53,7 @@
         </div>
         <div class="nav-item" :class="{ 'nav-item--active': activeTab === 'patient-registry' }" @click="activeTab = 'patient-registry'">
           <span class="nav-icon"><i class="fas fa-id-card text-red" /></span>
-          <span>Hồ sơ Bệnh nhân (tab)</span>
+          <span>Hồ sơ Bệnh nhân</span>
         </div>
 
         <div class="sidebar__divider">3. PHÂN HỆ DƯỢC & HÓA ĐƠN</div>
@@ -117,6 +116,7 @@
           <div class="search-box">
             <i class="fas fa-search" style="color: #94a3b8;" />
             <input placeholder="Tìm kiếm nhanh..." type="text" v-model="quickSearchQuery" />
+            <span style="margin-left: 6px; font-size: 0.72rem; font-weight: 600; color: #94a3b8; cursor: pointer; white-space: nowrap;" @click.stop="openCommandPalette" title="Mở tìm kiếm trang (Ctrl+K)">(Ctrl+K)</span>
           </div>
 
           <!-- COMPACT USER PILL IN TOP-RIGHT OF TOP-BAR WITH DROPDOWN -->
@@ -494,11 +494,11 @@
                 </button>
               </div>
               <div v-else class="slots-grid-pane">
-                <div v-for="slot in activeSlots" :key="slot.id" class="slot-time-pill" :class="{ 'slot-booked': !slot.isAvailable }">
+                <div v-for="slot in activeSlots" :key="slot.id" class="slot-time-pill" :class="{ 'slot-booked': slot.isBooked }">
                   <div class="slot-pill-header">
                     <span class="slot-pill-time"><i class="far fa-clock" /> {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}</span>
-                    <span class="slot-pill-status-badge" :class="slot.isAvailable ? 'status-free' : 'status-busy'">
-                      {{ slot.isAvailable ? 'Còn trống' : 'Đã đặt' }}
+                    <span class="slot-pill-status-badge" :class="slot.isBooked ? 'status-busy' : 'status-free'">
+                      {{ slot.isBooked ? 'Đã đặt' : 'Còn trống' }}
                     </span>
                   </div>
                 </div>
@@ -643,6 +643,16 @@
                 <span class="badge badge--completed" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem;">
                   <i class="fas fa-check-circle" style="margin-right: 4px;" /> Đang hoạt động
                 </span>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <div style="display: flex; gap: 6px; justify-content: center;">
+                  <a-button type="primary" size="small" style="background: #3b82f6; border: none; display: flex; align-items: center; justify-content: center;" @click="editService(record)">
+                    <i class="fas fa-edit" />
+                  </a-button>
+                  <a-button type="primary" danger size="small" style="display: flex; align-items: center; justify-content: center;" @click="deleteService(record.id)">
+                    <i class="fas fa-trash-alt" />
+                  </a-button>
+                </div>
               </template>
             </template>
           </a-table>
@@ -1164,28 +1174,36 @@
       </div>
     </div>
 
-    <!-- 3. Service Add Modal -->
+    <!-- 3. Service Add/Edit Modal -->
     <div v-if="showServiceModal" class="modal-backdrop">
       <div class="modal-card shadow-lg animate-fade-in">
         <div class="modal-header">
-          <h3><i class="fas fa-concierge-bell text-blue" /> Thêm dịch vụ mới</h3>
-          <button class="btn-close-modal" @click="showServiceModal = false">&times;</button>
+          <h3><i class="fas fa-concierge-bell text-blue" /> {{ editingServiceId ? 'Sửa dịch vụ' : 'Thêm dịch vụ mới' }}</h3>
+          <button class="btn-close-modal" @click="closeServiceModal">&times;</button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="submitAddService" class="cockpit-form">
+          <form @submit.prevent="submitServiceForm" class="cockpit-form">
             <div class="form-group-cockpit">
               <label>Tên dịch vụ y khoa:</label>
               <input v-model="formService.name" placeholder="Ví dụ: Siêu Âm Đầu Dò" required type="text" class="cockpit-input" />
             </div>
             <div class="form-group-cockpit">
+              <label>Danh mục:</label>
+              <input v-model="formService.category" placeholder="Ví dụ: Chẩn đoán, Xét nghiệm, Siêu âm..." type="text" class="cockpit-input" />
+            </div>
+            <div class="form-group-cockpit">
+              <label>Đơn giá (VNĐ):</label>
+              <input v-model.number="formService.price" placeholder="Ví dụ: 200000" required type="number" min="0" class="cockpit-input" />
+            </div>
+            <div class="form-group-cockpit">
               <label>Mô tả dịch vụ:</label>
-              <textarea v-model="formService.description" placeholder="Nhập mô tả của dịch vụ khám bệnh..." required class="cockpit-input" style="height: 80px; resize: none;"></textarea>
+              <textarea v-model="formService.description" placeholder="Nhập mô tả của dịch vụ khám bệnh..." class="cockpit-input" style="height: 80px; resize: none;"></textarea>
             </div>
             <div class="modal-footer-btns">
-              <button type="button" class="btn-cancel-modal" @click="showServiceModal = false">Hủy</button>
+              <button type="button" class="btn-cancel-modal" @click="closeServiceModal">Hủy</button>
               <button type="submit" class="btn-primary-cockpit" :disabled="submittingService">
-                <span v-if="submittingService"><i class="fas fa-spinner fa-spin" /> Đang tạo...</span>
-                <span v-else><i class="fas fa-plus-circle" /> Thêm dịch vụ</span>
+                <span v-if="submittingService"><i class="fas fa-spinner fa-spin" /> {{ editingServiceId ? 'Đang cập nhật...' : 'Đang tạo...' }}</span>
+                <span v-else><i class="fas fa-plus-circle" /> {{ editingServiceId ? 'Cập nhật' : 'Thêm dịch vụ' }}</span>
               </button>
             </div>
           </form>
@@ -1442,16 +1460,18 @@
         </div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem; text-align: left; max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
           <!-- Patient identifiers -->
-          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã số (Gateway ID)</label>
+          <div style="display: flex; gap: 1rem; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="flex: 1;">
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã bệnh nhân</label>
               <p style="font-family: monospace; font-size: 0.9rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
-                #{{ selectedPatient.gatewayPatientId || 'Chưa đồng bộ' }}
+                <template v-if="selectedPatient.gatewayPatientId">#{{ selectedPatient.gatewayPatientId }}</template>
+                <template v-else-if="selectedPatient.identityCard">{{ selectedPatient.identityCard }}</template>
+                <template v-else>#BN{{ String(selectedPatient.id || '').substring(0, 8).toUpperCase() }}</template>
               </p>
             </div>
-            <div>
+            <div v-if="selectedPatient.gatewayPatientId" style="flex: 2;">
               <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã định danh (GUID)</label>
-              <p style="font-family: monospace; font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0;">
+              <p style="font-family: monospace; font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; word-break: break-all;">
                 {{ selectedPatient.id }}
               </p>
             </div>
@@ -1695,9 +1715,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import api, { publicApi, medicalApi } from '@/services/api'
+  import { normalizeSearch } from '@/utils/search'
   import { appointmentService } from '@/services/appointmentService'
   import { useAuthStore } from '@/stores/authStore'
   import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
@@ -1710,31 +1731,9 @@
   import BillingManagement from '@/views/Pharmacy/BillingManagement.vue'
   import PaymentManagement from '@/views/Pharmacy/PaymentManagement.vue'
   import InventoryManagement from '@/views/Pharmacy/InventoryManagement.vue'
-  import CommandPalette from '@/components/CommandPalette.vue'
-
   const router = useRouter()
   const authStore = useAuthStore()
   const loading = ref(false)
-  const showCommandPalette = ref(false)
-
-  function handleCommandNavigate(tab) {
-    activeTab.value = tab
-  }
-
-  function onGlobalKeydown(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault()
-      showCommandPalette.value = !showCommandPalette.value
-    }
-  }
-
-  onMounted(() => {
-    window.addEventListener('keydown', onGlobalKeydown)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('keydown', onGlobalKeydown)
-  })
 
   // Columns Definitions for Ant Design Tables
   const columnsAppointments = [
@@ -1756,7 +1755,7 @@
       dataIndex: 'patientName',
       key: 'patientName',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.patientName || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.patientName || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.patientName.localeCompare(b.patientName)
     },
     {
@@ -1764,7 +1763,7 @@
       dataIndex: 'doctorName',
       key: 'doctorName',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.doctorName || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.doctorName || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.doctorName.localeCompare(b.doctorName)
     },
     {
@@ -1839,7 +1838,7 @@
       key: 'diagnosis',
       width: '200px',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.diagnosis || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.diagnosis || '').includes(normalizeSearch(value)),
       sorter: (a, b) => (a.diagnosis || '').localeCompare(b.diagnosis || '')
     },
     {
@@ -1887,7 +1886,7 @@
       dataIndex: 'fullName',
       key: 'fullName',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.fullName || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.fullName || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.fullName.localeCompare(b.fullName)
     },
     {
@@ -1945,7 +1944,7 @@
       dataIndex: 'fullName',
       key: 'fullName',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.fullName || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.fullName || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.fullName.localeCompare(b.fullName)
     },
     {
@@ -1953,7 +1952,7 @@
       dataIndex: 'specialty',
       key: 'specialty',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.specialty || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.specialty || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.specialty.localeCompare(b.specialty)
     },
     {
@@ -1988,7 +1987,7 @@
       dataIndex: 'name',
       key: 'name',
       customFilterDropdown: true,
-      onFilter: (value, record) => (record.name || '').toLowerCase().includes(value.toLowerCase()),
+      onFilter: (value, record) => normalizeSearch(record.name || '').includes(normalizeSearch(value)),
       sorter: (a, b) => a.name.localeCompare(b.name)
     },
     {
@@ -2007,6 +2006,12 @@
       title: 'Trạng thái',
       key: 'status',
       width: '160px',
+      align: 'center'
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: '120px',
       align: 'center'
     }
   ]
@@ -2075,12 +2080,12 @@
   const filteredRooms = computed(() => {
     let list = [...roomsList.value]
     if (searchRoomQuery.value) {
-      const q = searchRoomQuery.value.toLowerCase().trim()
+      const q = normalizeSearch(searchRoomQuery.value)
       list = list.filter(r => 
-        r.code.toLowerCase().includes(q) || 
-        r.name.toLowerCase().includes(q) ||
-        (r.doctorName && r.doctorName.toLowerCase().includes(q)) ||
-        r.floor.toLowerCase().includes(q)
+        normalizeSearch(r.code).includes(q) || 
+        normalizeSearch(r.name).includes(q) ||
+        normalizeSearch(r.doctorName).includes(q) ||
+        normalizeSearch(r.floor).includes(q)
       )
     }
     return list
@@ -2395,14 +2400,14 @@
   const filteredRecords = computed(() => {
     let list = [...allMedicalRecords.value]
     if (searchRecordQuery.value) {
-      const q = searchRecordQuery.value.toLowerCase()
+      const q = normalizeSearch(searchRecordQuery.value)
       list = list.filter(r => {
         const pName = getPatientInfo(r.patientId)?.fullName || ''
-        return r.symptoms?.toLowerCase().includes(q) || 
-               r.diagnosis?.toLowerCase().includes(q) ||
-               r.notes?.toLowerCase().includes(q) ||
-               r.patientId?.toLowerCase().includes(q) ||
-               pName.toLowerCase().includes(q)
+        return normalizeSearch(r.symptoms).includes(q) || 
+               normalizeSearch(r.diagnosis).includes(q) ||
+               normalizeSearch(r.notes).includes(q) ||
+               normalizeSearch(r.patientId).includes(q) ||
+               normalizeSearch(pName).includes(q)
       })
     }
     return list
@@ -2411,11 +2416,11 @@
   const filteredPatientRegistry = computed(() => {
     let list = [...allPatientsList.value]
     if (searchPatientRegistryQuery.value) {
-      const q = searchPatientRegistryQuery.value.toLowerCase()
+      const q = normalizeSearch(searchPatientRegistryQuery.value)
       list = list.filter(p => 
-        p.fullName?.toLowerCase().includes(q) || 
-        p.medicalHistory?.toLowerCase().includes(q) ||
-        p.allergies?.toLowerCase().includes(q)
+        normalizeSearch(p.fullName).includes(q) || 
+        normalizeSearch(p.medicalHistory).includes(q) ||
+        normalizeSearch(p.allergies).includes(q)
       )
     }
     return list
@@ -2424,11 +2429,11 @@
   const filteredDoctors = computed(() => {
     let list = [...doctorsList.value]
     if (searchDoctorQuery.value) {
-      const q = searchDoctorQuery.value.toLowerCase()
+      const q = normalizeSearch(searchDoctorQuery.value)
       list = list.filter(d => 
-        d.fullName?.toLowerCase().includes(q) || 
-        d.specialty?.toLowerCase().includes(q) ||
-        d.degree?.toLowerCase().includes(q)
+        normalizeSearch(d.fullName).includes(q) || 
+        normalizeSearch(d.specialty).includes(q) ||
+        normalizeSearch(d.degree).includes(q)
       )
     }
     return list
@@ -2437,10 +2442,10 @@
   const filteredServices = computed(() => {
     let list = [...servicesList.value]
     if (searchServiceQuery.value) {
-      const q = searchServiceQuery.value.toLowerCase()
+      const q = normalizeSearch(searchServiceQuery.value)
       list = list.filter(s => 
-        s.name?.toLowerCase().includes(q) || 
-        s.description?.toLowerCase().includes(q)
+        normalizeSearch(s.name).includes(q) || 
+        normalizeSearch(s.description).includes(q)
       )
     }
     return list
@@ -2501,15 +2506,15 @@
       list = list.filter(a => a.status === parseInt(filterStatus.value))
     }
     if (searchPatientQuery.value) {
-      const q = searchPatientQuery.value.toLowerCase()
-      list = list.filter(a => a.patientName?.toLowerCase().includes(q))
+      const q = normalizeSearch(searchPatientQuery.value)
+      list = list.filter(a => normalizeSearch(a.patientName).includes(q))
     }
     if (quickSearchQuery.value) {
-      const q = quickSearchQuery.value.toLowerCase()
+      const q = normalizeSearch(quickSearchQuery.value)
       list = list.filter(a => 
-        a.patientName?.toLowerCase().includes(q) || 
-        a.doctorName?.toLowerCase().includes(q) ||
-        a.serviceName?.toLowerCase().includes(q)
+        normalizeSearch(a.patientName).includes(q) || 
+        normalizeSearch(a.doctorName).includes(q) ||
+        normalizeSearch(a.serviceName).includes(q)
       )
     }
     return list.sort((a, b) => {
@@ -2521,7 +2526,8 @@
 
   // Forms bounds (Appointment Service - ACTIVE)
   const formDoctor = ref({ fullName: '', specialty: '', degree: '', consultationFee: null, username: '', password: '' })
-  const formService = ref({ name: '', description: '', price: null })
+  const formService = ref({ name: '', category: '', description: '', price: 0 })
+  const editingServiceId = ref(null)
   const formSlots = ref({ doctorId: '', date: '' })
 
   // Dynamic schedules slots loader
@@ -2596,6 +2602,10 @@
   }
 
   // Unified page title
+  function openCommandPalette() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k', bubbles: true }))
+  }
+
   function getPageTitle () {
     switch (activeTab.value) {
       case 'overview': return 'Tổng Quan Trung Tâm'
@@ -2753,23 +2763,57 @@
     }
   }
 
-  async function submitAddService () {
+  function closeServiceModal () {
+    showServiceModal.value = false
+    editingServiceId.value = null
+    formService.value = { name: '', category: '', description: '', price: 0 }
+  }
+
+  async function submitServiceForm () {
     submittingService.value = true
     try {
-      await api.post('/MedicalServices', {
+      const payload = {
         name: formService.value.name,
-        description: formService.value.description,
-        price: formService.value.price,
+        category: formService.value.category || null,
+        description: formService.value.description || null,
+        price: formService.value.price || 0,
         isActive: true
-      })
-      alert('Thêm dịch vụ thành công!')
-      formService.value = { name: '', description: '', price: null }
-      showServiceModal.value = false
+      }
+      if (editingServiceId.value) {
+        await api.put(`/MedicalServices/${editingServiceId.value}`, payload)
+        alert('Cập nhật dịch vụ thành công!')
+      } else {
+        await api.post('/MedicalServices', payload)
+        alert('Thêm dịch vụ thành công!')
+      }
+      closeServiceModal()
       fetchAllData()
     } catch (e) {
-      alert('Lỗi thêm dịch vụ: ' + (e.response?.data || e.message))
+      alert((editingServiceId.value ? 'Lỗi cập nhật' : 'Lỗi thêm') + ' dịch vụ: ' + (e.response?.data || e.message))
     } finally {
       submittingService.value = false
+    }
+  }
+
+  async function editService (record) {
+    formService.value = {
+      name: record.name || '',
+      category: record.category || '',
+      description: record.description || '',
+      price: record.price || 0
+    }
+    editingServiceId.value = record.id
+    showServiceModal.value = true
+  }
+
+  async function deleteService (id) {
+    if (!confirm('Xác nhận xóa dịch vụ này?')) return
+    try {
+      await api.delete(`/MedicalServices/${id}`)
+      alert('Đã xóa dịch vụ!')
+      fetchAllData()
+    } catch (e) {
+      alert('Lỗi xóa dịch vụ: ' + (e.response?.data || e.message))
     }
   }
 

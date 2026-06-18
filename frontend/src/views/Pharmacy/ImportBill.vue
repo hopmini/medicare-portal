@@ -115,6 +115,16 @@
                 <template v-if="column.key === 'code'">
                   <span style="font-weight: 700; color: #0047AB; cursor: pointer;" @click="viewDetail(record)">{{ record.code }}</span>
                 </template>
+                <template v-else-if="column.key === 'supplierName'">
+                  <div style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.supplierName">
+                    {{ record.supplierName }}
+                  </div>
+                </template>
+                <template v-else-if="column.key === 'creator'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.creator">
+                    {{ record.creator }}
+                  </div>
+                </template>
                 <template v-else-if="column.key === 'date'">
                   <span>{{ dayjs(record.date).isValid() ? dayjs(record.date).format('DD/MM/YYYY') : record.date }}</span>
                 </template>
@@ -455,6 +465,7 @@ import dayjs from 'dayjs'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getMedicines, getSuppliers, getImportBills, createImportBill } from '@/services/pharmacyService'
+import { normalizeSearch } from '@/utils/search'
 
 const props = withDefaults(
   defineProps<{
@@ -570,8 +581,8 @@ const filteredImportBills = computed(() => {
   return importBills.value.filter(bill => {
     // Search query matches code or supplier name
     const matchesSearch = 
-      (bill.code || '').toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (bill.supplierName || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+      normalizeSearch(bill.code).includes(normalizeSearch(searchQuery.value)) ||
+      normalizeSearch(bill.supplierName).includes(normalizeSearch(searchQuery.value))
     
     // Status matches
     const matchesStatus = filterStatus.value === 'all' || bill.status === filterStatus.value

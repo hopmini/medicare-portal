@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { medicalApi } from '@/services/api'
+import { normalizeSearch } from '@/utils/search'
 
 interface Icd10Item {
   code: string
@@ -97,8 +98,8 @@ const onSearch = async () => {
     activeIndex.value = 0
   } catch {
     filtered.value = items.value.filter(i =>
-      i.code.toLowerCase().includes(searchCode.value.toLowerCase()) ||
-      i.name.toLowerCase().includes(searchCode.value.toLowerCase())
+      normalizeSearch(i.code).includes(normalizeSearch(searchCode.value)) ||
+      normalizeSearch(i.name).includes(normalizeSearch(searchCode.value))
     )
     showDropdown.value = true
     activeIndex.value = 0

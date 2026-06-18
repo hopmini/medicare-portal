@@ -769,6 +769,7 @@ import AppHeader from '@/components/AppHeader.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { getBills, payBill, getPrescriptions } from '@/services/pharmacyService';
 import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService';
+import { normalizeSearch } from '@/utils/search';
 
 const props = withDefaults(
   defineProps<{
@@ -1175,8 +1176,8 @@ const listColumns = [
 const filteredBills = computed(() => {
   return payBills.value.filter(b => {
     if (searchQuery.value) {
-      const q = searchQuery.value.toLowerCase();
-      if (!(b.code.toLowerCase().includes(q) || b.patientName.toLowerCase().includes(q))) return false;
+      const q = normalizeSearch(searchQuery.value);
+      if (!(normalizeSearch(b.code).includes(q) || normalizeSearch(b.patientName).includes(q))) return false;
     }
     if (filterStatus.value !== 'all' && b.payStatus !== filterStatus.value) return false;
     if (filterMethod.value !== 'all' && b.payMethod !== filterMethod.value) return false;
@@ -1275,8 +1276,8 @@ const historyListColumns = [
 const filteredTransactions = computed(() => {
   return transactionsList.value.filter(t => {
     if (historySearchQuery.value) {
-      const q = historySearchQuery.value.toLowerCase();
-      if (!(t.txCode.toLowerCase().includes(q) || t.billCode.toLowerCase().includes(q) || t.patientName.toLowerCase().includes(q))) return false;
+      const q = normalizeSearch(historySearchQuery.value);
+      if (!(normalizeSearch(t.txCode).includes(q) || normalizeSearch(t.billCode).includes(q) || normalizeSearch(t.patientName).includes(q))) return false;
     }
     if (historyFilterMethod.value !== 'all' && t.payMethod !== historyFilterMethod.value) return false;
     if (historyFilterStaff.value !== 'all' && t.staffName !== historyFilterStaff.value) return false;

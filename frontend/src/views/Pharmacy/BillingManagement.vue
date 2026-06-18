@@ -679,6 +679,7 @@ import { getBills, getPrescriptions, getMedicines, createBill } from '@/services
 import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
+import { normalizeSearch } from '@/utils/search';
 
 const props = withDefaults(
   defineProps<{
@@ -763,8 +764,8 @@ const filteredBills = computed(() => {
   return bills.value.filter(b => {
     if (activeTab.value !== 'all' && b.billType !== activeTab.value) return false;
     if (searchQuery.value) {
-      const q = searchQuery.value.toLowerCase();
-      if (!(b.code.toLowerCase().includes(q) || b.patientName.toLowerCase().includes(q) || b.patientPhone.includes(q))) return false;
+      const q = normalizeSearch(searchQuery.value);
+      if (!(normalizeSearch(b.code).includes(q) || normalizeSearch(b.patientName).includes(q) || b.patientPhone.includes(q))) return false;
     }
     if (filterType.value !== 'all' && b.billType !== filterType.value) return false;
     if (filterPayStatus.value !== 'all' && b.payStatus !== filterPayStatus.value) return false;

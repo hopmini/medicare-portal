@@ -166,7 +166,7 @@
             <!-- Action buttons -->
             <template v-else-if="column.key === 'action'">
               <a-space>
-                <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết">
+                <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết" @click="viewDetail(record)">
                   <i class="far fa-eye" />
                 </a-button>
                 <a-button type="link" style="color: #0047AB; padding: 0;" title="Sửa" @click="openModal('edit', record)">
@@ -235,6 +235,20 @@
           </a-col>
         </a-row>
       </a-form>
+    </a-modal>
+
+    <!-- Detail Modal for inline mode -->
+    <a-modal v-model:open="detailVisible" title="Chi tiết thuốc" :footer="null" style="border-radius: 8px;">
+      <a-descriptions :column="1" bordered size="small" v-if="detailRecord">
+        <a-descriptions-item label="Mã thuốc">{{ detailRecord.code }}</a-descriptions-item>
+        <a-descriptions-item label="Tên thuốc">{{ detailRecord.name }}</a-descriptions-item>
+        <a-descriptions-item label="Hoạt chất">{{ detailRecord.activeIngredient }}</a-descriptions-item>
+        <a-descriptions-item label="Đơn vị">{{ detailRecord.unit }}</a-descriptions-item>
+        <a-descriptions-item label="Giá bán">{{ detailRecord.price.toLocaleString() }} đ</a-descriptions-item>
+        <a-descriptions-item label="Tồn kho">{{ detailRecord.stock }}</a-descriptions-item>
+        <a-descriptions-item label="Số lô">{{ detailRecord.batches }}</a-descriptions-item>
+        <a-descriptions-item label="Ngày tạo">{{ detailRecord.createdDate }}</a-descriptions-item>
+      </a-descriptions>
     </a-modal>
   </div>
 
@@ -416,7 +430,7 @@
                 <!-- Action buttons -->
                 <template v-else-if="column.key === 'action'">
                   <a-space>
-                    <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết">
+                    <a-button type="link" style="color: #0047AB; padding: 0;" title="Xem chi tiết" @click="viewDetail(record)">
                       <i class="far fa-eye" />
                     </a-button>
                     <a-button type="link" style="color: #0047AB; padding: 0;" title="Sửa" @click="openModal('edit', record)">
@@ -488,6 +502,20 @@
         </a-row>
       </a-form>
     </a-modal>
+
+    <!-- Detail Modal -->
+    <a-modal v-model:open="detailVisible" title="Chi tiết thuốc" :footer="null" style="border-radius: 8px;">
+      <a-descriptions :column="1" bordered size="small" v-if="detailRecord">
+        <a-descriptions-item label="Mã thuốc">{{ detailRecord.code }}</a-descriptions-item>
+        <a-descriptions-item label="Tên thuốc">{{ detailRecord.name }}</a-descriptions-item>
+        <a-descriptions-item label="Hoạt chất">{{ detailRecord.activeIngredient }}</a-descriptions-item>
+        <a-descriptions-item label="Đơn vị">{{ detailRecord.unit }}</a-descriptions-item>
+        <a-descriptions-item label="Giá bán">{{ detailRecord.price.toLocaleString() }} đ</a-descriptions-item>
+        <a-descriptions-item label="Tồn kho">{{ detailRecord.stock }}</a-descriptions-item>
+        <a-descriptions-item label="Số lô">{{ detailRecord.batches }}</a-descriptions-item>
+        <a-descriptions-item label="Ngày tạo">{{ detailRecord.createdDate }}</a-descriptions-item>
+      </a-descriptions>
+    </a-modal>
   </a-layout>
 </template>
 
@@ -504,6 +532,7 @@ import {
   updateMedicine, 
   deleteMedicine 
 } from '@/services/pharmacyService'
+import { normalizeSearch } from '@/utils/search'
 
 const props = withDefaults(
   defineProps<{
@@ -539,6 +568,8 @@ const unitFilter = ref('all')
 const visible = ref(false)
 const isEdit = ref(false)
 const editId = ref<number | null>(null)
+const detailVisible = ref(false)
+const detailRecord = ref<Medicine | null>(null)
 
 const form = ref({
   name: '',
@@ -588,11 +619,11 @@ const filteredMedicines = computed(() => {
   let list = [...medicines.value]
 
   if (search.value) {
-    const q = search.value.toLowerCase()
+    const q = normalizeSearch(search.value)
     list = list.filter(m => 
-      m.name.toLowerCase().includes(q) ||
-      m.code.toLowerCase().includes(q) ||
-      m.activeIngredient.toLowerCase().includes(q)
+      normalizeSearch(m.name).includes(q) ||
+      normalizeSearch(m.code).includes(q) ||
+      normalizeSearch(m.activeIngredient).includes(q)
     )
   }
 
@@ -667,6 +698,11 @@ async function loadMedicines() {
   } finally {
     loading.value = false
   }
+}
+
+function viewDetail(record: Medicine) {
+  detailRecord.value = record
+  detailVisible.value = true
 }
 
 function openModal(mode: 'add' | 'edit', record?: Medicine) {

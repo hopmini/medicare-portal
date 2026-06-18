@@ -272,6 +272,7 @@ import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { gatewayApi } from '@/services/api' // using real gateway identity connection
+import { normalizeSearch } from '@/utils/search'
 
 interface UserAccount {
   id: number;
@@ -343,11 +344,11 @@ const filteredUsers = computed(() => {
 
   // Search Filter
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
+    const q = normalizeSearch(searchQuery.value)
     list = list.filter(u => 
-      u.fullName.toLowerCase().includes(q) ||
-      u.username.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
+      normalizeSearch(u.fullName).includes(q) ||
+      normalizeSearch(u.username).includes(q) ||
+      normalizeSearch(u.email).includes(q) ||
       (u.phone && u.phone.includes(q))
     )
   }

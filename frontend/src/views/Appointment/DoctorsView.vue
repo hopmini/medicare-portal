@@ -89,6 +89,7 @@
   import { computed, onMounted, ref } from 'vue'
   import Navbar from '@/components/Navbar.vue'
   import api from '@/services/api'
+  import { normalizeSearch } from '@/utils/search'
 
   const searchQuery = ref('')
   const activeCat = ref('Tất cả')
@@ -155,8 +156,8 @@
 
   const filteredDoctors = computed(() => {
     return doctors.value.filter(doc => {
-      const matchSearch = doc.fullName.toLowerCase().includes(searchQuery.value.toLowerCase())
-        || doc.specialty.toLowerCase().includes(searchQuery.value.toLowerCase())
+      const matchSearch = normalizeSearch(doc.fullName).includes(normalizeSearch(searchQuery.value))
+        || normalizeSearch(doc.specialty).includes(normalizeSearch(searchQuery.value))
       const matchCat = activeCat.value === 'Tất cả' || doc.specialty === activeCat.value
       return matchSearch && matchCat
     })

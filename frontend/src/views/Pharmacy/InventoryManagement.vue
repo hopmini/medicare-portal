@@ -367,6 +367,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import PharmacySidebar from '@/components/PharmacySidebar.vue';
 import AppHeader from '@/components/AppHeader.vue';
 import { getInventoryTransactions, getMedicines } from '@/services/pharmacyService';
+import { normalizeSearch } from '@/utils/search';
 
 const props = withDefaults(
   defineProps<{
@@ -596,8 +597,8 @@ const filteredTransactions = computed(() => {
   return transactions.value.filter(t => {
     // Search filter
     if (searchQuery.value) {
-      const q = searchQuery.value.toLowerCase();
-      if (!(t.code.toLowerCase().includes(q) || t.medicine.toLowerCase().includes(q))) return false;
+      const q = normalizeSearch(searchQuery.value);
+      if (!(normalizeSearch(t.code).includes(q) || normalizeSearch(t.medicine).includes(q))) return false;
     }
 
     // Type filter

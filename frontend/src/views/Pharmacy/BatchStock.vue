@@ -167,7 +167,7 @@
               <!-- Actions column -->
               <template v-else-if="column.key === 'action'">
                 <a-space>
-                  <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết">
+                  <a-button type="link" style="padding: 0; color: #0047AB;" title="Xem chi tiết" @click="viewDetail(record)">
                     <i class="far fa-eye" />
                   </a-button>
                   <a-button type="link" style="padding: 0; color: #596780;" title="Nhật ký lô">
@@ -181,6 +181,20 @@
       </a-layout-content>
     </a-layout>
   </a-layout>
+
+  <!-- Detail Modal -->
+  <a-modal v-model:open="detailVisible" title="Chi tiết lô thuốc" :footer="null" style="border-radius: 8px;">
+    <a-descriptions :column="1" bordered size="small" v-if="detailRecord">
+      <a-descriptions-item label="Mã thuốc">{{ detailRecord.medCode }}</a-descriptions-item>
+      <a-descriptions-item label="Tên thuốc">{{ detailRecord.name }}</a-descriptions-item>
+      <a-descriptions-item label="Số lô">{{ detailRecord.batch }}</a-descriptions-item>
+      <a-descriptions-item label="Hạn sử dụng">{{ detailRecord.expiryDate }}</a-descriptions-item>
+      <a-descriptions-item label="Số lượng còn">{{ detailRecord.stock }}</a-descriptions-item>
+      <a-descriptions-item label="Đơn vị">{{ detailRecord.unit }}</a-descriptions-item>
+      <a-descriptions-item label="Ngày nhập">{{ detailRecord.importDate }}</a-descriptions-item>
+      <a-descriptions-item label="Mã phiếu nhập">{{ detailRecord.importCode }}</a-descriptions-item>
+    </a-descriptions>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -190,6 +204,7 @@ import { ref, computed, onMounted } from 'vue'
 import PharmacySidebar from '@/components/PharmacySidebar.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { getMedicines, getImportBills } from '@/services/pharmacyService'
+import { normalizeSearch } from '@/utils/search'
 
 const props = withDefaults(
   defineProps<{
@@ -270,11 +285,11 @@ const filteredBatches = computed(() => {
 
   // Text search query
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
+    const q = normalizeSearch(searchQuery.value)
     list = list.filter(b => 
-      b.name.toLowerCase().includes(q) || 
-      b.medCode.toLowerCase().includes(q) || 
-      b.batch.toLowerCase().includes(q)
+      normalizeSearch(b.name).includes(q) || 
+      normalizeSearch(b.medCode).includes(q) || 
+      normalizeSearch(b.batch).includes(q)
     )
   }
 
@@ -300,6 +315,14 @@ function getStatusText(status: string) {
   if (status === 'near') return 'Sắp hết hạn'
   if (status === 'low') return 'Tôn thấp'
   return 'Còn hạn'
+}
+
+const detailVisible = ref(false)
+const detailRecord = ref<BatchStock | null>(null)
+
+function viewDetail(record: BatchStock) {
+  detailRecord.value = record
+  detailVisible.value = true
 }
 
 async function loadRealBatches() {

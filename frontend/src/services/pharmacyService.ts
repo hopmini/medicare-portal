@@ -113,7 +113,7 @@ export async function getInventoryTransactions() {
     return transactions
   } catch (err) {
     console.error('Failed to fetch inventory transactions from backend:', err)
-    return []
+    throw err
   }
 }
 

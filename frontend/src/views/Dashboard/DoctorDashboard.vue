@@ -1268,6 +1268,7 @@
   import { getMedicines } from '@/services/pharmacyService'
   import { medicalRecordService, mapUserIdToGuid } from '@/services/medicalRecordService'
   import Icd10Picker from '@/components/Icd10Picker.vue'
+  import { normalizeSearch } from '@/utils/search'
 
   const authStore = useAuthStore()
   const loading = ref(false)
@@ -1340,23 +1341,23 @@
 
   const filteredPatients = computed(() => {
     if (!searchPatientQuery.value) return patientsList.value
-    const q = searchPatientQuery.value.toLowerCase()
+    const q = normalizeSearch(searchPatientQuery.value)
     return patientsList.value.filter(p => 
-      p.fullName?.toLowerCase().includes(q) || 
-      p.medicalHistory?.toLowerCase().includes(q) ||
-      p.allergies?.toLowerCase().includes(q)
+      normalizeSearch(p.fullName).includes(q) || 
+      normalizeSearch(p.medicalHistory).includes(q) ||
+      normalizeSearch(p.allergies).includes(q)
     )
   })
 
   const filteredRecords = computed(() => {
     if (!searchRecordQuery.value) return recordsList.value
-    const q = searchRecordQuery.value.toLowerCase()
+    const q = normalizeSearch(searchRecordQuery.value)
     return recordsList.value.filter(r => {
       const pName = patientMap.value.get(r.patientId?.toLowerCase())?.fullName || ''
-      return r.symptoms?.toLowerCase().includes(q) || 
-             r.diagnosis?.toLowerCase().includes(q) ||
-             pName.toLowerCase().includes(q) ||
-             r.id?.toLowerCase().includes(q)
+      return normalizeSearch(r.symptoms).includes(q) || 
+             normalizeSearch(r.diagnosis).includes(q) ||
+             normalizeSearch(pName).includes(q) ||
+             normalizeSearch(r.id).includes(q)
     })
   })
 
