@@ -1252,103 +1252,115 @@
 
    
     <!-- 4. Medical Record Detail Modal -->
-    <!-- 4. Medical Record Detail Modal -->
-    <div v-if="selectedRecord" class="modal-backdrop">
-      <div class="modal-card shadow-lg animate-fade-in" style="width: 600px;">
-        <div class="modal-header">
-          <h3><i class="fas fa-file-medical text-red" /> {{ isEditingRecord ? 'Sửa bệnh án' : 'Chi tiết bệnh án' }} #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}</h3>
+    <div v-if="selectedRecord" class="modal-backdrop" @click.self="selectedRecord = null; isEditingRecord = false">
+      <div class="modal-card shadow-lg animate-fade-in" style="width: 780px; max-width: 95vw;">
+        <div class="modal-header" style="background: #f8fafc; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding: 1.25rem 1.75rem;">
+          <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a;">
+            <i class="fas fa-file-medical" style="color: #0047AB;" /> {{ isEditingRecord ? 'Sửa bệnh án' : 'Chi tiết bệnh án' }} #{{ String(selectedRecord.id || '').substring(0, 8).toUpperCase() }}
+          </h3>
           <button class="btn-close-modal" @click="selectedRecord = null; isEditingRecord = false">&times;</button>
         </div>
-        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; text-align: left; max-height: 70vh; overflow-y: auto;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Bệnh nhân</label>
-              <p style="font-size: 0.95rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
-                {{ getPatientInfo(selectedRecord.patientId)?.fullName || 'Chưa rõ' }}
-              </p>
-            </div>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Mã BN</label>
-              <p style="font-family: monospace; font-size: 0.95rem; font-weight: bold; color: #0047AB; margin: 2px 0 0 0;">
-                {{ selectedRecord.gatewayPatientId ? '#' + selectedRecord.gatewayPatientId : '#' + (parseInt(String(selectedRecord.patientId || '').split('-').pop() || '0', 10) || '?') }}
-              </p>
+        <div class="modal-body" style="padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: 72vh; overflow-y: auto;">
+          <!-- Patient info section -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+            <h4 style="margin: 0 0 12px; font-size: 0.9rem; font-weight: 800; color: #0047AB; display: flex; align-items: center; gap: 6px;"><i class="fas fa-user" /> Bệnh nhân</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Họ tên</div>
+                <div style="margin-top: 4px; font-size: 0.95rem; font-weight: 700; color: #0f172a;">{{ getPatientInfo(selectedRecord.patientId)?.fullName || 'Chưa rõ' }}</div>
+              </div>
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Mã BN</div>
+                <div style="margin-top: 4px; font-size: 0.95rem; font-weight: 700; color: #0047AB; font-family: monospace;">
+                  {{ selectedRecord.gatewayPatientId ? '#' + selectedRecord.gatewayPatientId : '#' + (parseInt(String(selectedRecord.patientId || '').split('-').pop() || '0', 10) || '?') }}
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Edit mode -->
-          <template v-if="isEditingRecord">
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
-              <textarea v-model="editRecordForm.symptoms" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
-            </div>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
-              <input v-model="editRecordForm.diagnosis" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" />
-            </div>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
-              <textarea v-model="editRecordForm.notes" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
-            </div>
-          </template>
-
-          <!-- Read-only mode -->
-          <template v-else>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
-              <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.4; white-space: pre-wrap;">{{ selectedRecord.symptoms }}</p>
-            </div>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
-              <p style="background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; color: #15803d; font-weight: bold;">{{ selectedRecord.diagnosis }}</p>
-            </div>
-            <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
-              <p style="line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 6px;">{{ selectedRecord.notes || 'Không có ghi chú thêm.' }}</p>
-            </div>
-          </template>
-          
-          <div v-if="selectedRecord.prescription" style="border-top: 1.5px dashed #fca5a5; padding-top: 15px; margin-top: 5px;">
-            <h4 style="margin: 0 0 10px 0; color: #b91c1c; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-              <i class="fas fa-prescription-bottle" /> Đơn thuốc kèm theo
-            </h4>
-            <div style="background: #fff8f8; border: 1px solid #fecaca; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
-              <div v-for="(med, idx) in selectedRecord.prescription.details" :key="idx" style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                <span><strong>{{ idx + 1 }}. {{ med.medicationName }}</strong> - <i>{{ med.dosage }}</i></span>
-                <span style="color: #b91c1c; font-weight: bold;">x{{ med.quantity }} Viên</span>
+          <!-- Clinical section -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+            <h4 style="margin: 0 0 12px; font-size: 0.9rem; font-weight: 800; color: #0047AB; display: flex; align-items: center; gap: 6px;"><i class="fas fa-stethoscope" /> Ghi nhận lâm sàng</h4>
+            <template v-if="isEditingRecord">
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                  <label style="font-weight: 700; color: #475569; font-size: 0.8rem;">Triệu chứng lâm sàng</label>
+                  <textarea v-model="editRecordForm.symptoms" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+                </div>
+                <div>
+                  <label style="font-weight: 700; color: #475569; font-size: 0.8rem;">Chẩn đoán của Bác sĩ</label>
+                  <input v-model="editRecordForm.diagnosis" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                </div>
+                <div>
+                  <label style="font-weight: 700; color: #475569; font-size: 0.8rem;">Lời dặn y khoa</label>
+                  <textarea v-model="editRecordForm.notes" class="form-control" rows="3" style="margin-top: 4px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+                </div>
               </div>
-              <div v-if="selectedRecord.prescription.instructions" style="font-size: 0.8rem; color: #7f1d1d; border-top: 1px dashed #fee2e2; padding-top: 6px; margin-top: 4px;">
+            </template>
+            <template v-else>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Triệu chứng</div>
+                  <p style="margin: 0; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; line-height: 1.5; font-size: 0.88rem;">{{ selectedRecord.symptoms }}</p>
+                </div>
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Chẩn đoán</div>
+                  <p style="margin: 0; background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px; color: #15803d; font-weight: 700; font-size: 0.88rem;">{{ selectedRecord.diagnosis }}</p>
+                </div>
+                <div v-if="selectedRecord.notes">
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Ghi chú</div>
+                  <p style="margin: 0; background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; line-height: 1.5; font-size: 0.88rem;">{{ selectedRecord.notes }}</p>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Prescription -->
+          <div v-if="selectedRecord.prescription" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+            <h4 style="margin: 0 0 12px; font-size: 0.9rem; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 6px;"><i class="fas fa-prescription-bottle" /> Đơn thuốc</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div v-for="(med, idx) in selectedRecord.prescription.details" :key="idx" style="background: white; border: 1px solid #fee2e2; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-weight: 700; font-size: 0.88rem;">{{ idx + 1 }}. {{ med.medicationName }}</span>
+                  <span style="font-size: 0.8rem; color: #64748b; margin-left: 6px;">{{ med.dosage }}</span>
+                </div>
+                <span style="font-weight: 800; color: #b91c1c;">x{{ med.quantity }}</span>
+              </div>
+              <div v-if="selectedRecord.prescription.instructions" style="font-size: 0.85rem; color: #7f1d1d; background: #fee2e2; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #ef4444;">
                 <strong>Lời dặn:</strong> {{ selectedRecord.prescription.instructions }}
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto;">
-            <button v-if="!selectedRecord.isLocked" class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #dc2626; color: white; font-size: 0.8rem;" @click="lockRecord(selectedRecord.id)">
+        <div class="modal-footer" style="padding: 1rem 1.75rem; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button v-if="!selectedRecord.isLocked" style="padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.8rem; cursor: pointer;" @click="lockRecord(selectedRecord.id)">
               <i class="fas fa-lock" /> Khóa
             </button>
-            <button v-if="selectedRecord.isLocked" class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #16a34a; color: white; font-size: 0.8rem;" @click="unlockRecord(selectedRecord.id)">
+            <button v-if="selectedRecord.isLocked" style="padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.8rem; cursor: pointer;" @click="unlockRecord(selectedRecord.id)">
               <i class="fas fa-unlock" /> Mở khóa
             </button>
-            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #6b7280; color: white; font-size: 0.8rem;" @click="softDeleteRecord(selectedRecord.id)">
+            <button style="padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.8rem; cursor: pointer;" @click="softDeleteRecord(selectedRecord.id)">
               <i class="fas fa-trash" /> Xóa
             </button>
-            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 8px 14px; font-weight: 700; background: #2563eb; color: white; font-size: 0.8rem;" @click="showAuditHistory(selectedRecord.id)">
+            <button style="padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.8rem; cursor: pointer;" @click="showAuditHistory(selectedRecord.id)">
               <i class="fas fa-history" /> Lịch sử
             </button>
           </div>
-          <template v-if="isEditingRecord">
-            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #166534; color: white;" @click="saveRecord">
-              <i class="fas fa-save" /> Lưu thay đổi
-            </button>
-            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #94a3b8; color: white;" @click="isEditingRecord = false">Hủy</button>
-          </template>
-          <template v-else>
-            <button class="btn-primary-cockpit" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #0047AB; color: white;" @click="startEditingRecord">
-              <i class="fas fa-edit" /> Sửa bệnh án
-            </button>
-            <button class="btn-cancel-modal" style="border-radius: 6px; padding: 10px 20px; font-weight: 700; background: #64748b; color: white;" @click="selectedRecord = null; isEditingRecord = false">Đóng thông tin</button>
-          </template>
+          <div style="display: flex; gap: 8px;">
+            <template v-if="isEditingRecord">
+              <button style="padding: 7px 16px; border: 1px solid #0047AB; border-radius: 6px; background: #0047AB; color: white; font-weight: 600; font-size: 0.85rem; cursor: pointer;" @click="saveRecord">
+                <i class="fas fa-save" /> Lưu
+              </button>
+              <button style="padding: 7px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.85rem; cursor: pointer;" @click="isEditingRecord = false">Hủy</button>
+            </template>
+            <template v-else>
+              <button style="padding: 7px 16px; border: 1px solid #0047AB; border-radius: 6px; background: #0047AB; color: white; font-weight: 600; font-size: 0.85rem; cursor: pointer;" @click="startEditingRecord">
+                <i class="fas fa-edit" /> Sửa
+              </button>
+              <button style="padding: 7px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; font-weight: 600; font-size: 0.85rem; cursor: pointer;" @click="selectedRecord = null; isEditingRecord = false">Đóng</button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -1449,7 +1461,7 @@
           <template v-if="isEditingPatient">
             <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
               <div>
-                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên bệnh nhân</label>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên</label>
                 <input v-model="editPatientForm.fullName" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
               </div>
               <div>
@@ -1463,25 +1475,68 @@
                 <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Nhóm máu</label>
                 <select v-model="editPatientForm.bloodGroup" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
                   <option value="">Chưa rõ</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="AB">AB</option>
-                  <option value="O">O</option>
-                  <option value="A+">A+</option>
-                  <option value="B+">B+</option>
-                  <option value="AB+">AB+</option>
-                  <option value="O+">O+</option>
-                  <option value="A-">A-</option>
-                  <option value="B-">B-</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O-">O-</option>
+                  <option value="A">A</option><option value="B">B</option><option value="AB">AB</option><option value="O">O</option>
+                  <option value="A+">A+</option><option value="B+">B+</option><option value="AB+">AB+</option><option value="O+">O+</option>
+                  <option value="A-">A-</option><option value="B-">B-</option><option value="AB-">AB-</option><option value="O-">O-</option>
                 </select>
               </div>
             </div>
 
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
+                <input v-model="editPatientForm.dateOfBirth" type="date" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Số điện thoại</label>
+                <input v-model="editPatientForm.phone" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Email</label>
+                <input v-model="editPatientForm.email" type="email" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+            </div>
+
             <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
-              <input v-model="editPatientForm.dateOfBirth" type="date" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Địa chỉ</label>
+              <input v-model="editPatientForm.address" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">CMND/CCCD</label>
+                <input v-model="editPatientForm.identityCard" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Số BHYT</label>
+                <input v-model="editPatientForm.insuranceNumber" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Nghề nghiệp</label>
+                <input v-model="editPatientForm.occupation" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Dân tộc</label>
+                <input v-model="editPatientForm.ethnicity" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Quốc tịch</label>
+                <input v-model="editPatientForm.nationality" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Liên hệ khẩn cấp (Tên)</label>
+                <input v-model="editPatientForm.emergencyContact" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">SĐT khẩn cấp</label>
+                <input v-model="editPatientForm.emergencyPhone" type="text" class="form-control" style="margin-top: 4px; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+              </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -1500,7 +1555,7 @@
           <template v-else>
             <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
               <div>
-                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên bệnh nhân</label>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Họ và tên</label>
                 <p style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 4px 0 0 0;">{{ selectedPatient.fullName }}</p>
               </div>
               <div>
@@ -1517,21 +1572,73 @@
               </div>
             </div>
 
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ formatDate(selectedPatient.dateOfBirth) }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Số điện thoại</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.phone || 'Chưa cập nhật' }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Email</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.email || 'Chưa cập nhật' }}</p>
+              </div>
+            </div>
+
             <div>
-              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Ngày sinh</label>
-              <p style="margin: 4px 0 0 0; font-weight: 500;">{{ formatDate(selectedPatient.dateOfBirth) }}</p>
+              <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Địa chỉ</label>
+              <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.address || 'Chưa cập nhật' }}</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">CMND/CCCD</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.identityCard || 'Chưa cập nhật' }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Số BHYT</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.insuranceNumber || 'Chưa cập nhật' }}</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Nghề nghiệp</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.occupation || 'Chưa cập nhật' }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Dân tộc</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.ethnicity || 'Chưa cập nhật' }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Quốc tịch</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.nationality || 'Chưa cập nhật' }}</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Liên hệ khẩn cấp</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.emergencyContact || 'Chưa cập nhật' }}</p>
+              </div>
+              <div>
+                <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">SĐT khẩn cấp</label>
+                <p style="margin: 4px 0 0 0; font-weight: 500;">{{ selectedPatient.emergencyPhone || 'Chưa cập nhật' }}</p>
+              </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div>
                 <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Tiền sử bệnh lý</label>
-                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 4px 0 0 0; font-size: 0.85rem; min-height: 50px;">
+                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 4px 0 0 0; font-size: 0.85rem;">
                   {{ selectedPatient.medicalHistory || 'Chưa có ghi nhận' }}
                 </p>
               </div>
               <div>
                 <label style="font-weight: bold; color: #475569; font-size: 0.75rem;">Dị ứng thuốc / Thức ăn</label>
-                <p style="background: #fff5f5; padding: 10px; border-radius: 8px; border: 1px solid #fee2e2; color: #991b1b; margin: 4px 0 0 0; font-size: 0.85rem; font-weight: 600; min-height: 50px;">
+                <p style="background: #fff5f5; padding: 10px; border-radius: 8px; border: 1px solid #fee2e2; color: #991b1b; margin: 4px 0 0 0; font-size: 0.85rem; font-weight: 600;">
                   {{ selectedPatient.allergies || 'Không dị ứng' }}
                 </p>
               </div>
@@ -2194,6 +2301,16 @@
     dateOfBirth: '',
     gender: 'Nam',
     bloodGroup: '',
+    phone: '',
+    email: '',
+    address: '',
+    identityCard: '',
+    insuranceNumber: '',
+    occupation: '',
+    ethnicity: '',
+    nationality: '',
+    emergencyContact: '',
+    emergencyPhone: '',
     medicalHistory: '',
     allergies: ''
   })
@@ -2213,6 +2330,16 @@
     editPatientForm.value.dateOfBirth = selectedPatient.value.dateOfBirth ? new Date(selectedPatient.value.dateOfBirth).toISOString().split('T')[0] : ''
     editPatientForm.value.gender = selectedPatient.value.gender || 'Nam'
     editPatientForm.value.bloodGroup = selectedPatient.value.bloodGroup || ''
+    editPatientForm.value.phone = selectedPatient.value.phone || ''
+    editPatientForm.value.email = selectedPatient.value.email || ''
+    editPatientForm.value.address = selectedPatient.value.address || ''
+    editPatientForm.value.identityCard = selectedPatient.value.identityCard || ''
+    editPatientForm.value.insuranceNumber = selectedPatient.value.insuranceNumber || ''
+    editPatientForm.value.occupation = selectedPatient.value.occupation || ''
+    editPatientForm.value.ethnicity = selectedPatient.value.ethnicity || ''
+    editPatientForm.value.nationality = selectedPatient.value.nationality || ''
+    editPatientForm.value.emergencyContact = selectedPatient.value.emergencyContact || ''
+    editPatientForm.value.emergencyPhone = selectedPatient.value.emergencyPhone || ''
     editPatientForm.value.medicalHistory = selectedPatient.value.medicalHistory || ''
     editPatientForm.value.allergies = selectedPatient.value.allergies || ''
     isEditingPatient.value = true
@@ -2231,6 +2358,16 @@
         dateOfBirth: editPatientForm.value.dateOfBirth,
         gender: editPatientForm.value.gender,
         bloodGroup: editPatientForm.value.bloodGroup,
+        phone: editPatientForm.value.phone,
+        email: editPatientForm.value.email,
+        address: editPatientForm.value.address,
+        identityCard: editPatientForm.value.identityCard,
+        insuranceNumber: editPatientForm.value.insuranceNumber,
+        occupation: editPatientForm.value.occupation,
+        ethnicity: editPatientForm.value.ethnicity,
+        nationality: editPatientForm.value.nationality,
+        emergencyContact: editPatientForm.value.emergencyContact,
+        emergencyPhone: editPatientForm.value.emergencyPhone,
         medicalHistory: editPatientForm.value.medicalHistory,
         allergies: editPatientForm.value.allergies
       })
@@ -2238,12 +2375,7 @@
         alert('Cập nhật thông tin bệnh nhân thành công!')
         
         // Cập nhật thông tin hiển thị tại chỗ
-        selectedPatient.value.fullName = editPatientForm.value.fullName
-        selectedPatient.value.dateOfBirth = editPatientForm.value.dateOfBirth
-        selectedPatient.value.gender = editPatientForm.value.gender
-        selectedPatient.value.bloodGroup = editPatientForm.value.bloodGroup
-        selectedPatient.value.medicalHistory = editPatientForm.value.medicalHistory
-        selectedPatient.value.allergies = editPatientForm.value.allergies
+        Object.assign(selectedPatient.value, editPatientForm.value)
         
         // Tải lại toàn bộ danh sách bệnh nhân
         const patientsRes = await medicalRecordService.getAllPatients()

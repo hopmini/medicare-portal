@@ -54,7 +54,7 @@
             <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 4px; display: block;">Đến ngày</label>
             <input v-model="filterDateTo" type="date" class="form-input" @change="loadRecords" />
           </div>
-          <div style="display: flex; gap: 8px; align-items: flex-end;">
+                  <div style="display: flex; gap: 8px; align-items: flex-end; padding-bottom: 1px;">
             <button class="btn-filter" @click="loadRecords"><i class="fas fa-search" /> Tìm</button>
             <button class="btn-filter btn-clear" @click="clearFilters"><i class="fas fa-undo" /> Reset</button>
           </div>
@@ -133,11 +133,11 @@
 
         <!-- Pagination -->
         <div v-if="totalPages > 1" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 8px; border-top: 1px solid #e2e8f0;">
-          <button :disabled="page === 1" @click="page--; loadRecords()" style="padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; font-weight: 600; color: #374151; transition: 0.15s;">Trước</button>
-          <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+          <button class="pagination-btn" :disabled="page === 1" @click="page--; loadRecords()"><i class="fas fa-chevron-left" /> Trước</button>
+          <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; padding: 0 8px;">
             Trang {{ page }} / {{ totalPages }}
           </span>
-          <button :disabled="page === totalPages" @click="page++; loadRecords()" style="padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; font-weight: 600; color: #374151; transition: 0.15s;">Sau</button>
+          <button class="pagination-btn" :disabled="page === totalPages" @click="page++; loadRecords()">Sau <i class="fas fa-chevron-right" /></button>
         </div>
       </div>
     </div>
@@ -157,19 +157,19 @@
           <!-- Patient Info (for admin) -->
           <div v-if="isAdmin" class="clinical-section">
             <h4 class="section-heading"><i class="fas fa-user" /> Bệnh nhân</h4>
-            <div class="symptom-box" style="margin: 0;">
+            <div class="symptom-box">
               <span class="cell-label">Họ tên:</span>
               <p class="symptom-text" style="font-weight: 700;">
                 {{ patientMap.get(selectedRecord.patientId?.toLowerCase())?.fullName || 'Bệnh nhân Medicare' }}
               </p>
             </div>
-            <div class="symptom-box" style="margin-top: 8px;">
+            <div class="symptom-box">
               <span class="cell-label">Mã BN:</span>
               <p class="symptom-text" style="font-weight: 700; font-family: monospace;">
                 {{ getPatientCode(selectedRecord) }}
               </p>
             </div>
-            <div class="symptom-box" style="margin-top: 8px;">
+            <div class="symptom-box">
               <span class="cell-label">Ngày khám:</span>
               <p class="symptom-text">{{ formatDate(selectedRecord.createdAt) }}</p>
             </div>
@@ -190,19 +190,19 @@
           <!-- Clinical -->
           <div class="clinical-section">
             <h4 class="section-heading"><i class="fas fa-stethoscope" /> Ghi nhận lâm sàng</h4>
-            <div class="symptom-box" style="margin: 0;">
+            <div class="symptom-box">
               <span class="cell-label">Triệu chứng:</span>
               <p class="symptom-text">{{ selectedRecord.symptoms }}</p>
             </div>
-            <div class="symptom-box" style="margin-top: 8px;">
+            <div class="symptom-box" v-if="selectedRecord.diagnosis">
               <span class="cell-label">Chẩn đoán:</span>
               <p class="symptom-text" style="font-weight: 700; color: #15803d;">{{ selectedRecord.diagnosis }}</p>
             </div>
-            <div class="symptom-box" style="margin-top: 8px;" v-if="selectedRecord.diagnosisCode">
+            <div class="symptom-box" v-if="selectedRecord.diagnosisCode">
               <span class="cell-label">Mã ICD-10:</span>
               <p class="symptom-text"><strong>{{ selectedRecord.diagnosisCode }}</strong><span v-if="selectedRecord.diagnosisCodeName" style="margin-left: 4px;">- {{ selectedRecord.diagnosisCodeName }}</span></p>
             </div>
-            <div class="symptom-box" style="margin-top: 8px;" v-if="selectedRecord.notes">
+            <div class="symptom-box" v-if="selectedRecord.notes">
               <span class="cell-label">Ghi chú:</span>
               <p class="symptom-text">{{ selectedRecord.notes }}</p>
             </div>
@@ -241,15 +241,15 @@
           <!-- Discharge Summary -->
           <div class="clinical-section" v-if="selectedRecord.dischargeDate || selectedRecord.dischargeDiagnosis">
             <h4 class="section-heading"><i class="fas fa-hospital" /> Giấy ra viện</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-              <div v-if="selectedRecord.admissionDate" class="symptom-box" style="margin: 0;"><span class="cell-label">Nhập viện:</span><p class="symptom-text">{{ formatDate(selectedRecord.admissionDate) }}</p></div>
-              <div v-if="selectedRecord.dischargeDate" class="symptom-box" style="margin: 0;"><span class="cell-label">Xuất viện:</span><p class="symptom-text">{{ formatDate(selectedRecord.dischargeDate) }}</p></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div v-if="selectedRecord.admissionDate" class="symptom-box"><span class="cell-label">Nhập viện:</span><p class="symptom-text">{{ formatDate(selectedRecord.admissionDate) }}</p></div>
+              <div v-if="selectedRecord.dischargeDate" class="symptom-box"><span class="cell-label">Xuất viện:</span><p class="symptom-text">{{ formatDate(selectedRecord.dischargeDate) }}</p></div>
             </div>
-            <div v-if="selectedRecord.dischargeDiagnosis" class="symptom-box" style="margin-top: 8px;"><span class="cell-label">Chẩn đoán xuất viện:</span><p class="symptom-text">{{ selectedRecord.dischargeDiagnosis }}</p></div>
-            <div v-if="selectedRecord.dischargeInstructions" class="symptom-box" style="margin-top: 8px;"><span class="cell-label">Lời dặn:</span><p class="symptom-text">{{ selectedRecord.dischargeInstructions }}</p></div>
-            <div v-if="selectedRecord.followUpDate || selectedRecord.followUpClinic" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
-              <div v-if="selectedRecord.followUpClinic" class="symptom-box" style="margin: 0;"><span class="cell-label">Phòng tái khám:</span><p class="symptom-text">{{ selectedRecord.followUpClinic }}</p></div>
-              <div v-if="selectedRecord.followUpDate" class="symptom-box" style="margin: 0;"><span class="cell-label">Ngày tái khám:</span><p class="symptom-text">{{ formatDate(selectedRecord.followUpDate) }}</p></div>
+            <div v-if="selectedRecord.dischargeDiagnosis" class="symptom-box"><span class="cell-label">Chẩn đoán xuất viện:</span><p class="symptom-text">{{ selectedRecord.dischargeDiagnosis }}</p></div>
+            <div v-if="selectedRecord.dischargeInstructions" class="symptom-box"><span class="cell-label">Lời dặn:</span><p class="symptom-text">{{ selectedRecord.dischargeInstructions }}</p></div>
+            <div v-if="selectedRecord.followUpDate || selectedRecord.followUpClinic" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div v-if="selectedRecord.followUpClinic" class="symptom-box"><span class="cell-label">Phòng tái khám:</span><p class="symptom-text">{{ selectedRecord.followUpClinic }}</p></div>
+              <div v-if="selectedRecord.followUpDate" class="symptom-box"><span class="cell-label">Ngày tái khám:</span><p class="symptom-text">{{ formatDate(selectedRecord.followUpDate) }}</p></div>
             </div>
           </div>
 
@@ -433,7 +433,7 @@ onMounted(loadRecords)
   font-size: 0.88rem;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .form-input:focus {
   border-color: #2563eb;
@@ -454,6 +454,7 @@ onMounted(loadRecords)
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  height: 38px;
 }
 .btn-filter:hover { background: #1d4ed8; }
 .btn-clear {
@@ -464,23 +465,24 @@ onMounted(loadRecords)
 .btn-clear:hover { background: #f1f5f9; color: #334155; }
 
 .btn-table-action {
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
-  border: 1px solid transparent;
+  border: 1px solid #d1d5db;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.15s;
+  transition: all 0.15s;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  white-space: nowrap;
+  background: white;
+  color: #374151;
 }
-.btn-detail {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
+.btn-table-action:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
-.btn-detail:hover { background: #dbeafe; }
 
 .detail-modal-overlay {
   position: fixed;
@@ -497,7 +499,7 @@ onMounted(loadRecords)
   background: white;
   border-radius: 16px;
   width: 90%;
-  max-width: 680px;
+  max-width: 820px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -506,7 +508,7 @@ onMounted(loadRecords)
 .modal-header {
   background: #0047AB;
   color: white;
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem 1.75rem;
   border-radius: 16px 16px 0 0;
   display: flex;
   justify-content: space-between;
@@ -519,38 +521,39 @@ onMounted(loadRecords)
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
 }
 .modal-footer {
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.75rem;
   border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 .btn-modal-close {
-  padding: 0.6rem 1.5rem;
-  background: #e2e8f0;
-  color: #334155;
-  border: none;
-  border-radius: 8px;
-  font-weight: 800;
+  padding: 0.5rem 1.25rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
   transition: 0.15s;
 }
-.btn-modal-close:hover { background: #cbd5e1; }
+.btn-modal-close:hover { background: #e2e8f0; }
 
 .clinical-section {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 .section-heading {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   font-size: 0.9rem;
   font-weight: 800;
   color: #0047AB;
@@ -562,7 +565,10 @@ onMounted(loadRecords)
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 10px 14px;
+}
+.symptom-box + .symptom-box {
+  margin-top: 8px;
 }
 .cell-label {
   font-size: 0.75rem;
@@ -571,15 +577,16 @@ onMounted(loadRecords)
   text-transform: uppercase;
 }
 .symptom-text {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   font-size: 0.88rem;
   color: #1f2937;
+  line-height: 1.5;
 }
 .vital-chip {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-size: 0.82rem;
 }
 .vital-chip strong { color: #64748b; }
@@ -590,5 +597,29 @@ onMounted(loadRecords)
 @keyframes scaleUp {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+tbody tr:hover {
+  background: #f8fafc;
+}
+
+.pagination-btn {
+  padding: 6px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.15s;
+  font-size: 0.85rem;
+}
+.pagination-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

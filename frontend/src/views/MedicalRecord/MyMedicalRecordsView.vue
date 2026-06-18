@@ -74,10 +74,8 @@
             </button>
           </div>
           <div v-else style="display: flex; gap: 8px;">
-            <button @click="isEditingProfile = false" style="background: white; border: 1px solid #cbd5e1; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; color: #475569; cursor: pointer; transition: 0.15s;">
-              Hủy
-            </button>
-            <button @click="saveProfile" :disabled="profileLoading" style="background: #0047AB; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.82rem; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;">
+            <button class="btn-cancel" @click="isEditingProfile = false">Hủy</button>
+            <button class="btn-save" @click="saveProfile" :disabled="profileLoading">
               <i v-if="profileLoading" class="fas fa-circle-notch fa-spin" />
               <i v-else class="fas fa-save" /> Lưu lại
             </button>
@@ -177,17 +175,17 @@
                   </div>
                 </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-family: monospace; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: 700;">
+              <div class="card-header-actions" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-family: monospace; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: 700; white-space: nowrap;">
                   Mã BA: #{{ String(rec.id || '').substring(0, 8).toUpperCase() }}
                 </span>
-                <button class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="downloadPdf(rec)">
+                <button class="btn-header-action" @click="downloadPdf(rec)">
                   <i class="fas fa-file-pdf" /> Tải PDF
                 </button>
-                <button v-if="rec.prescription" class="btn-print" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="printPrescription(rec)">
+                <button v-if="rec.prescription" class="btn-header-action" @click="printPrescription(rec)">
                   <i class="fas fa-print" /> In toa thuốc
                 </button>
-                <button class="btn-print btn-delete-record" style="background: white; border: 1px solid #fecaca; color: #dc2626; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;" @click="confirmDelete(rec)">
+                <button class="btn-header-action btn-delete" @click="confirmDelete(rec)">
                   <i class="fas fa-trash-alt" /> Xóa
                 </button>
               </div>
@@ -718,32 +716,93 @@
 <style scoped>
 @import '@/styles/public-pages.css';
 
+.record-card {
+  transition: all 0.25s ease;
+}
 .record-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
 }
 
-.btn-print:hover {
+.btn-header-action {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-header-action:hover {
   border-color: #0047AB !important;
   color: #0047AB !important;
   background-color: #f0f7ff !important;
 }
-
-.btn-delete-record:hover {
+.btn-header-action.btn-delete {
+  border-color: #fecaca;
+  color: #dc2626;
+}
+.btn-header-action.btn-delete:hover {
   border-color: #dc2626 !important;
   color: #b91c1c !important;
   background-color: #fef2f2 !important;
 }
 
+.btn-book-now {
+  transition: all 0.2s;
+}
 .btn-book-now:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 15px rgba(0,0,0,0.15) !important;
   background-color: #f8fafc !important;
 }
 
+.btn-save {
+  background: #0047AB;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.btn-save:hover { background: #003d94; }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-cancel {
+  background: white;
+  border: 1px solid #cbd5e1;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { background: #f1f5f9; }
+
 @media (max-width: 768px) {
   .card-body {
     grid-template-columns: 1fr !important;
+  }
+  .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .card-header-actions {
+    flex-wrap: wrap !important;
   }
 }
 </style>
