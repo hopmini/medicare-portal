@@ -1,18 +1,15 @@
 <template>
   <div class="ai-consultant-wrapper">
-    <!-- Floating Chat Trigger Button -->
     <button class="ai-floating-btn shadow-lg" :class="{ 'ai-floating-btn--active': isOpen }" @click="toggleChat">
       <div class="ai-icon-inner">
         <i v-if="!isOpen" class="fas fa-robot animate-pulse-gentle" />
         <i v-else class="fas fa-times" />
       </div>
-      <span v-if="!isOpen && showTooltip" class="ai-tooltip">Tư vấn khám AI 🤖</span>
+      <span v-if="!isOpen && showTooltip" class="ai-tooltip">Tư vấn AI 🤖</span>
     </button>
 
-    <!-- Chat Panel Window -->
     <transition name="chat-slide">
       <div v-if="isOpen" class="ai-chat-window glass-panel shadow-2xl">
-        <!-- Chat Header -->
         <div class="ai-chat-header">
           <div class="ai-header-info">
             <div class="ai-avatar-glow">
@@ -20,49 +17,46 @@
             </div>
             <div>
               <h3>Medicare AI Assistant</h3>
-              <span class="status-online"><span class="dot"></span>Sẵn sàng tư vấn lâm sàng</span>
+              <span class="status-online"><span class="dot"></span>Sẵn sàng trợ giúp</span>
             </div>
           </div>
           <button class="btn-close-chat" @click="toggleChat">&times;</button>
         </div>
 
-        <!-- Chat Messages Area -->
         <div ref="messagesContainer" class="ai-chat-messages">
           <div v-for="(msg, idx) in messages" :key="idx" :class="['message-row', msg.sender === 'user' ? 'msg-user' : 'msg-ai']">
             <div class="message-bubble shadow-sm">
-              <!-- Text response -->
               <span v-html="msg.text"></span>
 
-              <!-- Diagnostics card if present -->
-              <div v-if="msg.diagnostics" class="diagnostics-card animate-scale-up">
+              <div v-if="msg.diagnostics && msg.showDiagnostics" class="diagnostics-card">
                 <div class="diag-header">
                   <i class="fas fa-stethoscope" />
-                  <strong>KẾT QUẢ PHÂN TÍCH LÂM SÀNG (AI)</strong>
+                  <strong>KẾT QUẢ PHÂN TÍCH</strong>
                 </div>
                 <div class="diag-body">
                   <div class="diag-item">
-                    <span class="diag-label">Chuyên khoa đề xuất:</span>
+                    <span class="diag-label">Chuyên khoa:</span>
                     <strong class="diag-value text-blue">{{ msg.diagnostics.specialty }}</strong>
                   </div>
                   <div class="diag-item">
-                    <span class="diag-label">Mức độ khẩn cấp:</span>
+                    <span class="diag-label">Mức độ:</span>
                     <span :class="['urgency-badge', getUrgencyClass(msg.diagnostics.urgency)]">
                       <i class="fas fa-exclamation-triangle" style="margin-right: 4px;" />
                       {{ msg.diagnostics.urgency }}
                     </span>
                   </div>
                   <div class="diag-item">
-                    <span class="diag-label">Dịch vụ đề nghị:</span>
+                    <span class="diag-label">Dịch vụ:</span>
                     <strong class="diag-value">{{ msg.diagnostics.recommendedService }}</strong>
                   </div>
                   <div class="diag-note">
                     <i class="fas fa-info-circle" />
-                    Kết quả phân tích dựa trên triệu chứng lâm sàng sơ bộ và không thay thế chỉ định trực tiếp từ bác sĩ chuyên khoa.
+                    Phân tích dựa trên triệu chứng sơ bộ, không thay thế chỉ định bác sĩ.
                   </div>
                 </div>
                 <div class="diag-actions">
-                  <button class="btn-book-now" @click="redirectToBooking(msg.diagnostics.specialty, msg.diagnostics.serviceId)">
-                    Đặt lịch khám ngay <i class="fas fa-arrow-right" />
+                  <button class="btn-book-now" @click="redirectToBooking(msg.diagnostics.specialty, msg.diagnostics.serviceId, msg.diagnostics.recommendedService)">
+                    Đặt lịch khám <i class="fas fa-arrow-right" />
                   </button>
                 </div>
               </div>
@@ -70,7 +64,6 @@
             <span class="message-time">{{ msg.time }}</span>
           </div>
 
-          <!-- Typing indicator loader -->
           <div v-if="isTyping" class="message-row msg-ai">
             <div class="message-bubble typing-bubble">
               <span class="dot"></span>
@@ -80,7 +73,6 @@
           </div>
         </div>
 
-        <!-- Chat Input Area -->
         <div class="ai-chat-input-area">
           <div class="quick-prompts">
             <button v-for="(q, idx) in suggestedQuestions" :key="idx" class="btn-quick-prompt" @click="sendQuickPrompt(q.prompt)">{{ q.text }}</button>
@@ -88,7 +80,7 @@
           <div class="input-container">
             <input
               v-model="userInput"
-              placeholder="Nhập triệu chứng của bạn (Ví dụ: đau bụng, ho sốt...)"
+              placeholder="Nhập câu hỏi của bạn..."
               type="text"
               class="ai-input"
               @keyup.enter="handleSend"
@@ -127,10 +119,10 @@ const suggestedQuestions = computed(() => {
   const role = userRole.value
   if (role === 'Admin') {
     return [
-      { text: 'Tổng quan hoạt động hôm nay?', prompt: 'Tổng quan hoạt động phòng khám hôm nay thế nào?' },
+      { text: 'Tổng quan hôm nay?', prompt: 'Tổng quan hoạt động phòng khám hôm nay thế nào?' },
       { text: 'Lịch hẹn chờ duyệt', prompt: 'Có bao nhiêu lịch hẹn đang chờ duyệt?' },
       { text: 'Danh sách dịch vụ', prompt: 'Phòng khám có những dịch vụ gì?' },
-      { text: 'Bác sĩ đang làm việc', prompt: 'Danh sách bác sĩ đang làm việc tại phòng khám?' }
+      { text: 'Bác sĩ đang làm việc', prompt: 'Danh sách bác sĩ đang làm việc?' }
     ]
   }
   if (role === 'Doctor') {
@@ -165,7 +157,7 @@ onMounted(async () => {
 const messages = ref([
   {
     sender: 'ai',
-    text: 'Xin chào! Tôi là Trợ lý AI của Medicare. Hãy đặt câu hỏi về sức khỏe, bác sĩ, dịch vụ hoặc hệ thống để tôi hỗ trợ nhé!',
+    text: 'Xin chào! Tôi là trợ lý AI của Medicare. Bạn muốn hỏi gì về sức khỏe, bác sĩ, dịch vụ hoặc hệ thống?',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 ])
@@ -190,10 +182,11 @@ function getUrgencyClass(urgency) {
   return 'urgency-low'
 }
 
-function redirectToBooking(specialty, serviceId) {
+function redirectToBooking(specialty, serviceId, serviceName) {
   isOpen.value = false
   const query = { autoSpecialty: specialty }
   if (serviceId) query.serviceId = serviceId
+  if (serviceName) query.serviceName = serviceName
   router.push({ path: '/patient', query })
 }
 
@@ -230,12 +223,13 @@ async function handleSend() {
   messages.value.push({
     sender: 'ai',
     text: result.reply,
-    diagnostics: result.specialty ? {
+    diagnostics: result.specialty && result.showDiagnostics ? {
       specialty: result.specialty,
       urgency: result.urgency || 'Trung bình',
       recommendedService: result.recommendedService || 'Khám tổng quát',
       serviceId: result.serviceId || undefined
     } : null,
+    showDiagnostics: result.showDiagnostics || false,
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   })
   scrollToBottom()
@@ -314,8 +308,8 @@ async function handleSend() {
   position: absolute;
   bottom: 75px;
   right: 0;
-  width: 380px;
-  height: 520px;
+  width: 400px;
+  height: 560px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
@@ -333,6 +327,7 @@ async function handleSend() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .ai-header-info {
@@ -350,6 +345,7 @@ async function handleSend() {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .ai-header-info h3 {
@@ -384,6 +380,8 @@ async function handleSend() {
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .btn-close-chat:hover {
@@ -403,7 +401,7 @@ async function handleSend() {
 .message-row {
   display: flex;
   flex-direction: column;
-  max-width: 85%;
+  max-width: 90%;
 }
 
 .msg-user {
@@ -421,6 +419,9 @@ async function handleSend() {
   border-radius: 16px;
   font-size: 0.9rem;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .msg-user .message-bubble {
@@ -443,20 +444,20 @@ async function handleSend() {
   font-weight: 600;
 }
 
-/* Diagnostics Card */
 .diagnostics-card {
-  margin-top: 12px;
+  margin-top: 10px;
   background: #f0f9ff;
   border: 1px solid #bae6fd;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .diag-header {
   background: #e0f2fe;
-  padding: 8px 12px;
-  font-size: 0.8rem;
+  padding: 6px 10px;
+  font-size: 0.75rem;
   font-weight: 800;
   color: #0369a1;
   display: flex;
@@ -466,26 +467,30 @@ async function handleSend() {
 }
 
 .diag-body {
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .diag-item {
   display: flex;
   justify-content: space-between;
-  font-size: 0.82rem;
+  align-items: center;
+  font-size: 0.8rem;
+  gap: 8px;
 }
 
 .diag-label {
   color: #64748b;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .diag-value {
   color: #0f172a;
   font-weight: 700;
+  text-align: right;
 }
 
 .text-blue {
@@ -493,12 +498,13 @@ async function handleSend() {
 }
 
 .urgency-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .urgency-low {
@@ -517,21 +523,20 @@ async function handleSend() {
 }
 
 .diag-note {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #64748b;
-  line-height: 1.4;
+  line-height: 1.3;
   border-top: 1px dashed #bae6fd;
-  padding-top: 8px;
-  margin-top: 4px;
+  padding-top: 6px;
+  margin-top: 2px;
   display: flex;
   gap: 4px;
 }
 
 .diag-actions {
-  padding: 8px 12px;
+  padding: 8px 10px;
   background: #e0f2fe;
   border-top: 1px solid #bae6fd;
-  text-align: center;
 }
 
 .btn-book-now {
@@ -555,7 +560,6 @@ async function handleSend() {
   opacity: 0.9;
 }
 
-/* Typing indicator bubble */
 .typing-bubble {
   display: flex;
   align-items: center;
@@ -574,14 +578,14 @@ async function handleSend() {
 .typing-bubble .dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-bubble .dot:nth-child(2) { animation-delay: -0.16s; }
 
-/* Input area styling */
 .ai-chat-input-area {
-  padding: 12px;
+  padding: 10px 12px;
   background: white;
   border-top: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .quick-prompts {
@@ -599,13 +603,14 @@ async function handleSend() {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 6px 12px;
-  font-size: 0.75rem;
+  padding: 5px 10px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #475569;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-quick-prompt:hover {
@@ -626,6 +631,7 @@ async function handleSend() {
   font-size: 0.85rem;
   outline: none;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 
 .ai-input:focus {
@@ -644,6 +650,7 @@ async function handleSend() {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-send-chat:hover:not(:disabled) {
@@ -655,7 +662,6 @@ async function handleSend() {
   cursor: not-allowed;
 }
 
-/* Animations */
 @keyframes tooltipFadeIn {
   from { opacity: 0; transform: translateX(10px); }
   to { opacity: 1; transform: translateX(0); }

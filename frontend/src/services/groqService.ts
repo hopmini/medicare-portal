@@ -33,6 +33,31 @@ export async function fetchDoctors(): Promise<any[]> {
   return []
 }
 
+function hasBookingIntent(query: string): boolean {
+  const q = query.toLowerCase()
+  return q.includes('đặt lịch') || q.includes('đặt khám') || q.includes('hẹn khám') ||
+    q.includes('đăng ký') || q.includes('đi khám') || q.includes('muốn khám') ||
+    q.includes('cần khám') || q.includes('tư vấn khám') || q.includes('đặt')
+}
+
+function hasSymptoms(query: string): boolean {
+  const q = query.toLowerCase()
+  return q.includes('đau') || q.includes('sốt') || q.includes('ho') || q.includes('nôn') ||
+    q.includes('mệt') || q.includes('chóng') || q.includes('buồn') || q.includes('ngứa') ||
+    q.includes('sưng') || q.includes('khó') || q.includes('rối loạn') || q.includes('triệu chứng') ||
+    q.includes('bị') && (q.includes('bụng') || q.includes('họng') || q.includes('đầu') || q.includes('răng'))
+}
+
+function extractJson(text: string): any | null {
+  const match = text.match(/\{[\s\S]*\}/)
+  if (match) {
+    try {
+      return JSON.parse(match[0])
+    } catch { /* ignore */ }
+  }
+  return null
+}
+
 function buildSystemPrompt(services: any[], doctors: any[], role: string): string {
   const serviceList = services.length > 0
     ? `Danh sách dịch vụ khám đang có:\n${services.map(s => `- ID: ${s.id}, Tên: ${s.name}, Giá: ${s.price}đ, Mô tả: ${s.description || 'Không có'}`).join('\n')}`
@@ -45,32 +70,30 @@ function buildSystemPrompt(services: any[], doctors: any[], role: string): strin
   let roleContext = ''
   switch (role) {
     case 'Admin':
-      roleContext = 'Người dùng là Quản trị viên hệ thống. Hỗ trợ các câu hỏi về tổng quan doanh thu, quản lý lịch hẹn, bệnh án, thuốc, phiếu nhập, tồn kho, hóa đơn.'
+      roleContext = 'Người dùng là Quản trị viên hệ thống.'
       break
     case 'Doctor':
-      roleContext = 'Người dùng là Bác sĩ. Hỗ trợ các câu hỏi về lịch hẹn khám, bệnh nhân, bệnh án, đơn thuốc, lịch trực.'
+      roleContext = 'Người dùng là Bác sĩ.'
       break
     case 'Receptionist':
-      roleContext = 'Người dùng là Lễ tân. Hỗ trợ các câu hỏi về danh sách lịch hẹn, trạng thái thanh toán, hóa đơn bán thuốc.'
+      roleContext = 'Người dùng là Lễ tân.'
       break
     default:
-      roleContext = 'Người dùng là Bệnh nhân. Hỗ trợ các câu hỏi về triệu chứng, bác sĩ, dịch vụ khám, lịch sử khám bệnh, đơn thuốc.'
+      roleContext = 'Người dùng là Bệnh nhân.'
   }
 
   return `Bạn là trợ lý AI của Medicare, nói tiếng Việt. ${roleContext}
-
-Bạn có thể trả lời các câu hỏi về sức khỏe, bệnh lý, thuốc men, hoặc tra cứu thông tin hệ thống.
 
 ${serviceList}
 
 ${doctorList}
 
-Khi người dùng hỏi về bác sĩ cụ thể (vd: "bác sĩ tim mạch", "bác sĩ nội"), hãy trả lời DỰA TRÊN DANH SÁCH BÁC SĨ THẬT bên trên.
-
-Khi người dùng mô tả TRIỆU CHỨNG bệnh, hãy phân tích và chọn dịch vụ PHÙ HỢP NHẤT từ danh sách trên, trả lời ở dạng JSON:
-{ "reply": "câu trả lời tư vấn bằng markdown", "serviceId": "ID của dịch vụ phù hợp nhất", "specialty": "tên chuyên khoa", "urgency": "Nhẹ / Trung bình / Khẩn cấp", "recommendedService": "tên dịch vụ đề xuất" }
-
-Khi không có triệu chứng (hỏi thăm, hỏi kiến thức, tán gẫu, hỏi về bác sĩ), trả lời text thuần đơn giản, KHÔNG cần JSON.`
+QUY TẮC XỬ LÝ:
+1. Nếu người dùng hỏi về bác sĩ hoặc dịch vụ: trả lời text thuần dựa trên danh sách thật bên trên, KHÔNG thêm JSON, KHÔNG gợi ý đặt lịch.
+2. Nếu người dùng hỏi kiến thức sức khỏe chung: trả lời text thuần tự nhiên, KHÔNG JSON, KHÔNG gợi ý đặt lịch.
+3. Nếu người dùng mô tả TRIỆU CHỨNG bệnh (đau, sốt, ho...): CHỈ trả lời MỘT JSON duy nhất, TUYỆT ĐỐI KHÔNG thêm text nào khác ngoài JSON:
+{ "reply": "câu tư vấn ngắn gọn", "serviceId": "ID dịch vụ phù hợp nhất (số)", "specialty": "tên chuyên khoa", "urgency": "Nhẹ / Trung bình / Khẩn cấp", "recommendedService": "tên dịch vụ" }
+Không giải thích, không chào hỏi, không thêm text. Chỉ JSON.`
 }
 
 export async function chatWithGroq(
@@ -113,56 +136,70 @@ export async function chatWithGroq(
 
     const data = await res.json()
     const content = data.choices?.[0]?.message?.content || ''
+    const lastMsg = messages.filter(m => m.role === 'user').pop()?.content || ''
+    const showDiag = hasBookingIntent(lastMsg) || hasSymptoms(lastMsg)
 
-    if (content.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(content)
-        const lastMsg = messages.filter(m => m.role === 'user').pop()?.content || ''
-        const hasSymp = hasSymptoms(lastMsg)
-        return {
-          reply: parsed.reply || content,
-          serviceId: hasSymp ? (parsed.serviceId || null) : null,
-          specialty: hasSymp ? (parsed.specialty || null) : null,
-          urgency: hasSymp ? (parsed.urgency || null) : null,
-          recommendedService: hasSymp ? (parsed.recommendedService || null) : null
-        }
-      } catch {
-        return { reply: content, serviceId: null, specialty: null, urgency: null, recommendedService: null }
+    const parsedJson = extractJson(content)
+    if (parsedJson && parsedJson.reply) {
+      return {
+        reply: parsedJson.reply,
+        serviceId: showDiag ? (parsedJson.serviceId || null) : null,
+        specialty: showDiag ? (parsedJson.specialty || null) : null,
+        urgency: showDiag ? (parsedJson.urgency || null) : null,
+        recommendedService: showDiag ? (parsedJson.recommendedService || null) : null,
+        showDiagnostics: showDiag
       }
     }
 
-    return { reply: content, serviceId: null, specialty: null, urgency: null, recommendedService: null }
+    return { reply: content, serviceId: null, specialty: null, urgency: null, recommendedService: null, showDiagnostics: false }
   } catch (err) {
     console.error('Groq API failed, using fallback:', err)
     return fallbackAnalysis(messages[messages.length - 1]?.content || '', services)
   }
 }
 
-function hasSymptoms(query: string) {
-  const q = query.toLowerCase()
-  return q.includes('đau') || q.includes('sốt') || q.includes('ho') || q.includes('nôn') ||
-    q.includes('mệt') || q.includes('chóng') || q.includes('buồn') || q.includes('ngứa') ||
-    q.includes('sưng') || q.includes('khó') || q.includes('rối loạn') || q.includes('triệu chứng')
-}
-
 function fallbackAnalysis(query: string, services: any[] = []) {
-  if (!hasSymptoms(query)) {
-    return { reply: 'Chào bạn! Tôi là trợ lý AI của Medicare. Bạn có thể hỏi tôi bất kỳ điều gì về sức khỏe, bệnh lý, thuốc men, hoặc đặt câu hỏi về dịch vụ của phòng khám. Tôi sẵn sàng trợ giúp! 😊', serviceId: null, specialty: null, urgency: null, recommendedService: null }
-  }
   const q = query.toLowerCase()
+  const needsBooking = hasBookingIntent(q) || hasSymptoms(q)
+
+  function findServiceId(nameHint: string): string | null {
+    if (!services || services.length === 0) return null
+    const svc = services.find((s: any) => {
+      const sn = (s.name || '').toLowerCase()
+      return sn.includes(nameHint.toLowerCase()) || nameHint.toLowerCase().includes(sn)
+    })
+    return svc ? String(svc.id) : null
+  }
+
+  if (q.includes('bác sĩ') || q.includes('ai khám') || q.includes('chuyên khoa') || q.includes('bs')) {
+    return {
+      reply: 'Chúng tôi có đội ngũ bác sĩ đa khoa và chuyên khoa giàu kinh nghiệm. Bạn muốn tìm bác sĩ theo chuyên khoa nào?',
+      serviceId: null, specialty: null, urgency: null, recommendedService: null,
+      showDiagnostics: false
+    }
+  }
+
+  if (!needsBooking) {
+    return {
+      reply: 'Chào bạn! Tôi là trợ lý AI của Medicare. Bạn có thể hỏi tôi về tình trạng sức khỏe, bác sĩ, dịch vụ khám, hoặc các thông tin khác liên quan đến phòng khám. Tôi sẵn sàng trợ giúp! 😊',
+      serviceId: null, specialty: null, urgency: null, recommendedService: null,
+      showDiagnostics: false
+    }
+  }
+
   if (q.includes('dạ dày') || q.includes('bụng') || q.includes('tiêu hóa') || q.includes('nôn') || q.includes('bao tử') || q.includes('đi ngoài') || q.includes('tiêu chảy'))
-    return { reply: 'Dựa trên các triệu chứng liên quan đến tiêu hóa...', serviceId: null, specialty: 'Khoa Tiêu Hóa', urgency: 'Trung bình - Cần đi khám sớm', recommendedService: 'Khám Tiêu hóa & Siêu âm bụng tổng quát' }
+    return { reply: 'Dựa trên các triệu chứng liên quan đến tiêu hóa, tôi đề nghị bạn nên khám chuyên khoa Tiêu Hóa để được thăm khám cụ thể.', serviceId: findServiceId('Tiêu hóa'), specialty: 'Khoa Tiêu Hóa', urgency: 'Trung bình - Cần đi khám sớm', recommendedService: 'Khám Tiêu hóa & Siêu âm bụng tổng quát', showDiagnostics: true }
   if (q.includes('ho') || q.includes('sốt') || q.includes('họng') || q.includes('cúm') || q.includes('khó thở'))
-    return { reply: 'Bạn đang có các biểu hiện của nhiễm trùng hô hấp...', serviceId: null, specialty: 'Khoa Nội Tổng Quát', urgency: q.includes('khó thở') ? 'Khẩn cấp - Cần khám ngay' : 'Trung bình - Cần đi khám', recommendedService: 'Khám Nội tổng quát & Chụp X-Quang Phổi thẳng' }
+    return { reply: 'Bạn đang có các biểu hiện của nhiễm trùng hô hấp.', serviceId: findServiceId('Nội tổng quát'), specialty: 'Khoa Nội Tổng Quát', urgency: q.includes('khó thở') ? 'Khẩn cấp - Cần khám ngay' : 'Trung bình - Cần đi khám', recommendedService: 'Khám Nội tổng quát & Chụp X-Quang Phổi thẳng', showDiagnostics: true }
   if (q.includes('tim') || q.includes('ngực') || q.includes('huyết áp'))
-    return { reply: 'Triệu chứng liên quan tim mạch...', serviceId: null, specialty: 'Khoa Tim Mạch', urgency: 'Khẩn cấp - Cần kiểm tra ngay', recommendedService: 'Khám Tim Mạch & Đo ECG' }
+    return { reply: 'Triệu chứng liên quan tim mạch cần được kiểm tra sớm.', serviceId: findServiceId('Tim mạch'), specialty: 'Khoa Tim Mạch', urgency: 'Khẩn cấp - Cần kiểm tra ngay', recommendedService: 'Khám Tim Mạch & Đo ECG', showDiagnostics: true }
   if (q.includes('răng') || q.includes('nướu') || q.includes('sâu') || q.includes('buốt'))
-    return { reply: 'Các vấn đề răng nướu...', serviceId: null, specialty: 'Khoa Răng Hàm Mặt', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám răng miệng & Chụp X-Quang' }
+    return { reply: 'Các vấn đề răng nướu nên được thăm khám nha khoa.', serviceId: findServiceId('Răng'), specialty: 'Khoa Răng Hàm Mặt', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám răng miệng & Chụp X-Quang', showDiagnostics: true }
   if (q.includes('mắt') || q.includes('mờ') || q.includes('đỏ mắt') || q.includes('nhức mắt'))
-    return { reply: 'Triệu chứng về mắt...', serviceId: null, specialty: 'Khoa Mắt', urgency: 'Nhẹ - Cần đi khám', recommendedService: 'Đo thị lực & Khám đáy mắt' }
+    return { reply: 'Triệu chứng về mắt cần được kiểm tra.', serviceId: findServiceId('Mắt'), specialty: 'Khoa Mắt', urgency: 'Nhẹ - Cần đi khám', recommendedService: 'Đo thị lực & Khám đáy mắt', showDiagnostics: true }
   if (q.includes('tai') || q.includes('mũi') || q.includes('ù tai') || q.includes('xoang'))
-    return { reply: 'Triệu chứng tai mũi họng...', serviceId: null, specialty: 'Khoa Tai Mũi Họng', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám Tai Mũi Họng & Nội soi' }
+    return { reply: 'Triệu chứng tai mũi họng nên được thăm khám.', serviceId: findServiceId('Tai Mũi Họng'), specialty: 'Khoa Tai Mũi Họng', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám Tai Mũi Họng & Nội soi', showDiagnostics: true }
   if (q.includes('trẻ') || q.includes('bé') || q.includes('con tôi') || q.includes('nhi'))
-    return { reply: 'Triệu chứng của trẻ nhỏ...', serviceId: null, specialty: 'Khoa Nhi', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám Nhi tổng quát' }
-  return { reply: 'Đã tiếp nhận triệu chứng...', serviceId: null, specialty: 'Khoa Nội Tổng Quát', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám sức khỏe tổng quát' }
+    return { reply: 'Triệu chứng của trẻ nhỏ cần được thăm khám nhi khoa.', serviceId: findServiceId('Nhi'), specialty: 'Khoa Nhi', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám Nhi tổng quát', showDiagnostics: true }
+  return { reply: 'Đã tiếp nhận thông tin của bạn. Bạn có muốn đặt lịch khám không?', serviceId: findServiceId('Nội tổng quát'), specialty: 'Khoa Nội Tổng Quát', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám sức khỏe tổng quát', showDiagnostics: true }
 }

@@ -576,7 +576,7 @@
 </template>
 
 <script setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import api from '@/services/api'
   import { appointmentService } from '@/services/appointmentService'
@@ -1113,6 +1113,24 @@
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
   }
 
+  function trySelectServiceFromQuery() {
+    const serviceId = route.query?.serviceId
+    const serviceName = route.query?.serviceName
+    if (!serviceId && !serviceName) return
+    if (medicalServices.value.length === 0) return
+    let svc = null
+    if (serviceId) svc = medicalServices.value.find(s => String(s.id) === String(serviceId))
+    if (!svc && serviceName) svc = medicalServices.value.find(s => s.name.toLowerCase().includes(serviceName.toLowerCase()))
+    if (svc && !selectedServices.value.some(s => s.id === svc.id)) {
+      selectedServices.value.push(svc)
+      const subOpts = getSubOptions(svc)
+      if (subOpts.length > 0) selectedSubOptions.value[svc.id] = subOpts[0]
+    }
+  }
+
+  watch(() => route.query, trySelectServiceFromQuery, { immediate: true })
+  watch(medicalServices, trySelectServiceFromQuery)
+
   onMounted(() => {
     fetchServices()
     doctorStore.fetchDoctors()
@@ -1129,19 +1147,6 @@
       patientForm.value.gender = u.gender || 'Nam'
       patientForm.value.insurance = u.insurance || ''
       patientForm.value.history = u.history || ''
-    }
-    // Auto-select service from AI chatbot recommendation
-    const serviceId = route.query.serviceId
-    if (serviceId) {
-      const timer = setInterval(() => {
-        if (medicalServices.value.length > 0) {
-          const svc = medicalServices.value.find(s => String(s.id) === serviceId)
-          if (svc && !selectedServices.value.some(s => s.id === svc.id)) {
-            toggleService(svc)
-          }
-          clearInterval(timer)
-        }
-      }, 200)
     }
   })
 </script>
