@@ -151,22 +151,35 @@ export const medicalRecordService = {
     fullName: string
     dateOfBirth: string
     gender: string
-    medicalHistory: string
-    allergies: string
     bloodGroup?: string
+    phone?: string
+    email?: string
+    address?: string
+    identityCard?: string
+    insuranceNumber?: string
+    occupation?: string
+    ethnicity?: string
+    nationality?: string
+    emergencyContact?: string
+    emergencyPhone?: string
+    medicalHistory?: string
+    allergies?: string
   }): Promise<{ success: boolean; message?: string }> {
     try {
       const patientGuid = mapUserIdToGuid(userId)
       const response = await medicalApi.put(`/Patients/${patientGuid}`, data)
       return {
         success: true,
-        message: response.data?.message
+        message: response.data?.message || 'Cập nhật hồ sơ thành công.'
       }
     } catch (error: any) {
       console.error('Failed to update patient profile:', error)
+      const data = error.response?.data
+      const validationErrors = data?.errors ? Object.entries(data.errors).map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`).join('; ') : ''
+      const msg = validationErrors || data?.message || data?.title || error.message || 'Không thể cập nhật hồ sơ sức khỏe.'
       return {
         success: false,
-        message: error.response?.data || 'Không thể cập nhật hồ sơ sức khỏe.'
+        message: typeof msg === 'string' ? msg : JSON.stringify(msg)
       }
     }
   },

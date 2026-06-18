@@ -2356,6 +2356,10 @@
       alert('Vui lòng điền họ và tên!')
       return
     }
+    if (!editPatientForm.value.dateOfBirth) {
+      alert('Vui lòng điền ngày sinh!')
+      return
+    }
     loading.value = true
     try {
       const res = await medicalRecordService.updatePatientProfile(selectedPatient.value.id, {
