@@ -93,6 +93,11 @@ body {
   opacity: 0;
 }
 
+/* Ensure prices (number + đ) stay on one line */
+.price-nowrap {
+  white-space: nowrap;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

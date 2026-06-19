@@ -22,7 +22,7 @@
                   <div>
                     <div class="metric-title">Hóa đơn hôm nay</div>
                     <div class="metric-value" style="color: #3b82f6;">{{ todayBillsCount }}</div>
-                    <div class="metric-sub">Tổng tiền: {{ todayBillsTotal.toLocaleString() }} đ</div>
+                    <div class="metric-sub price-nowrap">Tổng tiền: {{ todayBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -36,7 +36,7 @@
                   <div>
                     <div class="metric-title">Chờ thanh toán</div>
                     <div class="metric-value" style="color: #f59e0b;">{{ pendingBillsCount }}</div>
-                    <div class="metric-sub">Tổng tiền: {{ pendingBillsTotal.toLocaleString() }} đ</div>
+                    <div class="metric-sub price-nowrap">Tổng tiền: {{ pendingBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -50,7 +50,7 @@
                   <div>
                     <div class="metric-title">Đã thanh toán</div>
                     <div class="metric-value" style="color: #10b981;">{{ paidBillsCount }}</div>
-                    <div class="metric-sub">Tổng tiền: {{ paidBillsTotal.toLocaleString() }} đ</div>
+                    <div class="metric-sub price-nowrap">Tổng tiền: {{ paidBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -64,7 +64,7 @@
                   <div>
                     <div class="metric-title">Đã hủy</div>
                     <div class="metric-value" style="color: #ef4444;">{{ cancelledBillsCount }}</div>
-                    <div class="metric-sub">Tổng tiền: {{ cancelledBillsTotal.toLocaleString() }} đ</div>
+                    <div class="metric-sub price-nowrap">Tổng tiền: {{ cancelledBillsTotal.toLocaleString() }} đ</div>
                   </div>
                 </div>
               </a-card>
@@ -151,7 +151,7 @@
                   </div>
                 </template>
                 <template v-else-if="column.key === 'total'">
-                  <span style="font-weight: 700; color: #1e293b;">{{ record.total.toLocaleString() }} đ</span>
+                  <span class="price-nowrap" style="font-weight: 700; color: #1e293b;">{{ record.total.toLocaleString() }} đ</span>
                 </template>
                 <template v-else-if="column.key === 'payStatus'">
                   <a-tag v-if="record.payStatus === 'paid'" color="success" style="font-weight: 700; border-radius: 12px; padding: 2px 10px;">Đã thanh toán</a-tag>
@@ -271,7 +271,7 @@
                   <a-row :gutter="8" align="middle">
                     <a-col :span="6">
                       <div class="total-label">Tổng tiền thuốc</div>
-                      <div class="total-value">{{ rxSubtotal.toLocaleString() }} đ</div>
+                      <div class="total-value price-nowrap">{{ rxSubtotal.toLocaleString() }} đ</div>
                     </a-col>
                     <a-col :span="6">
                       <div class="total-label">Chiết khấu (%)</div>
@@ -288,7 +288,7 @@
                   </a-row>
                   <div class="grand-total">
                     <span>Tổng thanh toán</span>
-                    <span class="grand-total-value" style="color: #10b981;">{{ rxGrandTotal.toLocaleString() }} đ</span>
+                    <span class="grand-total-value price-nowrap" style="color: #10b981;">{{ rxGrandTotal.toLocaleString() }} đ</span>
                   </div>
                 </div>
 
@@ -377,7 +377,7 @@
                   <a-row :gutter="8" align="middle">
                     <a-col :span="6">
                       <div class="total-label">Tổng tiền thuốc</div>
-                      <div class="total-value">{{ otcSubtotal.toLocaleString() }} đ</div>
+                      <div class="total-value price-nowrap">{{ otcSubtotal.toLocaleString() }} đ</div>
                     </a-col>
                     <a-col :span="6">
                       <div class="total-label">Chiết khấu (%)</div>
@@ -394,7 +394,7 @@
                   </a-row>
                   <div class="grand-total">
                     <span>Tổng thanh toán</span>
-                    <span class="grand-total-value" style="color: #f59e0b;">{{ otcGrandTotal.toLocaleString() }} đ</span>
+                    <span class="grand-total-value price-nowrap" style="color: #f59e0b;">{{ otcGrandTotal.toLocaleString() }} đ</span>
                   </div>
                 </div>
 
@@ -507,7 +507,7 @@
                   <a-row :gutter="8" align="middle">
                     <a-col :span="6">
                       <div class="total-label">Tổng tiền thuốc</div>
-                      <div class="total-value">{{ comboSubtotal.toLocaleString() }} đ</div>
+                      <div class="total-value price-nowrap">{{ comboSubtotal.toLocaleString() }} đ</div>
                     </a-col>
                     <a-col :span="6">
                       <div class="total-label">Chiết khấu (%)</div>
@@ -524,7 +524,7 @@
                   </a-row>
                   <div class="grand-total">
                     <span>Tổng thanh toán</span>
-                    <span class="grand-total-value" style="color: #8b5cf6;">{{ comboGrandTotal.toLocaleString() }} đ</span>
+                    <span class="grand-total-value price-nowrap" style="color: #8b5cf6;">{{ comboGrandTotal.toLocaleString() }} đ</span>
                   </div>
                 </div>
 
@@ -634,8 +634,8 @@
       >
         <template #bodyCell="{ text, record, column, index }">
           <template v-if="column.key === 'index'">{{ index + 1 }}</template>
-          <template v-else-if="column.key === 'price'">{{ record.price?.toLocaleString() }} đ</template>
-          <template v-else-if="column.key === 'total'">{{ record.total?.toLocaleString() }} đ</template>
+          <template v-else-if="column.key === 'price'"><span class="price-nowrap">{{ record.price?.toLocaleString() }} đ</span></template>
+          <template v-else-if="column.key === 'total'"><span class="price-nowrap">{{ record.total?.toLocaleString() }} đ</span></template>
         </template>
       </a-table>
 
@@ -643,24 +643,24 @@
       <div style="margin-top: 20px; background: linear-gradient(135deg, #f0f7ff, #f8fafc); border-radius: 10px; padding: 16px 20px; border: 1px solid #e2e8f0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
           <span style="color: #64748b;">Tổng tiền thuốc:</span>
-          <span style="font-weight: 600;">{{ (selectedBillDetails.subtotal ?? selectedBillDetails.total)?.toLocaleString() }} đ</span>
+          <span class="price-nowrap" style="font-weight: 600;">{{ (selectedBillDetails.subtotal ?? selectedBillDetails.total)?.toLocaleString() }} đ</span>
         </div>
         <div v-if="selectedBillDetails.discountPct" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
           <span style="color: #64748b;">Chiết khấu ({{ selectedBillDetails.discountPct }}%):</span>
-          <span style="font-weight: 600; color: #ef4444;">-{{ Math.round((selectedBillDetails.subtotal ?? selectedBillDetails.total) * selectedBillDetails.discountPct / 100)?.toLocaleString() }} đ</span>
+          <span class="price-nowrap" style="font-weight: 600; color: #ef4444;">-{{ Math.round((selectedBillDetails.subtotal ?? selectedBillDetails.total) * selectedBillDetails.discountPct / 100)?.toLocaleString() }} đ</span>
         </div>
         <div v-if="selectedBillDetails.discountAmt" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
           <span style="color: #64748b;">Giảm giá trực tiếp:</span>
-          <span style="font-weight: 600; color: #ef4444;">-{{ selectedBillDetails.discountAmt?.toLocaleString() }} đ</span>
+          <span class="price-nowrap" style="font-weight: 600; color: #ef4444;">-{{ selectedBillDetails.discountAmt?.toLocaleString() }} đ</span>
         </div>
         <div v-if="selectedBillDetails.vatPct" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
           <span style="color: #64748b;">VAT ({{ selectedBillDetails.vatPct }}%):</span>
-          <span style="font-weight: 600; color: #f59e0b;">+{{ Math.round(selectedBillDetails.total * selectedBillDetails.vatPct / 100)?.toLocaleString() }} đ</span>
+          <span class="price-nowrap" style="font-weight: 600; color: #f59e0b;">+{{ Math.round(selectedBillDetails.total * selectedBillDetails.vatPct / 100)?.toLocaleString() }} đ</span>
         </div>
         <a-divider style="margin: 10px 0;" />
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 1rem; font-weight: 700; color: #0f172a;">TỔNG THANH TOÁN:</span>
-          <span style="font-size: 1.3rem; font-weight: 800; color: #10b981;">{{ selectedBillDetails.total?.toLocaleString() }} đ</span>
+          <span class="price-nowrap" style="font-size: 1.3rem; font-weight: 800; color: #10b981;">{{ selectedBillDetails.total?.toLocaleString() }} đ</span>
         </div>
       </div>
     </div>

@@ -109,8 +109,11 @@
   </nav>
 
   <!-- Notification Bell Button (Placed OUTSIDE the navbar to avoid backdrop-filter constraints) -->
-  <div v-if="authStore.isAuthenticated.value" class="notification-wrapper">
-    <button class="notification-btn" @click="showNotifDropdown = !showNotifDropdown; toastVisible = false" title="Thông báo">
+  <div v-if="authStore.isAuthenticated.value" class="notification-wrapper" :style="notifStyle"
+    @mousedown.prevent="onDragStart"
+    @touchstart.prevent="onTouchStart">
+
+    <button class="notification-btn" @click.stop="toggleNotif" title="Thông báo">
       <i class="fas fa-bell" />
       <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
     </button>
@@ -141,14 +144,11 @@
           <i class="fas fa-bell-slash" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: #cbd5e1;" />
           Không có thông báo mới
         </div>
-        <div 
-          v-else 
-          v-for="notif in notifications" 
-          :key="notif.id" 
-          class="notif-item" 
-          :class="{ 'notif-item--unread': notif.unread }"
-          @click="readNotif(notif)"
-        >
+        <template v-for="notif in notifications" :key="notif.id">
+          <div class="notif-item" 
+            :class="{ 'notif-item--unread': notif.unread }"
+            @click="readNotif(notif)"
+          >
           <div class="notif-item__icon" :class="notif.type || 'info'">
             <i class="fas" :class="getNotifIcon(notif.type)" />
           </div>
@@ -157,13 +157,14 @@
             <p>{{ notif.message }}</p>
             <small>{{ notif.time }}</small>
           </div>
-        </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
@@ -406,6 +407,109 @@
     if (wrapper && !wrapper.contains(e.target)) {
       showNotifDropdown.value = false
     }
+  }
+
+  // Draggable notification FAB
+  const STORAGE_KEY = 'medicare_notif_pos'
+  const defaultPos = { top: 100, right: 30 }
+  const notifPos = ref(loadPos())
+  const notifStyle = computed(() => {
+    const p = notifPos.value
+    const s: Record<string, string> = {}
+    if (p.top != null) s.top = p.top + 'px'
+    if (p.bottom != null) s.bottom = p.bottom + 'px'
+    if (p.left != null) s.left = p.left + 'px'
+    if (p.right != null) s.right = p.right + 'px'
+    return s
+  })
+
+  function loadPos () {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return { ...defaultPos }
+  }
+  function savePos () {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifPos.value))
+  }
+
+  function toggleNotif () {
+    if (wasDragged) { wasDragged = false; return }
+    showNotifDropdown.value = !showNotifDropdown.value
+    toastVisible.value = false
+  }
+
+  let dragStartX = 0, dragStartY = 0
+  let dragOrigPos = { ...defaultPos }
+  let wasDragged = false
+
+  function onDragStart (e: MouseEvent) {
+    dragStartX = e.clientX
+    dragStartY = e.clientY
+    wasDragged = false
+    dragOrigPos = { ...notifPos.value }
+    window.addEventListener('mousemove', onDragMove)
+    window.addEventListener('mouseup', onDragEnd)
+  }
+  function onTouchStart (e: TouchEvent) {
+    const t = e.touches[0]
+    dragStartX = t.clientX
+    dragStartY = t.clientY
+    wasDragged = false
+    dragOrigPos = { ...notifPos.value }
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', onTouchEnd, { passive: false })
+  }
+  function onDragMove (e: MouseEvent) {
+    if (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5) wasDragged = true
+    updatePos(e.clientX, e.clientY)
+  }
+  function onTouchMove (e: TouchEvent) {
+    e.preventDefault()
+    const t = e.touches[0]
+    if (Math.abs(t.clientX - dragStartX) > 5 || Math.abs(t.clientY - dragStartY) > 5) wasDragged = true
+    updatePos(t.clientX, t.clientY)
+  }
+  function updatePos (cx: number, cy: number) {
+    const dx = cx - dragStartX
+    const dy = cy - dragStartY
+    const pos = notifPos.value
+    if (pos.right != null) pos.right = Math.max(10, dragOrigPos.right! - dx)
+    if (pos.left != null) pos.left = Math.max(10, dragOrigPos.left! + dx)
+    if (pos.top != null) pos.top = Math.max(10, dragOrigPos.top! + dy)
+    if (pos.bottom != null) pos.bottom = Math.max(10, dragOrigPos.bottom! - dy)
+  }
+  function snapToEdge () {
+    const pos = notifPos.value
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const btnW = 54, btnH = 54
+    const cx = pos.left != null ? pos.left + btnW / 2 : vw - (pos.right ?? 30) - btnW / 2
+    const cy = pos.top != null ? pos.top + btnH / 2 : vh - (pos.bottom ?? 100) - btnH / 2
+
+    // Snap: prefer right/left edges, keep vertical
+    if (cx < vw / 2) {
+      pos.left = Math.max(10, Math.min(vw - btnW - 10, cx - btnW / 2))
+      pos.right = undefined
+    } else {
+      pos.right = Math.max(10, Math.min(vw - btnW - 10, vw - cx - btnW / 2))
+      pos.left = undefined
+    }
+    pos.top = Math.max(10, Math.min(vh - btnH - 10, cy - btnH / 2))
+    pos.bottom = undefined
+    notifPos.value = pos
+    savePos()
+  }
+  function onDragEnd () {
+    window.removeEventListener('mousemove', onDragMove)
+    window.removeEventListener('mouseup', onDragEnd)
+    snapToEdge()
+  }
+  function onTouchEnd () {
+    window.removeEventListener('touchmove', onTouchMove)
+    window.removeEventListener('touchend', onTouchEnd)
+    snapToEdge()
   }
 
   onMounted(() => {

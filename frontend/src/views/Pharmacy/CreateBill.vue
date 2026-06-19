@@ -33,11 +33,11 @@
                 </a-select>
                 <a-button 
                   class="details-btn"
-                  style="border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; height: 40px;"
+                  style="border-radius: 8px; display: flex; align-items: center; justify-content: center; height: 40px; width: 40px;"
                   @click="viewPresDetails"
                   :disabled="!selectedPresCode"
                 >
-                  <i class="far fa-eye" /> Xem chi tiết đơn
+                  <i class="far fa-eye" />
                 </a-button>
               </div>
             </a-card>
@@ -96,10 +96,10 @@
                       </div>
                     </template>
                     <template v-else-if="column.key === 'price'">
-                      <span>{{ record.price.toLocaleString() }} đ</span>
+                      <span class="price-nowrap">{{ record.price.toLocaleString() }} đ</span>
                     </template>
                     <template v-else-if="column.key === 'total'">
-                      <span style="font-weight: 700; color: #ef4444;">
+                      <span class="price-nowrap" style="font-weight: 700; color: #ef4444;">
                         {{ (record.price * record.qtyDispensed).toLocaleString() }} đ
                       </span>
                     </template>
@@ -125,7 +125,7 @@
                   <div class="summary-stats-box">
                     <div class="summary-item border-r">
                       <span class="sl">Tổng tiền thuốc</span>
-                      <strong class="sv blue-txt">{{ rawMedsTotal.toLocaleString() }} đ</strong>
+                      <strong class="sv blue-txt price-nowrap">{{ rawMedsTotal.toLocaleString() }} đ</strong>
                     </div>
                     
                     <div class="summary-item border-r">
@@ -165,7 +165,7 @@
 
                     <div class="summary-item font-grand">
                       <span class="sl">Tổng thanh toán</span>
-                      <strong class="sv green-txt">{{ grandTotal.toLocaleString() }} đ</strong>
+                      <strong class="sv green-txt price-nowrap">{{ grandTotal.toLocaleString() }} đ</strong>
                     </div>
                   </div>
                 </div>
@@ -272,7 +272,7 @@
                   <div class="info-display-grid">
                     <div class="info-item"><span class="lbl">Bác sĩ khám</span><span class="val">{{ generalExamInfo.doctor }}</span></div>
                     <div class="info-item"><span class="lbl">Dịch vụ khám</span><span class="val">{{ generalExamInfo.service }}</span></div>
-                    <div class="info-item"><span class="lbl">Tiền khám</span><span class="val blue-txt font-semibold">{{ generalExamInfo.fee.toLocaleString() }} đ</span></div>
+                    <div class="info-item"><span class="lbl">Tiền khám</span><span class="val blue-txt font-semibold price-nowrap">{{ generalExamInfo.fee.toLocaleString() }} đ</span></div>
                     <div class="info-item"><span class="lbl">Ngày khám</span><span class="val">{{ generalExamInfo.date }}</span></div>
                     <div class="info-item" style="grid-column: span 2;"><span class="lbl">Mã lịch hẹn</span><span class="val code-txt">{{ generalExamInfo.apptCode }}</span></div>
                   </div>
@@ -312,10 +312,10 @@
                     </div>
                   </template>
                   <template v-else-if="column.key === 'price'">
-                    <span>{{ record.price.toLocaleString() }} đ</span>
+                    <span class="price-nowrap">{{ record.price.toLocaleString() }} đ</span>
                   </template>
                   <template v-else-if="column.key === 'total'">
-                    <span style="font-weight: 700; color: #2563eb;">
+                    <span class="price-nowrap" style="font-weight: 700; color: #2563eb;">
                       {{ (record.price * (record.qty || 1)).toLocaleString() }} đ
                     </span>
                   </template>
@@ -344,7 +344,7 @@
                     <span class="circle-icon blue"><i class="fas fa-stethoscope" /></span>
                     <div class="meta">
                       <span class="label">Tiền khám</span>
-                      <strong class="value">{{ generalExamFee.toLocaleString() }} đ</strong>
+                      <strong class="value price-nowrap">{{ generalExamFee.toLocaleString() }} đ</strong>
                     </div>
                   </div>
 
@@ -352,7 +352,7 @@
                     <span class="circle-icon green"><i class="fas fa-shopping-bag" /></span>
                     <div class="meta">
                       <span class="label">Tổng tiền thuốc</span>
-                      <strong class="value">{{ generalMedFee.toLocaleString() }} đ</strong>
+                      <strong class="value price-nowrap">{{ generalMedFee.toLocaleString() }} đ</strong>
                     </div>
                   </div>
                 </div>
@@ -374,12 +374,12 @@
 
                   <div class="summary-input-cell">
                     <span class="label">VAT (10%) <i class="far fa-question-circle" /></span>
-                    <strong class="value orange-txt">{{ generalVatAmount.toLocaleString() }} đ</strong>
+                    <strong class="value orange-txt price-nowrap">{{ generalVatAmount.toLocaleString() }} đ</strong>
                   </div>
 
                   <div class="grand-total-display-cell">
                     <span class="label">Tổng thanh toán</span>
-                    <strong class="value green-txt">{{ generalGrandTotal.toLocaleString() }} đ</strong>
+                    <strong class="value green-txt price-nowrap">{{ generalGrandTotal.toLocaleString() }} đ</strong>
                   </div>
                 </div>
               </div>

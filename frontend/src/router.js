@@ -14,7 +14,6 @@ import DoctorsView from './views/Appointment/DoctorsView.vue'
 import ContactView from './views/Appointment/ContactView.vue'
 import GuideView from './views/Appointment/GuideView.vue'
 import ProfileView from './views/ProfileView.vue'
-import MyMedicalRecordsView from './views/MedicalRecord/MyMedicalRecordsView.vue'
 import MedicalRecordsListView from './views/MedicalRecord/MedicalRecordsListView.vue'
 // Pharmacy components
 import MedicineManagement from './views/Pharmacy/MedicineManagement.vue'
@@ -81,12 +80,7 @@ const routes = [
     component: MyAppointmentsView,
     meta: { requiresAuth: true, roles: ['Patient'] }
   },
-  {
-    path: '/my-medical-records',
-    name: 'MyMedicalRecords',
-    component: MyMedicalRecordsView,
-    meta: { requiresAuth: true, roles: ['Patient'] }
-  },
+  { path: '/my-medical-records', redirect: '/medical-records' },
   {
     path: '/services',
     name: 'Services',

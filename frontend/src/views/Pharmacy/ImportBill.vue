@@ -129,16 +129,16 @@
                   <span>{{ dayjs(record.date).isValid() ? dayjs(record.date).format('DD/MM/YYYY') : record.date }}</span>
                 </template>
                 <template v-else-if="column.key === 'goodsTotal'">
-                  <span>{{ record.goodsTotal.toLocaleString() }} đ</span>
+                  <span class="price-nowrap">{{ record.goodsTotal.toLocaleString() }} đ</span>
                 </template>
                 <template v-else-if="column.key === 'discountTotal'">
-                  <span>{{ record.discountTotal.toLocaleString() }} đ</span>
+                  <span class="price-nowrap">{{ record.discountTotal.toLocaleString() }} đ</span>
                 </template>
                 <template v-else-if="column.key === 'vatTotal'">
-                  <span>{{ record.vatTotal.toLocaleString() }} đ</span>
+                  <span class="price-nowrap">{{ record.vatTotal.toLocaleString() }} đ</span>
                 </template>
                 <template v-else-if="column.key === 'finalTotal'">
-                  <span style="font-weight: 700; color: #1e293b;">{{ record.finalTotal.toLocaleString() }} đ</span>
+                  <span class="price-nowrap" style="font-weight: 700; color: #1e293b;">{{ record.finalTotal.toLocaleString() }} đ</span>
                 </template>
                 <template v-else-if="column.key === 'status'">
                   <a-tag v-if="record.status === 'completed'" color="success" style="font-weight: 700; border-radius: 4px; padding: 2px 8px;">Đã hoàn tất</a-tag>
@@ -439,18 +439,18 @@
             {{ index + 1 }}
           </template>
           <template v-else-if="column.key === 'price'">
-            {{ record.price.toLocaleString() }} đ
+            <span class="price-nowrap">{{ record.price.toLocaleString() }} đ</span>
           </template>
           <template v-else-if="column.key === 'total'">
-            {{ (record.price * record.qty).toLocaleString() }} đ
+            <span class="price-nowrap">{{ (record.price * record.qty).toLocaleString() }} đ</span>
           </template>
         </template>
       </a-table>
       <div style="margin-top: 16px; text-align: right;">
-        <p><strong>Tổng tiền hàng:</strong> {{ selectedBillDetail.goodsTotal.toLocaleString() }} đ</p>
-        <p><strong>Chiết khấu:</strong> {{ selectedBillDetail.discountTotal.toLocaleString() }} đ</p>
-        <p><strong>VAT:</strong> {{ selectedBillDetail.vatTotal.toLocaleString() }} đ</p>
-        <p style="font-size: 1.15rem; color: #0047AB;"><strong>Tổng thanh toán:</strong> {{ selectedBillDetail.finalTotal.toLocaleString() }} đ</p>
+        <p class="price-nowrap"><strong>Tổng tiền hàng:</strong> {{ selectedBillDetail.goodsTotal.toLocaleString() }} đ</p>
+        <p class="price-nowrap"><strong>Chiết khấu:</strong> {{ selectedBillDetail.discountTotal.toLocaleString() }} đ</p>
+        <p class="price-nowrap"><strong>VAT:</strong> {{ selectedBillDetail.vatTotal.toLocaleString() }} đ</p>
+        <p class="price-nowrap" style="font-size: 1.15rem; color: #0047AB;"><strong>Tổng thanh toán:</strong> {{ selectedBillDetail.finalTotal.toLocaleString() }} đ</p>
       </div>
     </div>
   </a-modal>

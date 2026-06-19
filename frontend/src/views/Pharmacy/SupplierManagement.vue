@@ -54,6 +54,7 @@
         :pagination="{ pageSize: 8, showSizeChanger: true, locale: { items_per_page: '/ trang' } }" 
         size="middle"
         class="custom-table"
+        :scroll="{ x: 'max-content' }"
       >
         <template #bodyCell="{ text, record, column }">
           <!-- Name Column with truncation -->
@@ -219,6 +220,7 @@
             :pagination="{ pageSize: 8, showSizeChanger: true, locale: { items_per_page: '/ trang' } }" 
             size="middle"
             class="custom-table"
+            :scroll="{ x: 'max-content' }"
           >
             <template #bodyCell="{ text, record, column }">
               <!-- Name Column with truncation -->

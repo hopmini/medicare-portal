@@ -4,13 +4,13 @@
     <aside class="sidebar">
       <div class="sidebar__header">
         <div class="logo" style="cursor: pointer;" @click="$router.push('/')">
-          <div class="logo__icon">
-            <svg fill="none" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="height: 32px; width: 32px;">
-              <rect fill="#0047AB" height="32" rx="8" width="32" />
-              <path d="M16 6v20M6 16h20" stroke="white" stroke-linecap="round" stroke-width="4" />
+          <div class="logo__icon" style="background: rgba(255,255,255,0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <svg fill="none" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" style="height: 34px; width: 34px;">
+              <rect fill="#ffffff" height="34" rx="9" width="34" />
+              <path d="M17 6v22M6 17h22" stroke="#0047AB" stroke-linecap="round" stroke-width="4.2" />
             </svg>
           </div>
-          <div class="logo__text" style="font-weight: 800; font-size: 1.2rem; margin-left: 8px;">
+          <div class="logo__text" style="font-weight: 800; font-size: 1.2rem; margin-left: 10px;">
             Medicare<span style="color: #E53935;">.</span>
           </div>
         </div>
@@ -2166,7 +2166,23 @@
 
   const getPatientInfo = (patientId) => {
     if (!patientId) return null
-    return allPatientsList.value.find(p => p.id === patientId) || null
+    // 1. Tìm chính xác theo ID (từ MedicalRecordService hoặc Gateway)
+    let found = allPatientsList.value.find(p => p.id === patientId)
+    if (found) return found
+    // 2. Tách numericId từ GUID (00000000-0000-0000-0000-000000000004 → 4)
+    const numericId = parseInt(String(patientId).split('-').pop() || '0', 10)
+    if (numericId) {
+      // Tìm theo gatewayPatientId (MedicalRecordService)
+      found = allPatientsList.value.find(p => p.gatewayPatientId === numericId)
+      if (found) return found
+      // Tìm theo id số nguyên (Gateway users)
+      found = allPatientsList.value.find(p => p.id === numericId)
+      if (found) return found
+      // Tìm theo id dạng chuỗi số
+      found = allPatientsList.value.find(p => String(p.id) === String(numericId))
+      if (found) return found
+    }
+    return null
   }
 
   const isEditingRecord = ref(false)
@@ -2577,17 +2593,49 @@
         console.error('Lỗi khi tải toàn bộ bệnh án:', errRecord)
       }
 
+      // Nguồn chính: MedicalRecordService (chứa GUID + thông tin lâm sàng đầy đủ)
       try {
-        const res = await api.get('/Users/patients')
-        allPatientsList.value = res.data || []
-      } catch (errPatient) {
-        console.error('Lỗi khi tải danh sách bệnh nhân từ gateway:', errPatient)
-        try {
-          const patientsData = await medicalRecordService.getAllPatients()
-          allPatientsList.value = patientsData || []
-        } catch (errRecordPatient) {
-          console.error('Lỗi khi tải danh sách bệnh nhân từ medical service:', errRecordPatient)
+        const patientsData = await medicalRecordService.getAllPatients()
+        allPatientsList.value = patientsData || []
+      } catch (errMedical) {
+        console.error('Lỗi khi tải danh sách bệnh nhân từ MedicalRecordService:', errMedical)
+      }
+
+      // Bổ sung: Lấy thông tin tài khoản từ Gateway (username, email) và merge vào
+      try {
+        const gatewayRes = await api.get('/Users/patients')
+        const gatewayUsers = gatewayRes.data || []
+        // Merge: nếu patient từ MedicalRecordService có gatewayPatientId thì bổ sung username/email
+        for (const patient of allPatientsList.value) {
+          const gwUser = gatewayUsers.find(u => u.id === patient.gatewayPatientId)
+          if (gwUser) {
+            patient.username = gwUser.username || patient.username
+            patient.email = gwUser.email || patient.email
+            // Nếu tên trong MedicalDB là mặc định, lấy từ Gateway
+            if (!patient.fullName || patient.fullName === 'Bệnh nhân Medicare') {
+              patient.fullName = gwUser.fullName || patient.fullName
+            }
+          }
         }
+        // Thêm các bệnh nhân từ Gateway mà chưa có hồ sơ trong MedicalRecordService
+        for (const gwUser of gatewayUsers) {
+          const exists = allPatientsList.value.find(p => p.gatewayPatientId === gwUser.id)
+          if (!exists) {
+            allPatientsList.value.push({
+              id: `00000000-0000-0000-0000-${String(gwUser.id).padStart(12, '0')}`,
+              gatewayPatientId: gwUser.id,
+              fullName: gwUser.fullName || gwUser.username,
+              dateOfBirth: null,
+              gender: '',
+              medicalHistory: '',
+              allergies: '',
+              username: gwUser.username,
+              email: gwUser.email
+            })
+          }
+        }
+      } catch (errGateway) {
+        console.error('Lỗi khi tải danh sách bệnh nhân từ gateway (bổ sung):', errGateway)
       }
 
       // Refresh slots if doctor selected

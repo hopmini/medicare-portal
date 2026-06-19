@@ -1,5 +1,5 @@
 <template>
-  <div class="public-page">
+  <div class="public-page" style="padding-top: 100px;">
     <Navbar />
 
     <div class="page-header" style="background: #0047AB; color: white; padding: 2.5rem 0; text-align: left;">
@@ -100,7 +100,7 @@
                 {{ rec.createdAt ? formatDate(rec.createdAt) : '--' }}
               </td>
               <td v-if="isAdmin" style="padding: 14px 16px;">
-                <div style="font-weight: 700; color: #0f172a;">{{ patientMap.get(rec.patientId?.toLowerCase())?.fullName || 'Đang tải...' }}</div>
+                <div style="font-weight: 700; color: #0f172a;">{{ lookupPatientName(rec) }}</div>
                 <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">{{ getPatientCode(rec) }}</div>
               </td>
               <td style="padding: 14px 16px; max-width: 250px;">
@@ -160,7 +160,7 @@
             <div class="symptom-box">
               <span class="cell-label">Họ tên:</span>
               <p class="symptom-text" style="font-weight: 700;">
-                {{ patientMap.get(selectedRecord.patientId?.toLowerCase())?.fullName || 'Bệnh nhân Medicare' }}
+                {{ lookupPatientName(selectedRecord) }}
               </p>
             </div>
             <div class="symptom-box">
@@ -331,6 +331,11 @@ async function loadRecords () {
       }
       totalPages.value = 1
     }
+    records.value.sort((a: any, b: any) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return db - da
+    })
     await loadPatientNames()
   } catch (e: any) {
     error.value = e.response?.data || 'Không thể tải dữ liệu bệnh án.'
@@ -340,27 +345,70 @@ async function loadRecords () {
   }
 }
 
+function lookupPatientName (rec: any): string {
+  if (rec.patientName) return rec.patientName
+  if (rec.patient?.fullName) return rec.patient.fullName
+  const key = rec.patientId?.toLowerCase()
+  if (key && patientMap.value.has(key)) {
+    return patientMap.value.get(key).fullName || '--'
+  }
+  if (rec.gatewayPatientId != null) {
+    const gidKey = mapUserIdToGuid(String(rec.gatewayPatientId)).toLowerCase()
+    if (patientMap.value.has(gidKey)) {
+      return patientMap.value.get(gidKey).fullName || '--'
+    }
+    const rawKey = String(rec.gatewayPatientId)
+    if (patientMap.value.has(rawKey)) {
+      return patientMap.value.get(rawKey).fullName || '--'
+    }
+  }
+  const numericId = parseInt(String(rec.patientId || '').split('-').pop() || '0', 10)
+  if (numericId) {
+    for (const [, p] of patientMap.value.entries()) {
+      if (p.gatewayPatientId === numericId || p.id === numericId || String(p.id) === String(numericId)) {
+        return p.fullName || '--'
+      }
+    }
+  }
+  return '--'
+}
+
 async function loadPatientNames () {
   try {
     const patients = await medicalRecordService.getAllPatients()
     const map = new Map<string, any>()
     patients.forEach((p: any) => {
-      const pId = p.id || p.Id
+      const normalized = {
+        ...p,
+        id: p.id || p.Id,
+        fullName: p.fullName || p.FullName || p.full_name || '',
+        gatewayPatientId: p.gatewayPatientId ?? p.GatewayPatientId
+      }
+      const pId = normalized.id
       if (pId) {
         const id = String(pId).toLowerCase()
-        map.set(id, p)
-        const gid = p.gatewayPatientId ?? p.GatewayPatientId
+        map.set(id, normalized)
+        const gid = normalized.gatewayPatientId
         if (gid != null) {
-          map.set(mapUserIdToGuid(String(gid)).toLowerCase(), p)
+          map.set(mapUserIdToGuid(String(gid)).toLowerCase(), normalized)
+          map.set(String(gid), normalized)
         }
         const lastSeg = (id.split('-').pop() || '').replace(/^0+/, '')
         if (lastSeg && /^\d+$/.test(lastSeg)) {
-          map.set(mapUserIdToGuid(lastSeg).toLowerCase(), p)
+          map.set(mapUserIdToGuid(lastSeg).toLowerCase(), normalized)
+          map.set(lastSeg, normalized)
+        }
+        const numFromId = parseInt(id.split('-').pop() || '0', 10)
+        if (numFromId) {
+          map.set(mapUserIdToGuid(String(numFromId)).toLowerCase(), normalized)
+          map.set(String(numFromId), normalized)
         }
       }
     })
     patientMap.value = map
-  } catch {}
+  } catch (e) {
+    console.error('Failed to load patient names:', e)
+  }
 }
 
 function getPatientCode (rec: any): string {

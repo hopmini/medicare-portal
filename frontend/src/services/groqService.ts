@@ -8,7 +8,7 @@ let cachedDoctors: any[] | null = null
 export async function fetchServices(): Promise<any[]> {
   if (cachedServices) return cachedServices
   try {
-    const res = await fetch(`${GATEWAY_URL}/api/appointment/MedicalServices`)
+    const res = await fetch(`${GATEWAY_URL}/api/appointment/public/MedicalServices`)
     if (res.ok) {
       cachedServices = await res.json()
       return cachedServices || []
@@ -33,21 +33,6 @@ export async function fetchDoctors(): Promise<any[]> {
   return []
 }
 
-function hasBookingIntent(query: string): boolean {
-  const q = query.toLowerCase()
-  return q.includes('đặt lịch') || q.includes('đặt khám') || q.includes('hẹn khám') ||
-    q.includes('đăng ký') || q.includes('đi khám') || q.includes('muốn khám') ||
-    q.includes('cần khám') || q.includes('tư vấn khám') || q.includes('đặt')
-}
-
-function hasSymptoms(query: string): boolean {
-  const q = query.toLowerCase()
-  return q.includes('đau') || q.includes('sốt') || q.includes('ho') || q.includes('nôn') ||
-    q.includes('mệt') || q.includes('chóng') || q.includes('buồn') || q.includes('ngứa') ||
-    q.includes('sưng') || q.includes('khó') || q.includes('rối loạn') || q.includes('triệu chứng') ||
-    q.includes('bị') && (q.includes('bụng') || q.includes('họng') || q.includes('đầu') || q.includes('răng'))
-}
-
 function extractJson(text: string): any | null {
   const match = text.match(/\{[\s\S]*\}/)
   if (match) {
@@ -58,7 +43,21 @@ function extractJson(text: string): any | null {
   return null
 }
 
-function buildSystemPrompt(services: any[], doctors: any[], role: string): string {
+function formatAppointments(appointments: any[]): string {
+  if (appointments.length === 0) return ''
+  return '\nLịch hẹn của bạn:\n' + appointments.map(a => {
+    const today = new Date()
+    const appDate = a.date ? new Date(a.date) : null
+    const isPast = appDate && appDate < today
+    const statusMap: Record<number, string> = { 0: 'Chờ duyệt', 1: 'Đã duyệt', 2: 'Đã hoàn thành', 3: 'Đã hủy' }
+    const status = statusMap[a.status] ?? 'Không xác định'
+    const prefix = a.date ? `Ngày ${a.date}${a.time ? ' ' + a.time : ''}` : ''
+    const pastLabel = isPast ? ' (đã qua)' : ''
+    return `  - Mã: #${a.id}, Dịch vụ: ${a.serviceName || 'N/A'}, Bác sĩ: ${a.doctorName || 'N/A'}, ${prefix}, Trạng thái: ${status}${pastLabel}`
+  }).join('\n')
+}
+
+function buildSystemPrompt(services: any[], doctors: any[], role: string, appointments: any[] = []): string {
   const serviceList = services.length > 0
     ? `Danh sách dịch vụ khám đang có:\n${services.map(s => `- ID: ${s.id}, Tên: ${s.name}, Giá: ${s.price}đ, Mô tả: ${s.description || 'Không có'}`).join('\n')}`
     : ''
@@ -67,44 +66,44 @@ function buildSystemPrompt(services: any[], doctors: any[], role: string): strin
     ? `Danh sách bác sĩ:\n${doctors.map(d => `- ${d.fullName} - Chuyên khoa: ${d.specialty || 'Đa khoa'}, Học vị: ${d.degree || 'Không có'}`).join('\n')}`
     : ''
 
+  const appointmentList = formatAppointments(appointments)
+
   let roleContext = ''
   switch (role) {
-    case 'Admin':
-      roleContext = 'Người dùng là Quản trị viên hệ thống.'
-      break
-    case 'Doctor':
-      roleContext = 'Người dùng là Bác sĩ.'
-      break
-    case 'Receptionist':
-      roleContext = 'Người dùng là Lễ tân.'
-      break
-    default:
-      roleContext = 'Người dùng là Bệnh nhân.'
+    case 'Admin': roleContext = 'Người dùng là Quản trị viên.'; break
+    case 'Doctor': roleContext = 'Người dùng là Bác sĩ.'; break
+    case 'Receptionist': roleContext = 'Người dùng là Lễ tân.'; break
+    default: roleContext = 'Người dùng là Bệnh nhân.'
   }
 
-  return `Bạn là trợ lý AI của Medicare, nói tiếng Việt. ${roleContext}
+  return `Bạn là trợ lý AI của Medicare, luôn trả lời bằng tiếng Việt. ${roleContext}
 
 ${serviceList}
 
 ${doctorList}
+${appointmentList}
 
-QUY TẮC XỬ LÝ:
-1. Nếu người dùng hỏi về bác sĩ hoặc dịch vụ: trả lời text thuần dựa trên danh sách thật bên trên, KHÔNG thêm JSON, KHÔNG gợi ý đặt lịch.
-2. Nếu người dùng hỏi kiến thức sức khỏe chung: trả lời text thuần tự nhiên, KHÔNG JSON, KHÔNG gợi ý đặt lịch.
-3. Nếu người dùng mô tả TRIỆU CHỨNG bệnh (đau, sốt, ho...): CHỈ trả lời MỘT JSON duy nhất, TUYỆT ĐỐI KHÔNG thêm text nào khác ngoài JSON:
-{ "reply": "câu tư vấn ngắn gọn", "serviceId": "ID dịch vụ phù hợp nhất (số)", "specialty": "tên chuyên khoa", "urgency": "Nhẹ / Trung bình / Khẩn cấp", "recommendedService": "tên dịch vụ" }
-Không giải thích, không chào hỏi, không thêm text. Chỉ JSON.`
+HƯỚNG DẪN:
+- Trả lời tự nhiên, thân thiện, hữu ích dựa trên ngữ cảnh.
+- Nếu người dùng hỏi về dịch vụ: dùng danh sách dịch vụ thật bên trên để tư vấn.
+- Nếu người dùng hỏi về bác sĩ: dùng danh sách bác sĩ thật bên trên để giới thiệu.
+- Nếu người dùng hỏi về lịch hẹn: dùng danh sách lịch hẹn thật bên trên để trả lời.
+- Nếu người dùng hỏi kiến thức sức khỏe hoặc triệu chứng: trả lời bằng kiến thức y khoa phổ thông.
+- Nếu người dùng mô tả TRIỆU CHỨNG và muốn đặt lịch: tư vấn và đề xuất dịch vụ phù hợp. Khi có đề xuất, KẾT THÚC câu trả lời bằng MỘT dòng JSON duy nhất (không xuống dòng):
+{"serviceId":"ID","specialty":"tên chuyên khoa","urgency":"Nhẹ / Trung bình / Khẩn cấp","recommendedService":"tên dịch vụ"}
+- Nếu không có đề xuất đặt lịch, KHÔNG thêm JSON.`
 }
 
 export async function chatWithGroq(
   messages: { role: string; content: string }[],
   services: any[] = [],
   doctors: any[] = [],
-  role: string = 'Patient'
+  role: string = 'Patient',
+  appointments: any[] = []
 ) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
   if (!apiKey) {
-    return fallbackAnalysis(messages[messages.length - 1]?.content || '', services)
+    return { reply: 'Xin lỗi, AI chưa được cấu hình. Vui lòng liên hệ quản trị viên.', serviceId: null, specialty: null, urgency: null, recommendedService: null, showDiagnostics: false }
   }
 
   try {
@@ -117,10 +116,7 @@ export async function chatWithGroq(
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(services, doctors, role)
-          },
+          { role: 'system', content: buildSystemPrompt(services, doctors, role, appointments) },
           ...messages
         ],
         temperature: 0.7,
@@ -131,75 +127,29 @@ export async function chatWithGroq(
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
       console.error('Groq API error body:', errText)
-      throw new Error(`Groq API error: ${res.status} - ${errText}`)
+      throw new Error(`Groq API error: ${res.status}`)
     }
 
     const data = await res.json()
     const content = data.choices?.[0]?.message?.content || ''
-    const lastMsg = messages.filter(m => m.role === 'user').pop()?.content || ''
-    const showDiag = hasBookingIntent(lastMsg) || hasSymptoms(lastMsg)
+    const lastLine = content.trim().split('\n').pop() || ''
+    const parsedJson = extractJson(lastLine)
 
-    const parsedJson = extractJson(content)
-    if (parsedJson && parsedJson.reply) {
+    if (parsedJson && parsedJson.serviceId) {
+      const textWithoutJson = content.substring(0, content.lastIndexOf('{')).trim()
       return {
-        reply: parsedJson.reply,
-        serviceId: showDiag ? (parsedJson.serviceId || null) : null,
-        specialty: showDiag ? (parsedJson.specialty || null) : null,
-        urgency: showDiag ? (parsedJson.urgency || null) : null,
-        recommendedService: showDiag ? (parsedJson.recommendedService || null) : null,
-        showDiagnostics: showDiag
+        reply: textWithoutJson || `Tôi đề xuất bạn nên khám ${parsedJson.specialty}.`,
+        serviceId: parsedJson.serviceId || null,
+        specialty: parsedJson.specialty || null,
+        urgency: parsedJson.urgency || null,
+        recommendedService: parsedJson.recommendedService || null,
+        showDiagnostics: true
       }
     }
 
     return { reply: content, serviceId: null, specialty: null, urgency: null, recommendedService: null, showDiagnostics: false }
   } catch (err) {
-    console.error('Groq API failed, using fallback:', err)
-    return fallbackAnalysis(messages[messages.length - 1]?.content || '', services)
+    console.error('Groq API failed:', err)
+    return { reply: 'Rất tiếc, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.', serviceId: null, specialty: null, urgency: null, recommendedService: null, showDiagnostics: false }
   }
-}
-
-function fallbackAnalysis(query: string, services: any[] = []) {
-  const q = query.toLowerCase()
-  const needsBooking = hasBookingIntent(q) || hasSymptoms(q)
-
-  function findServiceId(nameHint: string): string | null {
-    if (!services || services.length === 0) return null
-    const svc = services.find((s: any) => {
-      const sn = (s.name || '').toLowerCase()
-      return sn.includes(nameHint.toLowerCase()) || nameHint.toLowerCase().includes(sn)
-    })
-    return svc ? String(svc.id) : null
-  }
-
-  if (q.includes('bác sĩ') || q.includes('ai khám') || q.includes('chuyên khoa') || q.includes('bs')) {
-    return {
-      reply: 'Chúng tôi có đội ngũ bác sĩ đa khoa và chuyên khoa giàu kinh nghiệm. Bạn muốn tìm bác sĩ theo chuyên khoa nào?',
-      serviceId: null, specialty: null, urgency: null, recommendedService: null,
-      showDiagnostics: false
-    }
-  }
-
-  if (!needsBooking) {
-    return {
-      reply: 'Chào bạn! Tôi là trợ lý AI của Medicare. Bạn có thể hỏi tôi về tình trạng sức khỏe, bác sĩ, dịch vụ khám, hoặc các thông tin khác liên quan đến phòng khám. Tôi sẵn sàng trợ giúp! 😊',
-      serviceId: null, specialty: null, urgency: null, recommendedService: null,
-      showDiagnostics: false
-    }
-  }
-
-  if (q.includes('dạ dày') || q.includes('bụng') || q.includes('tiêu hóa') || q.includes('nôn') || q.includes('bao tử') || q.includes('đi ngoài') || q.includes('tiêu chảy'))
-    return { reply: 'Dựa trên các triệu chứng liên quan đến tiêu hóa, tôi đề nghị bạn nên khám chuyên khoa Tiêu Hóa để được thăm khám cụ thể.', serviceId: findServiceId('Tiêu hóa'), specialty: 'Khoa Tiêu Hóa', urgency: 'Trung bình - Cần đi khám sớm', recommendedService: 'Khám Tiêu hóa & Siêu âm bụng tổng quát', showDiagnostics: true }
-  if (q.includes('ho') || q.includes('sốt') || q.includes('họng') || q.includes('cúm') || q.includes('khó thở'))
-    return { reply: 'Bạn đang có các biểu hiện của nhiễm trùng hô hấp.', serviceId: findServiceId('Nội tổng quát'), specialty: 'Khoa Nội Tổng Quát', urgency: q.includes('khó thở') ? 'Khẩn cấp - Cần khám ngay' : 'Trung bình - Cần đi khám', recommendedService: 'Khám Nội tổng quát & Chụp X-Quang Phổi thẳng', showDiagnostics: true }
-  if (q.includes('tim') || q.includes('ngực') || q.includes('huyết áp'))
-    return { reply: 'Triệu chứng liên quan tim mạch cần được kiểm tra sớm.', serviceId: findServiceId('Tim mạch'), specialty: 'Khoa Tim Mạch', urgency: 'Khẩn cấp - Cần kiểm tra ngay', recommendedService: 'Khám Tim Mạch & Đo ECG', showDiagnostics: true }
-  if (q.includes('răng') || q.includes('nướu') || q.includes('sâu') || q.includes('buốt'))
-    return { reply: 'Các vấn đề răng nướu nên được thăm khám nha khoa.', serviceId: findServiceId('Răng'), specialty: 'Khoa Răng Hàm Mặt', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám răng miệng & Chụp X-Quang', showDiagnostics: true }
-  if (q.includes('mắt') || q.includes('mờ') || q.includes('đỏ mắt') || q.includes('nhức mắt'))
-    return { reply: 'Triệu chứng về mắt cần được kiểm tra.', serviceId: findServiceId('Mắt'), specialty: 'Khoa Mắt', urgency: 'Nhẹ - Cần đi khám', recommendedService: 'Đo thị lực & Khám đáy mắt', showDiagnostics: true }
-  if (q.includes('tai') || q.includes('mũi') || q.includes('ù tai') || q.includes('xoang'))
-    return { reply: 'Triệu chứng tai mũi họng nên được thăm khám.', serviceId: findServiceId('Tai Mũi Họng'), specialty: 'Khoa Tai Mũi Họng', urgency: 'Nhẹ - Hẹn khám thường quy', recommendedService: 'Khám Tai Mũi Họng & Nội soi', showDiagnostics: true }
-  if (q.includes('trẻ') || q.includes('bé') || q.includes('con tôi') || q.includes('nhi'))
-    return { reply: 'Triệu chứng của trẻ nhỏ cần được thăm khám nhi khoa.', serviceId: findServiceId('Nhi'), specialty: 'Khoa Nhi', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám Nhi tổng quát', showDiagnostics: true }
-  return { reply: 'Đã tiếp nhận thông tin của bạn. Bạn có muốn đặt lịch khám không?', serviceId: findServiceId('Nội tổng quát'), specialty: 'Khoa Nội Tổng Quát', urgency: 'Trung bình - Cần đi khám', recommendedService: 'Khám sức khỏe tổng quát', showDiagnostics: true }
 }

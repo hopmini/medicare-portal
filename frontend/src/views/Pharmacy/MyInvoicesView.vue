@@ -191,12 +191,9 @@
               <!-- Thao tác -->
               <template v-else-if="column.key === 'actions'">
                 <div style="display: flex; gap: 12px; align-items: center;">
-                  <a class="mi-action-link" @click="openDetail(record)">
-                    <i class="far fa-eye" style="margin-right: 4px;" /> Chi tiết
+                  <a class="mi-action-link" @click="openDetail(record)" title="Xem chi tiết">
+                    <i class="far fa-eye" />
                   </a>
-                  <router-link :to="{ path: '/pharmacy/payment-status', query: { code: record.code } }" class="mi-action-link" style="color: #f59e0b;">
-                    <i class="fas fa-tasks" style="margin-right: 4px;" /> Trạng thái
-                  </router-link>
                 </div>
               </template>
             </template>
@@ -691,6 +688,7 @@ function downloadInvoice() {
 
 .mi-stat-currency {
   font-size: 1.25rem;
+  white-space: nowrap;
 }
 
 .mi-stat-sub {

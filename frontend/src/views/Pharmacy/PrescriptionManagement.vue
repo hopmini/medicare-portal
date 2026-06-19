@@ -119,8 +119,8 @@
                     </template>
                     <template v-else-if="column.key === 'action'">
                       <div style="display: flex; gap: 8px; justify-content: center;">
-                        <a-button type="primary" size="small" style="background: #0047AB; border: none; font-size: 0.75rem;" @click.stop="selectPrescription(record)">
-                          <i class="fas fa-file-prescription" /> Chi tiết
+                        <a-button type="primary" size="small" style="background: #0047AB; border: none;" @click.stop="selectPrescription(record)">
+                          <i class="far fa-eye" />
                         </a-button>
                       </div>
                     </template>

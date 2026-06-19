@@ -100,6 +100,7 @@ import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { chatWithGroq, fetchServices, fetchDoctors } from '@/services/groqService'
+import api from '@/services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -110,6 +111,7 @@ const isTyping = ref(false)
 const messagesContainer = ref(null)
 const medicalServices = ref([])
 const doctors = ref([])
+const appointments = ref([])
 
 const userRole = computed(() => {
   return authStore.user?.role || 'Patient'
@@ -152,7 +154,26 @@ const suggestedQuestions = computed(() => {
 onMounted(async () => {
   medicalServices.value = await fetchServices()
   doctors.value = await fetchDoctors()
+  await loadAppointments()
 })
+
+async function loadAppointments() {
+  const role = authStore.user?.role?.toLowerCase()
+  try {
+    if (role === 'patient') {
+      const res = await api.get('/Appointments/my')
+      appointments.value = res.data || []
+    } else if (role === 'doctor') {
+      const res = await api.get('/Appointments/doctor-today')
+      appointments.value = res.data || []
+    } else if (role === 'admin' || role === 'receptionist') {
+      const res = await api.get('/Appointments')
+      appointments.value = res.data || []
+    }
+  } catch (e) {
+    console.error('Failed to load appointments:', e)
+  }
+}
 
 const messages = ref([
   {
@@ -217,7 +238,7 @@ async function handleSend() {
     .slice(-10)
     .map(m => ({ role: m.sender === 'ai' ? 'assistant' : 'user', content: m.text }))
 
-  const result = await chatWithGroq(groqMessages, medicalServices.value, doctors.value, userRole.value)
+  const result = await chatWithGroq(groqMessages, medicalServices.value, doctors.value, userRole.value, appointments.value)
 
   isTyping.value = false
   messages.value.push({
