@@ -15,6 +15,7 @@ import ContactView from './views/Appointment/ContactView.vue'
 import GuideView from './views/Appointment/GuideView.vue'
 import ProfileView from './views/ProfileView.vue'
 import MedicalRecordsListView from './views/MedicalRecord/MedicalRecordsListView.vue'
+import MyMedicalRecordsView from './views/MedicalRecord/MyMedicalRecordsView.vue'
 // Pharmacy components
 import MedicineManagement from './views/Pharmacy/MedicineManagement.vue'
 import InventoryManagement from './views/Pharmacy/InventoryManagement.vue'
@@ -80,32 +81,12 @@ const routes = [
     component: MyAppointmentsView,
     meta: { requiresAuth: true, roles: ['Patient'] }
   },
-  { path: '/my-medical-records', redirect: '/medical-records' },
-  {
-    path: '/services',
-    name: 'Services',
-    component: ServicesView
-  },
-  {
-    path: '/doctors',
-    name: 'Doctors',
-    component: DoctorsView
-  },
-  {
-    path: '/contact',
-    name: 'Contact',
-    component: ContactView
-  },
-  {
-    path: '/guide',
-    name: 'Guide',
-    component: GuideView
-  },
+  { path: '/my-medical-records', name: 'MyMedicalRecords', component: MyMedicalRecordsView, meta: { requiresAuth: true, roles: ['Patient'] } },
   {
     path: '/medical-records',
     name: 'MedicalRecords',
-    component: MedicalRecordsListView,
-    meta: { requiresAuth: true, roles: ['Admin', 'Patient'] }
+    component: MyMedicalRecordsView,
+    meta: { requiresAuth: true, roles: ['Patient'] }
   },
   { path: '/patient-profile', redirect: '/dashboard?tab=patient-profile' },
   {
